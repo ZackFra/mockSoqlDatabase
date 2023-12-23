@@ -12,10 +12,51 @@
   "activationEvents": [],
   "main": "./out/extension.js",
   "contributes": {
+    "languages": [
+      {
+        "id": "apex",
+        "extensions": [
+          ".cls",
+          ".trigger",
+          ".apex",
+          ".apexcls",
+          ".apexcls-meta.xml",
+          ".apex-meta.xml",
+          ".trigger-meta.xml"
+        ]
+      }
+    ],
+    "menus": {
+      "explorer/context": [
+        {
+          "when": "resourceLangId == apex",
+          "command": "dev-force.execAnonWithDebug",
+          "group": "navigation"
+        }, {
+          "when": "resourceLangId == apex",
+          "command": "dev-force.execAnon",
+          "group": "navigation"
+        }
+      ],
+      "editor/context": [
+        {
+          "when": "resourceLangId == apex",
+          "command": "dev-force.execAnonWithDebug",
+          "group": "navigation"
+        }, {
+          "when": "resourceLangId == apex",
+          "command": "dev-force.execAnon",
+          "group": "navigation"
+        }
+      ]
+    },
     "commands": [
       {
-        "command": "dev-force.helloWorld",
-        "title": "Hello World"
+        "command": "dev-force.execAnonWithDebug",
+        "title": "DevForce: Execute Anonymous with Debug"
+      }, {
+        "command": "dev-force.execAnon",
+        "title": "DevForce: Execute Anonymous"
       }
     ]
   },
