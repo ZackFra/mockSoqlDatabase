@@ -1,0 +1,85 @@
+@IsTest
+public with sharing class TokenizerTest {
+    @IsTest
+    public static void testSelectAccount() {
+        Tokenizer t = new Tokenizer();
+        Tokenizer.Node head = t.parse('SELECT Id FROM Account');
+        
+        // we expect this to come back in a particular order
+        Assert.areEqual('select', head.id, 'Expected id to be "select"');
+        Assert.areEqual('select', head.nodeType, 'Expected nodeType to be "select"');
+        Assert.isNotNull(head.left, 'Expected left to be not null');
+        Assert.isNotNull(head.right, 'Expected right to be not null');
+
+        Tokenizer.Node idNode = head.left;
+        Assert.areEqual('id', idNode.id, 'Expected id to be "id"');
+        Assert.areEqual('field', idNode.nodeType, 'Expected nodeType to be "field"');
+        Assert.isNull(idNode.left, 'Expected left to be null');
+        Assert.isNull(idNode.right, 'Expected right to be null');
+
+        Tokenizer.Node fromNode = head.right;
+        Assert.areEqual('from', fromNode.id, 'Expected id to be "from"');
+        Assert.areEqual('from', fromNode.nodeType, 'Expected nodeType to be "from"');
+        Assert.isNotNull(fromNode.left, 'Expected left to be not null');
+        Assert.isNull(fromNode.right, 'Expected right to be null');
+
+        Tokenizer.Node accountNode = fromNode.left;
+        Assert.areEqual('account', accountNode.id, 'Expected id to be "account"');
+        Assert.areEqual('object', accountNode.nodeType, 'Expected nodeType to be "object"');
+        Assert.isNull(accountNode.left, 'Expected left to be null');
+        Assert.isNull(accountNode.right, 'Expected right to be null');
+    }
+
+    @IsTest
+    public static void testSelectWithWhereClause() {
+        Tokenizer t = new Tokenizer();
+        Tokenizer.Node head = t.parse('SELECT Id FROM Account WHERE Name = \'Test\'');
+        
+        // we expect this to come back in a particular order
+        Assert.areEqual('select', head.id, 'Expected id to be "select"');
+        Assert.areEqual('select', head.nodeType, 'Expected nodeType to be "select"');
+        Assert.isNotNull(head.left, 'Expected left to be not null');
+        Assert.isNotNull(head.right, 'Expected right to be not null');
+
+        Tokenizer.Node idNode = head.left;
+        Assert.areEqual('id', idNode.id, 'Expected id to be "id"');
+        Assert.areEqual('field', idNode.nodeType, 'Expected nodeType to be "field"');
+        Assert.isNull(idNode.left, 'Expected left to be null');
+        Assert.isNull(idNode.right, 'Expected right to be null');
+
+        Tokenizer.Node fromNode = head.right;
+        Assert.areEqual('from', fromNode.id, 'Expected id to be "from"');
+        Assert.areEqual('from', fromNode.nodeType, 'Expected nodeType to be "from"');
+        Assert.isNotNull(fromNode.left, 'Expected left to be not null');
+        Assert.isNotNull(fromNode.right, 'Expected right to be not null');
+
+        Tokenizer.Node accountNode = fromNode.left;
+        Assert.areEqual('account', accountNode.id, 'Expected id to be "account"');
+        Assert.areEqual('object', accountNode.nodeType, 'Expected nodeType to be "object"');
+        Assert.isNull(accountNode.left, 'Expected left to be null');
+        Assert.isNull(accountNode.right, 'Expected right to be null');
+
+        Tokenizer.Node whereNode = fromNode.right;
+        Assert.areEqual('where', whereNode.id, 'Expected id to be "where"');
+        Assert.areEqual('where', whereNode.nodeType, 'Expected nodeType to be "where"');
+        Assert.isNotNull(whereNode.left, 'Expected left to be not null');
+        Assert.isNull(whereNode.right, 'Expected right to be null');
+
+        Tokenizer.Node operatorNode = whereNode.left;
+        Assert.areEqual('=', operatorNode.id, 'Expected id to be "="');
+        Assert.areEqual('operator', operatorNode.nodeType, 'Expected nodeType to be "operator"');
+        Assert.isNotNull(operatorNode.left, 'Expected left to not be null');
+
+        Tokenizer.Node nameNode = operatorNode.left;
+        Assert.areEqual('name', nameNode.id, 'Expected id to be "name"');
+        Assert.areEqual('field', nameNode.nodeType, 'Expected nodeType to be "field"');
+        Assert.isNull(nameNode.left, 'Expected left to be null');
+        Assert.isNull(nameNode.right, 'Expected right to be null');
+
+        Tokenizer.Node valueNode = operatorNode.right;
+        Assert.areEqual('test', valueNode.id, 'Expected id to be "test"');
+        Assert.areEqual('string', valueNode.nodeType, 'Expected nodeType to be "string"');
+        Assert.isNull(valueNode.left, 'Expected left to be null');
+        Assert.isNull(valueNode.right, 'Expected right to be null');
+    }
+}
