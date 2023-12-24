@@ -14,38 +14,53 @@
   "contributes": {
     "languages": [
       {
-        "id": "apex",
+        "id": "anonApex",
         "extensions": [
-          ".cls",
-          ".trigger",
-          ".apex",
-          ".apexcls",
-          ".apexcls-meta.xml",
-          ".apex-meta.xml",
-          ".trigger-meta.xml"
+          ".apex"
+        ]
+      }, {
+        "id": "log",
+        "extensions": [
+          ".log"
         ]
       }
     ],
     "menus": {
       "explorer/context": [
         {
-          "when": "resourceLangId == apex",
+          "when": "resourceLangId == anonApex",
           "command": "dev-force.execAnonWithDebug",
           "group": "navigation"
         }, {
-          "when": "resourceLangId == apex",
+          "when": "resourceLangId == anonApex",
           "command": "dev-force.execAnon",
+          "group": "navigation"
+        }, {
+          "when": "resourceLangId == log",
+          "command": "dev-force.pullLatestLogWithDebug",
+          "group": "navigation"
+        }, {
+          "when": "resourceLangId == log",
+          "command": "dev-force.pullLatestLog",
           "group": "navigation"
         }
       ],
       "editor/context": [
         {
-          "when": "resourceLangId == apex",
+          "when": "resourceLangId == anonApex",
           "command": "dev-force.execAnonWithDebug",
           "group": "navigation"
         }, {
-          "when": "resourceLangId == apex",
+          "when": "resourceLangId == anonApex",
           "command": "dev-force.execAnon",
+          "group": "navigation"
+        }, {
+          "when": "resourceLangId == log",
+          "command": "dev-force.pullLatestLogWithDebug",
+          "group": "navigation"
+        }, {
+          "when": "resourceLangId == log",
+          "command": "dev-force.pullLatestLog",
           "group": "navigation"
         }
       ]
@@ -57,6 +72,12 @@
       }, {
         "command": "dev-force.execAnon",
         "title": "DevForce: Execute Anonymous"
+      }, {
+        "command": "dev-force.pullLatestLogWithDebug",
+        "title": "DevForce: Pull Latest Log with Debug"
+      }, {
+        "command": "dev-force.pullLatestLog",
+        "title": "DevForce: Pull Latest Log"
       }
     ]
   },

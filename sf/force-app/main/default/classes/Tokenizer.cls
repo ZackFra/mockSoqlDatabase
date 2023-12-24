@@ -188,18 +188,17 @@ public with sharing class Tokenizer {
             query = soqlSubQuery.subquery;
             query = ParserUtils.skipWhitespace(query);
             query = consume(query, ')');
-            query = query.subString(1);
             selectExpr = new Intermediary(
             	new NodeBuilder()
                 	.setId('subquery')
                 	.setNodeType('subquery')
-                	.setRight(soqlSubQuery.head)
+                	.setLeft(soqlSubQuery.head)
                 	.build(),
                 query
             );
         } else {
             selectExpr = parseFieldList(query);
-            query = selectExpr.subquery;
+            query = ParserUtils.skipWhitespace(selectExpr.subquery);
         }
         
         query = ParserUtils.skipWhitespace(query);
@@ -322,10 +321,13 @@ public with sharing class Tokenizer {
     
     private Intermediary parseWhere(String query) {
         query = ParserUtils.skipWhitespace(query);
-        if(query.length() == 0) return null;
-        String whereClause = query.subString(0, 5);
-        if(whereClause != 'where') return null;
-        query = query.subString(5);
+        if(query.length() == 0) {
+            return null;
+        }
+        if(lookahead(query, 5) != 'where') {
+            return null;
+        }
+        query = consume(query, 'where');
         
         Intermediary leftIntermediary = parseConditionalExpr(query);
         
@@ -347,6 +349,55 @@ public with sharing class Tokenizer {
         return lookahead(query, 2) == 'or';
     }
 
+    private Intermediary parseConditionalSubExpr(String query) {
+        query = consume(query, '(');
+        Intermediary subExpr = parseConditionalExpr(query);
+        query = subExpr.subquery;
+        query = consume(query, ')');
+        return new Intermediary(
+            new NodeBuilder()
+                .setId('conoditional subexpression')
+                .setNodeType('conditional subexpression')
+                .setLeft(subExpr.head)
+                .build(),
+            query
+        );
+    }
+
+    private Intermediary parseConditionalOperationExpr(String query) {
+        Intermediary fieldIntermediary = parseField(query);
+        query = fieldIntermediary.subquery;
+        query = ParserUtils.skipWhitespace(query);
+
+        Intermediary operatorIntermediary = parseOperator(query);
+        query = operatorIntermediary.subquery;
+        query = ParserUtils.skipWhitespace(query);
+
+        if(operatorIntermediary.head.nodeType == 'in' || operatorIntermediary.head.nodeType == 'not in' && lookahead(query, 1) == '(') {
+            query = consume(query, '(');
+            Intermediary listOrQuery;
+            if(lookahead(query, 5) == 'select') {
+                listOrQuery = parseQuery(query);
+            } else {
+                listOrQuery = parseValueList(query);
+            }
+            query = listOrQuery.subquery;
+            query = ParserUtils.skipWhitespace(query);
+
+            query = consume(query, ')');
+
+            operatorIntermediary.head.right = listOrQuery.head;
+        } else {
+            Intermediary valueIntermediary = parseValue(query);
+            query = valueIntermediary.subquery;
+            operatorIntermediary.head.right = valueIntermediary.head;
+        }
+        operatorIntermediary.subquery = query;
+        operatorIntermediary.head.left = fieldIntermediary.head;
+
+        return operatorIntermediary;
+    }
+
     // TODO: figure out how to handle the AND and OR operators
     private Intermediary parseConditionalExpr(String query) {
         query = ParserUtils.skipWhitespace(query);
@@ -354,19 +405,18 @@ public with sharing class Tokenizer {
         Intermediary leftIntermediary;
         Intermediary rightIntermediary;
 
-        // if this query contains a sub-expression, parse it
+        // work out the left intermediary first, it's either a sub-expression or a field being compared to a value
         if(lookahead(query, 1) == '(') {
-            query = consume(query, '(');
-            leftIntermediary = parseConditionalExpr(query);
-            query = leftIntermediary.subquery;
-            query = consume(query, ')');
+            leftIntermediary = parseConditionalSubExpr(query);
+        } else {
+            leftIntermediary = parseConditionalOperationExpr(query);
         }
-
+        query = leftIntermediary.subquery;
         query = ParserUtils.skipWhitespace(query);
 
         // if the next token is an AND or OR, parse it
-        NodeBuilder nb = new NodeBuilder();
         if(isAnd(query) || isOr(query)) {
+            NodeBuilder nb = new NodeBuilder();
             String token;
             if(isAnd(query)) {
                 token = 'and';
@@ -382,36 +432,38 @@ public with sharing class Tokenizer {
                 nb.setId(token)
                     .setNodeType(token)
                     .setLeft(leftIntermediary.head)
-                    .setRight(restOfExpr.head),
+                    .setRight(restOfExpr.head)
+                    .build(),
                 query
             );
         }
 
-        // if the next token is not and AND or OR, it must be a conditional expression
-        Intermediary fieldIntermediary = parseField(query);
-        query = fieldIntermediary.subquery;
-        Intermediary operatorIntermediary = parseOperator(query);
-        query = operatorIntermediary.subquery;
-        Intermediary valueIntermediary = parseValue(query);
-        query = valueIntermediary.subquery;
-
-        operatorIntermediary.head.left = fieldIntermediary.head;
-        operatorIntermediary.head.right = valueIntermediary.head;
-
-        if(leftIntermediary == null) {
-            leftIntermediary = operatorIntermediary;
-        } else {
-            leftIntermediary.head.right = operatorIntermediary.head;
-        }
         
         return new Intermediary(
             new NodeBuilder()
             .setId('conditional expression')
             .setNodeType('conditional expression')
-            .setLeft(operatorIntermediary.head)
+            .setLeft(leftIntermediary.head)
             .build(),
             query
         );
+    }
+
+    private Intermediary parseValueList(String query) {
+        query = ParserUtils.skipWhitespace(query);
+        
+        Intermediary value = parseValue(query);
+        query = value.subquery;
+        query = ParserUtils.skipWhitespace(query);
+        
+        if(query.subString(0, 1) == ',') {
+            query = consume(query, ',');
+            Intermediary restOfList = parseValueList(query);
+            value.head.left = restOfList.head;
+            value.subquery = restOfList.subquery;
+        }
+        
+        return value;
     }
     
     private Intermediary parseOperator(String query) {
