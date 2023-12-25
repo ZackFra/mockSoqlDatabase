@@ -244,13 +244,13 @@ public with sharing class Tokenizer {
         return false;
     }
 
-    // @description : Returns true if the next tokens in the query denote a subfield
+    // @description : Returns true if the next three tokens in the query denote a subfield
     private Boolean isSubField(String query) {
-        if(query.length() < 3) return false;
-        if(ParserUtils.validCharForFieldOrObject(query.subString(0, 1))) return false;
-        if(query.subString(1, 2) != '.') return false;
-        if(!ParserUtils.validCharForFieldOrObject(query.subString(2, 3))) return false;
-        return true;
+        Boolean isLongEnough = (query.length() >= 3);
+        Boolean isValidChar = isLongEnough && ParserUtils.validCharForFieldOrObject(query.subString(0, 1));
+        Boolean isDot = isValidChar && query.subString(1, 2) == '.';
+        Boolean isSubField = isDot && ParserUtils.validCharForFieldOrObject(query.subString(2, 3));
+        return isSubField;
     }
 
     // @description returns true if the next token in the query is a field or object
@@ -264,14 +264,13 @@ public with sharing class Tokenizer {
         while(query.length() != 0 && 
               isNextTokenFieldOrObject(query) ||
               isSubField(query)) {
-            
-              if(isSubField(query)) {
-              	fieldName += query.subString(0, 3);
-                query = query.subString(3);
-              } else {
-                fieldName += query.subString(0, 1);
-                query = query.subString(1);
-              }
+                if(isSubField(query)) {
+                    fieldName += query.subString(0, 3);
+                    query = query.subString(3);
+                } else {
+                    fieldName += query.subString(0, 1);
+                    query = query.subString(1);
+                }
         }
         
         if(fieldName.isNumeric()) {
@@ -371,7 +370,9 @@ public with sharing class Tokenizer {
         Intermediary operatorIntermediary = parseOperator(query);
         query = operatorIntermediary.subquery;
         query = ParserUtils.skipWhitespace(query);
-        if((operatorIntermediary.head.id == 'in' || operatorIntermediary.head.id == 'not in') && lookahead(query, 1) == '(') {
+        Boolean isIn = operatorIntermediary.head.id == 'in';
+        Boolean isNotIn = operatorIntermediary.head.id == 'not in';
+        if((isIn || isNotIn) && lookahead(query, 1) == '(') {
             query = consume(query, '(');
             Intermediary listOrQuery;
             if(lookahead(query, 6) == 'select') {
@@ -404,12 +405,10 @@ public with sharing class Tokenizer {
         return operatorIntermediary;
     }
 
-    // TODO: figure out how to handle the AND and OR operators
     private Intermediary parseConditionalExpr(String query) {
         query = ParserUtils.skipWhitespace(query);
 
         Intermediary leftIntermediary;
-        Intermediary rightIntermediary;
 
         // work out the left intermediary first, it's either a sub-expression or a field being compared to a value
         if(lookahead(query, 1) == '(') {
@@ -445,14 +444,7 @@ public with sharing class Tokenizer {
         }
 
         
-        return new Intermediary(
-            new NodeBuilder()
-            .setId('conditional expression')
-            .setNodeType('conditional expression')
-            .setLeft(leftIntermediary.head)
-            .build(),
-            query
-        );
+        return leftIntermediary;
     }
 
     private Intermediary parseValueList(String query) {
@@ -507,10 +499,11 @@ public with sharing class Tokenizer {
         if(lookahead(query, 1) == '\'') {
             query = query.subString(1);
             baseValue = parseString(query);
-            if(baseValue.subquery.subString(0, 1) != '\'') {
+            query = baseValue.subquery;
+            if(lookahead(query, 1) != '\'') {
                 throw new ParsingException(baseValue.subquery, '\'');
             }
-            query = baseValue.subquery.subString(1);
+            query = consume(query, '\'');
             baseValue.subquery = query;
             return baseValue;
         } else if(query.length() >= 4 && (query.subString(0, 4) == 'true' || query.subString(0, 5) == 'false')) {
