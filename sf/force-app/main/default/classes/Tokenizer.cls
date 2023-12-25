@@ -236,13 +236,13 @@ public with sharing class Tokenizer {
 
     private Boolean isAggregateFunction(String query) {
         query = ParserUtils.skipWhitespace(query);
-        if(query.length() < 3) return false;
-        if(query.subString(0, 3) == 'sum') return true;
-        if(query.subString(0, 3) == 'avg') return true;
-        if(query.subString(0, 3) == 'min') return true;
-        if(query.subString(0, 3) == 'max') return true;
-        if(query.subString(0, 5) == 'count') return true;
-        return false;
+        Boolean isLongEnough = (query.length() >= 3);
+        Boolean isSum = isLongEnough && lookahead(query, 3) == 'sum';
+        Boolean isAvg = isLongEnough && lookahead(query, 3) == 'avg';
+        Boolean isMin = isLongEnough && lookahead(query, 3) == 'min';
+        Boolean isMax = isLongEnough && lookahead(query, 3) == 'max';
+        Boolean isCount = isLongEnough && lookahead(query, 5) == 'count';
+        return isSum || isAvg || isMin || isMax || isCount;
     }
 
     // @description : Returns true if the next three tokens in the query denote a subfield
@@ -256,7 +256,7 @@ public with sharing class Tokenizer {
 
     // @description returns true if the next token in the query is a field or object
     private Boolean isNextTokenFieldOrObject(String query) {
-        return ParserUtils.validCharForFieldOrObject(query.subString(0, 1));
+        return ParserUtils.validCharForFieldOrObject(lookahead(query, 1));
     }
     
     private Intermediary parseField(String query) {
@@ -266,10 +266,10 @@ public with sharing class Tokenizer {
               isNextTokenFieldOrObject(query) ||
               isSubField(query)) {
                 if(isSubField(query)) {
-                    fieldName += query.subString(0, 3);
+                    fieldName += lookahead(query, 3);
                     query = query.subString(3);
                 } else {
-                    fieldName += query.subString(0, 1);
+                    fieldName += lookahead(query, 1);
                     query = query.subString(1);
                 }
         }
