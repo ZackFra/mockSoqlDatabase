@@ -28,15 +28,15 @@ acctList.add(acct2);
 db.doInsert(acctList);
 
 Map<String, String> args = new Map<String, String> {
-    'acctid1' => acct.Id,
-    'acctid2' => acct2.Id
+    'acctId1' => acct.Id,
+    'acctId2' => acct2.Id
 };
-Account createdAcct = (Account) db.query('SELECT Id, Name, BillingStreet FROM Account WHERE Id = :acctid1', args);
-System.debug(createdAcct.Id);
-System.debug(createdAcct.Name);
-System.debug(createdAcct.BillingStreet);
 
-Account createdAcct2 = (Account) db.query('SELECT Id, Name, BillingStreet FROM Account WHERE Id = :acctid2', args);
-System.debug(createdAcct2.Id);
-System.debug(createdAcct2.Name);
-System.debug(createdAcct2.BillingStreet);
+List<Account> createdAccts = (List<Account>) db.query('SELECT Id, Name, BillingStreet ' + 
+                                                    'FROM Account ' + 
+                                                    'WHERE Name LIKE \'%Test%\' ' + 
+                                                    'AND (Id != :acctid1 OR BillingCity = \'Testville\') ',
+                                                    args);
+for(Account a : createdAccts) {
+    System.debug(a.Name);
+}

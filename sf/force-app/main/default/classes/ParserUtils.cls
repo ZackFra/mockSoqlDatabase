@@ -1,7 +1,8 @@
 public with sharing class ParserUtils {
     public static String skipWhitespace(String query) {
-        if(query.length() == 0) return query;
-        while(query.substring(0, 1).isWhitespace()) query = query.subString(1);
+        while(query.length() > 0 && query.substring(0, 1).isWhitespace()) {
+            query = query.subString(1);
+        }
         return query;
     }
     

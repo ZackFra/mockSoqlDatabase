@@ -92,6 +92,7 @@ public with sharing class Tokenizer {
     }
     
     public Node parse(String query) {
+        query = query.trim();
         Intermediary fullQuery = parseQuery(query);
         return fullQuery.head;
     }
