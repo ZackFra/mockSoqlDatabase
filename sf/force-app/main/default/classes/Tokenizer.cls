@@ -504,7 +504,7 @@ public with sharing class Tokenizer {
     private Intermediary parseValue(String query) {
         query = ParserUtils.skipWhitespace(query);
         Intermediary baseValue;
-        if(query.subString(0, 1) == '\'') {
+        if(lookahead(query, 1) == '\'') {
             query = query.subString(1);
             baseValue = parseString(query);
             if(baseValue.subquery.subString(0, 1) != '\'') {
@@ -515,9 +515,33 @@ public with sharing class Tokenizer {
             return baseValue;
         } else if(query.length() >= 4 && (query.subString(0, 4) == 'true' || query.subString(0, 5) == 'false')) {
         	return parseBoolean(query);
+        } else if(lookahead(query, 1) == ':') {
+            query = consume(query, ':');
+            return parseBindVariable(query);
         } else {
         	return parseNum(query);
         }
+    }
+
+    private Intermediary parseBindVariable(String query) {
+        query = ParserUtils.skipWhitespace(query);
+        String bindVarName = '';
+        while(query.length() > 0 && isNextTokenFieldOrObject(query)) {
+            bindVarName += query.subString(0, 1);
+            query = query.subString(1);
+        }
+
+        if(bindVarName.isNumeric()) {
+            throw new ParsingException(bindVarName, 'bind variable name');
+        }
+
+        return new Intermediary(
+            new NodeBuilder()
+                .setId(bindVarName)
+                .setNodeType('bind variable')
+                .build(),
+            query
+        );
     }
     
     private Intermediary parseNum(String query) {
