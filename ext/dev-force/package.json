@@ -12,54 +12,42 @@
   "activationEvents": [],
   "main": "./out/extension.js",
   "contributes": {
-    "languages": [
-      {
-        "id": "anonApex",
-        "extensions": [
-          ".apex"
-        ]
-      }, {
-        "id": "log",
-        "extensions": [
-          ".log"
-        ]
-      }
-    ],
+    "languages": [],
     "menus": {
       "explorer/context": [
         {
-          "when": "resourceLangId == anonApex",
+          "when": "resourceLangId == apex-anon",
           "command": "dev-force.execAnonWithDebug",
           "group": "navigation"
         }, {
-          "when": "resourceLangId == anonApex",
+          "when": "resourceLangId == apex-anon",
           "command": "dev-force.execAnon",
           "group": "navigation"
         }, {
-          "when": "resourceLangId == log",
+          "when": "resourceLangId == apexlog",
           "command": "dev-force.pullLatestLogWithDebug",
           "group": "navigation"
         }, {
-          "when": "resourceLangId == log",
+          "when": "resourceLangId == apexlog",
           "command": "dev-force.pullLatestLog",
           "group": "navigation"
         }
       ],
       "editor/context": [
         {
-          "when": "resourceLangId == anonApex",
+          "when": "resourceLangId == apex-anon",
           "command": "dev-force.execAnonWithDebug",
           "group": "navigation"
         }, {
-          "when": "resourceLangId == anonApex",
+          "when": "resourceLangId == apex-anon",
           "command": "dev-force.execAnon",
           "group": "navigation"
         }, {
-          "when": "resourceLangId == log",
+          "when": "resourceLangId == apexlog",
           "command": "dev-force.pullLatestLogWithDebug",
           "group": "navigation"
         }, {
-          "when": "resourceLangId == log",
+          "when": "resourceLangId == apexlog",
           "command": "dev-force.pullLatestLog",
           "group": "navigation"
         }

@@ -102,11 +102,12 @@ public with sharing class Tokenizer {
         
         Intermediary selectIntermediary = parseSelect(query);
         query = selectIntermediary.subquery;
-        
+
         Intermediary fromIntermediary = parseFrom(query);
         query = fromIntermediary.subquery;
         
         Intermediary nextLink = selectIntermediary;
+
         nextLink.head.right = fromIntermediary.head;
         nextLink = fromIntermediary;
         
@@ -154,7 +155,7 @@ public with sharing class Tokenizer {
         
         // head node, so to speak
         selectIntermediary.subquery = nextLink.subquery;
-		if(nextLink.subquery != '') {
+		if(nextLink.subquery != '' && lookahead(nextLink.subquery, 1) != ')') {
             throw new ParsingException(nextLink.subquery, null);
         }
         return selectIntermediary;
@@ -163,17 +164,16 @@ public with sharing class Tokenizer {
     private Intermediary parseSelect(String query) {
         query = ParserUtils.skipWhitespace(query);
         
-        String selectStatement = consume(query, 'select');
-        
-        String subquery = query.substring(6);
-        Intermediary leftIntermediary = parseSelectExpr(subquery);
+        query = consume(query, 'select');
+        Intermediary leftIntermediary = parseSelectExpr(query);
+        query = leftIntermediary.subquery;
         return new Intermediary(
         	new NodeBuilder()
             	.setId('select')
             	.setNodeType('select')
             	.setLeft(leftIntermediary.head)
             	.build(),
-            leftIntermediary.subquery
+            query
         );
         
     }
@@ -192,13 +192,13 @@ public with sharing class Tokenizer {
             	new NodeBuilder()
                 	.setId('subquery')
                 	.setNodeType('subquery')
-                	.setLeft(soqlSubQuery.head)
+                	.setRight(soqlSubQuery.head)
                 	.build(),
                 query
             );
         } else {
             selectExpr = parseFieldList(query);
-            query = ParserUtils.skipWhitespace(selectExpr.subquery);
+            query = selectExpr.subquery;
         }
         
         query = ParserUtils.skipWhitespace(query);
@@ -265,11 +265,10 @@ public with sharing class Tokenizer {
               isNextTokenFieldOrObject(query) ||
               isSubField(query)) {
             
-              if(query.length() >= 3 && ParserUtils.validCharForFieldOrObject(query.subString(0, 1)) && query.subString(1, 2) == '.' && ParserUtils.validCharForFieldOrObject(query.subString(2, 3))) {
+              if(isSubField(query)) {
               	fieldName += query.subString(0, 3);
                 query = query.subString(3);
               } else {
-                  
                 fieldName += query.subString(0, 1);
                 query = query.subString(1);
               }
@@ -356,7 +355,7 @@ public with sharing class Tokenizer {
         query = consume(query, ')');
         return new Intermediary(
             new NodeBuilder()
-                .setId('conoditional subexpression')
+                .setId('conditional subexpression')
                 .setNodeType('conditional subexpression')
                 .setLeft(subExpr.head)
                 .build(),
@@ -372,12 +371,19 @@ public with sharing class Tokenizer {
         Intermediary operatorIntermediary = parseOperator(query);
         query = operatorIntermediary.subquery;
         query = ParserUtils.skipWhitespace(query);
-
-        if(operatorIntermediary.head.nodeType == 'in' || operatorIntermediary.head.nodeType == 'not in' && lookahead(query, 1) == '(') {
+        if((operatorIntermediary.head.id == 'in' || operatorIntermediary.head.id == 'not in') && lookahead(query, 1) == '(') {
             query = consume(query, '(');
             Intermediary listOrQuery;
-            if(lookahead(query, 5) == 'select') {
-                listOrQuery = parseQuery(query);
+            if(lookahead(query, 6) == 'select') {
+                Intermediary soqlSubQuery = parseQuery(query);
+                listOrQuery = new Intermediary(
+                    new NodeBuilder()
+                        .setId('subquery')
+                        .setNodeType('subquery')
+                        .setRight(soqlSubQuery.head)
+                        .build(),
+                    soqlSubQuery.subquery
+                );
             } else {
                 listOrQuery = parseValueList(query);
             }

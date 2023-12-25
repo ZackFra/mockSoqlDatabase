@@ -1,5 +1,4 @@
 import * as vscode from 'vscode';
-import * as fs from 'fs';
 
 function executeAnon(debug: Boolean, file?: string) {
 
