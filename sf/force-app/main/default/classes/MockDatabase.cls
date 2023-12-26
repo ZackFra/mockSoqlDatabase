@@ -42,6 +42,7 @@ public with sharing class MockDatabase {
         Boolean isBindVar = (valueNode.nodeType == 'bind variable');
         Boolean isParamsNull = (params == null);
         Boolean isValueInParams = (!isParamsNull && params.containsKey(valueNode.id));
+        
 
         if(isBindVar && isParamsNull || isBindVar && !isValueInParams) {
             throw new QueryException('Missing bind variable: ' + valueNode.id);
@@ -165,64 +166,111 @@ public with sharing class MockDatabase {
         
         Object fieldValue = getFieldNodeValue(valueNode, sObj, params);
         
+        String fieldName = fieldNode.id;
+        Object sObjectFieldValue;
+
+        Boolean isParentField = fieldName.contains('.');
+        if(!isParentField) {
+            sObjectFieldValue = sObj.get(fieldName);
+        } else {
+            List<String> fieldParts = fieldName.split('\\.');
+            String finalField = fieldParts[fieldParts.size()-1];
+            fieldParts.remove(fieldParts.size()-1);
+            
+            Map<String, Object> parentInfo;
+            sObject parentRecord = sObj;
+            String parentObjApiName;
+            do {
+                String field = fieldParts[0];
+                parentInfo = getParentObject(parentRecord, field);
+                parentRecord = (sObject) parentInfo.get('parentRecord');
+                parentObjApiName = (String) parentInfo.get('parentObjApiName');
+                fieldParts.remove(0);
+            } while(!fieldParts.isEmpty());
+            parentRecord = this.db.get(parentObjApiName).get(parentRecord.Id);
+            sObjectFieldValue = parentRecord.get(finalField);
+        }
+        
         switch on operatorNode.id {
             when '=' {
-                if(sObj.get(fieldNode.id) instanceof String) {
-                    return ((String) sObj.get(fieldNode.id)).toLowerCase() == fieldValue;
+                if(sObjectFieldValue instanceof String) {
+                    return ((String) sObjectFieldValue).toLowerCase() == ((String)fieldValue).toLowerCase();
                 }
-                return sObj.get(fieldNode.id) == fieldValue;
+                return sObjectFieldValue == fieldValue;
             }
             when '!=', '<>' {
-                return sObj.get(fieldNode.id) != fieldValue;
+                if(sObjectFieldValue instanceof String) {
+                    return ((String) sObjectFieldValue).toLowerCase() != ((String)fieldValue).toLowerCase();
+                }
+                return sObjectFieldValue != fieldValue;
             }
             when 'like' {
                 String regexPattern = String.valueOf(fieldValue)
+                    .toLowerCase()
                     .replaceAll('%', '.*')
                     .replaceAll('_', '.');
                 Pattern regex = Pattern.compile(regexPattern);
-                Matcher regexMatcher = regex.matcher(String.valueOf(sObj.get(fieldNode.id)).toLowerCase());
+                Matcher regexMatcher = regex.matcher(String.valueOf(sObjectFieldValue).toLowerCase());
                 return regexMatcher.matches();
             }
             when 'in' {
                 List<Object> values = (List<Object>) fieldValue;
-                return values.contains(sObj.get(fieldNode.id));
+                for(Integer i = 0; i < values.size(); i++) {
+                    if(values[i] instanceof String) {
+                        values[i] = (Object) ((String) values[i]).toLowerCase();
+                    }
+                }
+                if(sObjectFieldValue instanceof String) {
+                    String nodeValue = ((String) sObjectFieldValue).toLowerCase();
+                    return values.contains(nodeValue);
+                }
+                return values.contains(sObjectFieldValue);
             }
             when 'not in' {
                 List<Object> values = (List<Object>) fieldValue;
-                return !values.contains(sObj.get(fieldNode.id));
+                for(Integer i = 0; i < values.size(); i++) {
+                    if(values[i] instanceof String) {
+                        values[i] = (Object) ((String) values[i]).toLowerCase();
+                    }
+                }
+                if(sObjectFieldValue instanceof String) {
+                    String nodeValue = ((String) sObjectFieldValue).toLowerCase();
+                    return !values.contains(nodeValue);
+                }
+                return !values.contains(sObjectFieldValue);
             }
             when '>' {
                 if(fieldValue instanceOf Date) {
                     Date fieldDate = (Date) fieldValue;
-                    Date sObjDate = (Date) sObj.get(fieldNode.id);
+                    Date sObjDate = (Date) sObjectFieldValue;
                     return fieldDate > sObjDate;
                 } else if(fieldValue instanceOf DateTime) {
                     DateTime fieldDateTime = (DateTime) fieldValue;
-                    DateTime sObjDateTime = (DateTime) sObj.get(fieldNode.id);
+                    DateTime sObjDateTime = (DateTime) sObjectFieldValue;
                     return fieldDateTime > sObjDateTime;
                 } else if(fieldValue instanceOf Time) {
                     Time fieldTime = (Time) fieldValue;
-                    Time sObjTime = (Time) sObj.get(fieldNode.id);
+                    Time sObjTime = (Time) sObjectFieldValue;
                     return fieldTime > sObjTime;
                 } else if(fieldValue instanceOf Integer) {
                     Integer fieldInt = (Integer) fieldValue;
-                    Integer sObjInt = (Integer) sObj.get(fieldNode.id);
+                    Integer sObjInt = (Integer) sObjectFieldValue;
                     return fieldInt > sObjInt;
                 } else if(fieldValue instanceOf Decimal) {
                     Decimal fieldDec = (Decimal) fieldValue;
-                    Decimal sObjDec = (Decimal) sObj.get(fieldNode.id);
+                    Decimal sObjDec = (Decimal) sObjectFieldValue;
                     return fieldDec > sObjDec;
                 } else if(fieldValue instanceOf Double) {
                     Double fieldDouble = (Double) fieldValue;
-                    Double sObjDouble = (Double) sObj.get(fieldNode.id);
+                    Double sObjDouble = (Double) sObjectFieldValue;
                     return fieldDouble > sObjDouble;
                 } else if(fieldValue instanceOf Long) {
                     Long fieldLong = (Long) fieldValue;
-                    Long sObjLong = (Long) sObj.get(fieldNode.id);
+                    Long sObjLong = (Long) sObjectFieldValue;
                     return fieldLong > sObjLong;
                 } else if(fieldValue instanceOf String) {
-                    String fieldString = (String) fieldValue;
-                    String sObjString = (String) sObj.get(fieldNode.id);
+                    String fieldString = ((String) fieldValue).toLowerCase();
+                    String sObjString = ((String) sObjectFieldValue).toLowerCase();
                     return fieldString > sObjString;
                 } else {
                     throw new QueryException('Invalid field type');
@@ -231,35 +279,35 @@ public with sharing class MockDatabase {
             when '<' {
                 if(fieldValue instanceOf Date) {
                     Date fieldDate = (Date) fieldValue;
-                    Date sObjDate = (Date) sObj.get(fieldNode.id);
+                    Date sObjDate = (Date) sObjectFieldValue;
                     return fieldDate.daysBetween(sObjDate) < 0;
                 } else if(fieldValue instanceOf DateTime) {
                     DateTime fieldDateTime = (DateTime) fieldValue;
-                    DateTime sObjDateTime = (DateTime) sObj.get(fieldNode.id);
+                    DateTime sObjDateTime = (DateTime) sObjectFieldValue;
                     return fieldDateTime < sObjDateTime;
                 } else if(fieldValue instanceOf Time) {
                     Time fieldTime = (Time) fieldValue;
-                    Time sObjTime = (Time) sObj.get(fieldNode.id);
+                    Time sObjTime = (Time) sObjectFieldValue;
                     return fieldTime < sObjTime;
                 } else if(fieldValue instanceOf Integer) {
                     Integer fieldInt = (Integer) fieldValue;
-                    Integer sObjInt = (Integer) sObj.get(fieldNode.id);
+                    Integer sObjInt = (Integer) sObjectFieldValue;
                     return fieldInt < sObjInt;
                 } else if(fieldValue instanceOf Decimal) {
                     Decimal fieldDec = (Decimal) fieldValue;
-                    Decimal sObjDec = (Decimal) sObj.get(fieldNode.id);
+                    Decimal sObjDec = (Decimal) sObjectFieldValue;
                     return fieldDec < sObjDec;
                 } else if(fieldValue instanceOf Double) {
                     Double fieldDouble = (Double) fieldValue;
-                    Double sObjDouble = (Double) sObj.get(fieldNode.id);
+                    Double sObjDouble = (Double) sObjectFieldValue;
                     return fieldDouble < sObjDouble;
                 } else if(fieldValue instanceOf Long) {
                     Long fieldLong = (Long) fieldValue;
-                    Long sObjLong = (Long) sObj.get(fieldNode.id);
+                    Long sObjLong = (Long) sObjectFieldValue;
                     return fieldLong < sObjLong;
                 } else if(fieldValue instanceOf String) {
-                    String fieldString = (String) fieldValue;
-                    String sObjString = (String) sObj.get(fieldNode.id);
+                    String fieldString = ((String) fieldValue).toLowerCase();
+                    String sObjString = ((String) sObjectFieldValue).toLowerCase();
                     return fieldString < sObjString;
                 } else {
                     throw new QueryException('Invalid field type');
@@ -268,35 +316,35 @@ public with sharing class MockDatabase {
             when '>=' {
                 if(fieldValue instanceOf Date) {
                     Date fieldDate = (Date) fieldValue;
-                    Date sObjDate = (Date) sObj.get(fieldNode.id);
+                    Date sObjDate = (Date) sObjectFieldValue;
                     return fieldDate >= sObjDate;
                 } else if(fieldValue instanceOf DateTime) {
                     DateTime fieldDateTime = (DateTime) fieldValue;
-                    DateTime sObjDateTime = (DateTime) sObj.get(fieldNode.id);
+                    DateTime sObjDateTime = (DateTime) sObjectFieldValue;
                     return fieldDateTime >= sObjDateTime;
                 } else if(fieldValue instanceOf Time) {
                     Time fieldTime = (Time) fieldValue;
-                    Time sObjTime = (Time) sObj.get(fieldNode.id);
+                    Time sObjTime = (Time) sObjectFieldValue;
                     return fieldTime >= sObjTime;
                 } else if(fieldValue instanceOf Integer) {
                     Integer fieldInt = (Integer) fieldValue;
-                    Integer sObjInt = (Integer) sObj.get(fieldNode.id);
+                    Integer sObjInt = (Integer) sObjectFieldValue;
                     return fieldInt >= sObjInt;
                 } else if(fieldValue instanceOf Decimal) {
                     Decimal fieldDec = (Decimal) fieldValue;
-                    Decimal sObjDec = (Decimal) sObj.get(fieldNode.id);
+                    Decimal sObjDec = (Decimal) sObjectFieldValue;
                     return fieldDec >= sObjDec;
                 } else if(fieldValue instanceOf Double) {
                     Double fieldDouble = (Double) fieldValue;
-                    Double sObjDouble = (Double) sObj.get(fieldNode.id);
+                    Double sObjDouble = (Double) sObjectFieldValue;
                     return fieldDouble >= sObjDouble;
                 } else if(fieldValue instanceOf Long) {
                     Long fieldLong = (Long) fieldValue;
-                    Long sObjLong = (Long) sObj.get(fieldNode.id);
+                    Long sObjLong = (Long) sObjectFieldValue;
                     return fieldLong >= sObjLong;
                 } else if(fieldValue instanceOf String) {
-                    String fieldString = (String) fieldValue;
-                    String sObjString = (String) sObj.get(fieldNode.id);
+                    String fieldString = ((String) fieldValue).toLowerCase();
+                    String sObjString = ((String) sObjectFieldValue).toLowerCase();
                     return fieldString >= sObjString;
                 } else {
                     throw new QueryException('Invalid field type');
@@ -304,45 +352,45 @@ public with sharing class MockDatabase {
             } when '<=' {
                 if(fieldValue instanceOf Date) {
                     Date fieldDate = (Date) fieldValue;
-                    Date sObjDate = (Date) sObj.get(fieldNode.id);
+                    Date sObjDate = (Date) sObjectFieldValue;
                     return fieldDate <= sObjDate;
                 } else if(fieldValue instanceOf DateTime) {
                     DateTime fieldDateTime = (DateTime) fieldValue;
-                    DateTime sObjDateTime = (DateTime) sObj.get(fieldNode.id);
+                    DateTime sObjDateTime = (DateTime) sObjectFieldValue;
                     return fieldDateTime <= sObjDateTime;
                 } else if(fieldValue instanceOf Time) {
                     Time fieldTime = (Time) fieldValue;
-                    Time sObjTime = (Time) sObj.get(fieldNode.id);
+                    Time sObjTime = (Time) sObjectFieldValue;
                     return fieldTime <= sObjTime;
                 } else if(fieldValue instanceOf Integer) {
                     Integer fieldInt = (Integer) fieldValue;
-                    Integer sObjInt = (Integer) sObj.get(fieldNode.id);
+                    Integer sObjInt = (Integer) sObjectFieldValue;
                     return fieldInt <= sObjInt;
                 } else if(fieldValue instanceOf Decimal) {
                     Decimal fieldDec = (Decimal) fieldValue;
-                    Decimal sObjDec = (Decimal) sObj.get(fieldNode.id);
+                    Decimal sObjDec = (Decimal) sObjectFieldValue;
                     return fieldDec <= sObjDec;
                 } else if(fieldValue instanceOf Double) {
                     Double fieldDouble = (Double) fieldValue;
-                    Double sObjDouble = (Double) sObj.get(fieldNode.id);
+                    Double sObjDouble = (Double) sObjectFieldValue;
                     return fieldDouble <= sObjDouble;
                 } else if(fieldValue instanceOf Long) {
                     Long fieldLong = (Long) fieldValue;
-                    Long sObjLong = (Long) sObj.get(fieldNode.id);
+                    Long sObjLong = (Long) sObjectFieldValue;
                     return fieldLong <= sObjLong;
                 } else if(fieldValue instanceOf String) {
-                    String fieldString = (String) fieldValue;
-                    String sObjString = (String) sObj.get(fieldNode.id);
+                    String fieldString = ((String) fieldValue).toLowerCase();
+                    String sObjString = ((String) sObjectFieldValue).toLowerCase();
                     return fieldString <= sObjString;
                 } else {
                     throw new QueryException('Invalid field type');
                 }
             } when 'includes' {
                 List<Object> values = (List<Object>) fieldValue;
-                return values.contains(sObj.get(fieldNode.id));
+                return values.contains(sObjectFieldValue);
             } when 'excludes' {
                 List<Object> values = (List<Object>) fieldValue;
-                return !values.contains(sObj.get(fieldNode.id));
+                return !values.contains(sObjectFieldValue);
             }
         }
 
@@ -404,7 +452,7 @@ public with sharing class MockDatabase {
                 if(objTypeList.size() == 1) {
                     parentObjApiName = objTypeList[0].getDescribe().getName();
                 } else {
-                    // handle polymorphic
+                    // TODO: handle polymorphic
                 }
 
                 fieldApiName = f.getDescribe().getName();
@@ -618,6 +666,10 @@ public with sharing class MockDatabase {
         List<sObject> results = new List<sObject>();
         for(sObject obj : mockObjects.values()) {
             if(!checkWhereCondition(obj, whereNode, params)) {
+                System.debug('failed where condition');
+                System.debug(obj);
+                System.debug(whereNode);
+                System.debug(params);
                 continue;
             }
 

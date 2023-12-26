@@ -56,16 +56,19 @@ OpportunityLineItem oppLine = new OpportunityLineItem(
 
 db.doInsert(oppLine);
 
+System.debug(oppLine.Id);
+
 Map<String, Object> args = new Map<String, Object> {
     'acctId1' => acct.Id,
     'acctId2' => acct2.Id,
     'acctIds' => acctIds,
-    'oppId' => mockOpp.Id
+    'oppId' => mockOpp.Id,
+    'oppLineId' => oppLine.Id
 };
 
 List<OpportunityLineItem> createdOppLines = 
     (List<OpportunityLineItem>) db.queryWithBinds(
-        'SELECT Opportunity.Account.Name, Opportunity.Name, Opportunity.Account.BillingStreet, Opportunity.CloseDate FROM OpportunityLineItem', args);
+        'SELECT Opportunity.Account.Name, Opportunity.Name, Opportunity.Account.BillingStreet, Opportunity.CloseDate FROM OpportunityLineItem WHERE Opportunity.Account.Name = \'Test Account\' ', args);
 System.debug(createdOppLines);
 for(OpportunityLineItem oppLine : createdOppLines) {
     System.debug('Opportunity Line = ' + oppLine);
