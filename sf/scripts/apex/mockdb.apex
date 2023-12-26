@@ -27,16 +27,52 @@ acctList.add(acct);
 acctList.add(acct2);
 db.doInsert(acctList);
 
-Map<String, String> args = new Map<String, String> {
-    'acctId1' => acct.Id,
-    'acctId2' => acct2.Id
+Contact con = new Contact(
+    FirstName = 'Test',
+    LastName = 'Contact',
+    AccountId = acct2.Id
+);
+db.doInsert(con);
+
+List<Id> acctIds = new List<Id> {
+    acct.Id,
+    acct2.Id
 };
 
-List<Account> createdAccts = (List<Account>) db.query('SELECT Id, Name, BillingStreet ' + 
-                                                    'FROM Account ' + 
-                                                    'WHERE Name LIKE \'%Test%\' ' + 
-                                                    'AND (Id != :acctid1 OR BillingCity = \'Testville\') ',
-                                                    args);
-for(Account a : createdAccts) {
-    System.debug(a.Name);
+Opportunity mockOpp = new Opportunity(
+    Name = 'Test Opportunity',
+    StageName = 'Prospecting',
+    CloseDate = Date.today(),
+    AccountId = acct.Id
+);
+
+db.doInsert(mockOpp);
+
+OpportunityLineItem oppLine = new OpportunityLineItem(
+    OpportunityId = mockOpp.Id,
+    Quantity = 1,
+    UnitPrice = 100
+);
+
+db.doInsert(oppLine);
+
+Map<String, Object> args = new Map<String, Object> {
+    'acctId1' => acct.Id,
+    'acctId2' => acct2.Id,
+    'acctIds' => acctIds
+};
+
+List<Opportunity> createdOpps = 
+    (List<Opportunity>) db.queryWithBinds(
+        'SELECT (SELECT Id FROM OpportunityLineItems) ' + 
+        'FROM Opportunity ' + 
+        'WHERE Id IN (' + 
+            'SELECT OpportunityId ' +
+            'FROM OpportunityLineItem' + 
+        ')', args);
+for(Opportunity opp : createdOpps) {
+    System.debug(opp.Id);
+    for(OpportunityLineItem line : opp.OpportunityLineItems) {
+        System.debug(line.Id);
+    }
 }

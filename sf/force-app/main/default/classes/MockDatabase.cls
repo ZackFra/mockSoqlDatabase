@@ -38,6 +38,92 @@ public with sharing class MockDatabase {
         if(isBindVar) {
             return params.get(valueNode.id);
         }
+
+        if(valueNode.nodeType == 'value list') {
+            List<Object> values = new List<Object>();
+            Tokenizer.Node valueListNode = valueNode.left;
+            while(valueListNode != null) {
+                values.add(getFieldNodeValue(valueListNode, sObj, params));
+                valueListNode = valueListNode.left;
+            }
+            return values;
+        }
+
+        if(valueNode.nodeType == 'subquery') {
+            Tokenizer.Node subquerySelectNode = valueNode.right;
+            Tokenizer.Node subqueryFieldNode = subquerySelectNode.left;
+            Integer fieldsList = 0;
+
+            Tokenizer.Node curr = subqueryFieldNode;
+            while(curr != null) {
+                fieldsList++;
+                curr = curr.left;
+            }
+            if(fieldsList > 1) {
+                throw new QueryException('Subquery must select only one field');
+            }
+
+            Tokenizer.Node fromNode = subquerySelectNode.right;
+            Tokenizer.Node objNode = fromNode.left;
+
+            String fieldName = subqueryFieldNode.id;
+            String objName = objNode.id;
+            String objApiName = getSObjectApiName(objName);
+            Type t = type.forName(objApiName);
+            if(t == null) {
+                throw new QueryException('Invalid object name: ' + objName);
+            }
+            sObject childObj = ((SObject)t.newInstance()).getSObjectType().newSObject();
+            if(childObj == null) {
+                throw new QueryException('Invalid object name: ' + objName);
+            }
+            Schema.DescribeSObjectResult fieldDsor = childObj.getSObjectType().getDescribe();
+            String fieldApiName = null;
+            for(Schema.SObjectField field : fieldDsor.fields.getMap().values()) {
+                if(field.getDescribe().getName() == fieldName) {
+                    fieldApiName = field.getDescribe().getName();
+                    break;
+                }
+            }
+            if(fieldApiName == null) {
+                throw new QueryException('Invalid field name: ' + fieldName);
+            }
+
+            Schema.SObjectField childObjField = childObj.getSObjectType().getDescribe().fields.getMap().get(fieldApiName);
+            if(childObjField == null) {
+                throw new QueryException('Invalid field name: ' + fieldName);
+            }
+
+            Schema.DisplayType childObjFieldType = childObjField.getDescribe().getType();
+
+            if(childObjFieldType != Schema.DisplayType.REFERENCE && childObjFieldType != Schema.DisplayType.ID) {
+                throw new QueryException('Subquery must select an ID field');
+            }
+
+            Boolean isSameType = false;
+            if(childObjFieldType == Schema.DisplayType.ID && sObj.getSObjectType() == childObj.getSObjectType()) {
+                isSameType = true;
+            } else {
+                List<Schema.SObjectType> refType = childObjField.getDescribe().getReferenceTo();
+                for(Schema.SObjectType ref : refType) {
+                    if(ref == sObj.getSObjectType()) {
+                        isSameType = true;
+                        break;
+                    }
+                }
+            }
+            if(!isSameType) {
+                throw new QueryException('Subquery must select a field of the same type as the parent object');
+            }
+
+            List<sObject> subQueryObjects = doQuery(subquerySelectNode, params);
+            List<Id> subQueryIds = new List<Id>();
+            for(sObject subQueryObj : subQueryObjects) {
+                subQueryIds.add((Id) subQueryObj.get(fieldApiName));
+            }
+            return subQueryIds;
+        }
+
         return valueNode.Id;
     }
 
@@ -69,6 +155,9 @@ public with sharing class MockDatabase {
         
         switch on operatorNode.id {
             when '=' {
+                if(sObj.get(fieldNode.id) instanceof String) {
+                    return ((String) sObj.get(fieldNode.id)).toLowerCase() == fieldValue;
+                }
                 return sObj.get(fieldNode.id) == fieldValue;
             }
             when '!=', '<>' {
@@ -81,6 +170,167 @@ public with sharing class MockDatabase {
                 Pattern regex = Pattern.compile(regexPattern);
                 Matcher regexMatcher = regex.matcher(String.valueOf(sObj.get(fieldNode.id)).toLowerCase());
                 return regexMatcher.matches();
+            }
+            when 'in' {
+                List<Object> values = (List<Object>) fieldValue;
+                return values.contains(sObj.get(fieldNode.id));
+            }
+            when 'not in' {
+                List<Object> values = (List<Object>) fieldValue;
+                return !values.contains(sObj.get(fieldNode.id));
+            }
+            when '>' {
+                if(fieldValue instanceOf Date) {
+                    Date fieldDate = (Date) fieldValue;
+                    Date sObjDate = (Date) sObj.get(fieldNode.id);
+                    return fieldDate > sObjDate;
+                } else if(fieldValue instanceOf DateTime) {
+                    DateTime fieldDateTime = (DateTime) fieldValue;
+                    DateTime sObjDateTime = (DateTime) sObj.get(fieldNode.id);
+                    return fieldDateTime > sObjDateTime;
+                } else if(fieldValue instanceOf Time) {
+                    Time fieldTime = (Time) fieldValue;
+                    Time sObjTime = (Time) sObj.get(fieldNode.id);
+                    return fieldTime > sObjTime;
+                } else if(fieldValue instanceOf Integer) {
+                    Integer fieldInt = (Integer) fieldValue;
+                    Integer sObjInt = (Integer) sObj.get(fieldNode.id);
+                    return fieldInt > sObjInt;
+                } else if(fieldValue instanceOf Decimal) {
+                    Decimal fieldDec = (Decimal) fieldValue;
+                    Decimal sObjDec = (Decimal) sObj.get(fieldNode.id);
+                    return fieldDec > sObjDec;
+                } else if(fieldValue instanceOf Double) {
+                    Double fieldDouble = (Double) fieldValue;
+                    Double sObjDouble = (Double) sObj.get(fieldNode.id);
+                    return fieldDouble > sObjDouble;
+                } else if(fieldValue instanceOf Long) {
+                    Long fieldLong = (Long) fieldValue;
+                    Long sObjLong = (Long) sObj.get(fieldNode.id);
+                    return fieldLong > sObjLong;
+                } else if(fieldValue instanceOf String) {
+                    String fieldString = (String) fieldValue;
+                    String sObjString = (String) sObj.get(fieldNode.id);
+                    return fieldString > sObjString;
+                } else {
+                    throw new QueryException('Invalid field type');
+                }
+            }
+            when '<' {
+                if(fieldValue instanceOf Date) {
+                    Date fieldDate = (Date) fieldValue;
+                    Date sObjDate = (Date) sObj.get(fieldNode.id);
+                    return fieldDate.daysBetween(sObjDate) < 0;
+                } else if(fieldValue instanceOf DateTime) {
+                    DateTime fieldDateTime = (DateTime) fieldValue;
+                    DateTime sObjDateTime = (DateTime) sObj.get(fieldNode.id);
+                    return fieldDateTime < sObjDateTime;
+                } else if(fieldValue instanceOf Time) {
+                    Time fieldTime = (Time) fieldValue;
+                    Time sObjTime = (Time) sObj.get(fieldNode.id);
+                    return fieldTime < sObjTime;
+                } else if(fieldValue instanceOf Integer) {
+                    Integer fieldInt = (Integer) fieldValue;
+                    Integer sObjInt = (Integer) sObj.get(fieldNode.id);
+                    return fieldInt < sObjInt;
+                } else if(fieldValue instanceOf Decimal) {
+                    Decimal fieldDec = (Decimal) fieldValue;
+                    Decimal sObjDec = (Decimal) sObj.get(fieldNode.id);
+                    return fieldDec < sObjDec;
+                } else if(fieldValue instanceOf Double) {
+                    Double fieldDouble = (Double) fieldValue;
+                    Double sObjDouble = (Double) sObj.get(fieldNode.id);
+                    return fieldDouble < sObjDouble;
+                } else if(fieldValue instanceOf Long) {
+                    Long fieldLong = (Long) fieldValue;
+                    Long sObjLong = (Long) sObj.get(fieldNode.id);
+                    return fieldLong < sObjLong;
+                } else if(fieldValue instanceOf String) {
+                    String fieldString = (String) fieldValue;
+                    String sObjString = (String) sObj.get(fieldNode.id);
+                    return fieldString < sObjString;
+                } else {
+                    throw new QueryException('Invalid field type');
+                }
+            }
+            when '>=' {
+                if(fieldValue instanceOf Date) {
+                    Date fieldDate = (Date) fieldValue;
+                    Date sObjDate = (Date) sObj.get(fieldNode.id);
+                    return fieldDate >= sObjDate;
+                } else if(fieldValue instanceOf DateTime) {
+                    DateTime fieldDateTime = (DateTime) fieldValue;
+                    DateTime sObjDateTime = (DateTime) sObj.get(fieldNode.id);
+                    return fieldDateTime >= sObjDateTime;
+                } else if(fieldValue instanceOf Time) {
+                    Time fieldTime = (Time) fieldValue;
+                    Time sObjTime = (Time) sObj.get(fieldNode.id);
+                    return fieldTime >= sObjTime;
+                } else if(fieldValue instanceOf Integer) {
+                    Integer fieldInt = (Integer) fieldValue;
+                    Integer sObjInt = (Integer) sObj.get(fieldNode.id);
+                    return fieldInt >= sObjInt;
+                } else if(fieldValue instanceOf Decimal) {
+                    Decimal fieldDec = (Decimal) fieldValue;
+                    Decimal sObjDec = (Decimal) sObj.get(fieldNode.id);
+                    return fieldDec >= sObjDec;
+                } else if(fieldValue instanceOf Double) {
+                    Double fieldDouble = (Double) fieldValue;
+                    Double sObjDouble = (Double) sObj.get(fieldNode.id);
+                    return fieldDouble >= sObjDouble;
+                } else if(fieldValue instanceOf Long) {
+                    Long fieldLong = (Long) fieldValue;
+                    Long sObjLong = (Long) sObj.get(fieldNode.id);
+                    return fieldLong >= sObjLong;
+                } else if(fieldValue instanceOf String) {
+                    String fieldString = (String) fieldValue;
+                    String sObjString = (String) sObj.get(fieldNode.id);
+                    return fieldString >= sObjString;
+                } else {
+                    throw new QueryException('Invalid field type');
+                }
+            } when '<=' {
+                if(fieldValue instanceOf Date) {
+                    Date fieldDate = (Date) fieldValue;
+                    Date sObjDate = (Date) sObj.get(fieldNode.id);
+                    return fieldDate <= sObjDate;
+                } else if(fieldValue instanceOf DateTime) {
+                    DateTime fieldDateTime = (DateTime) fieldValue;
+                    DateTime sObjDateTime = (DateTime) sObj.get(fieldNode.id);
+                    return fieldDateTime <= sObjDateTime;
+                } else if(fieldValue instanceOf Time) {
+                    Time fieldTime = (Time) fieldValue;
+                    Time sObjTime = (Time) sObj.get(fieldNode.id);
+                    return fieldTime <= sObjTime;
+                } else if(fieldValue instanceOf Integer) {
+                    Integer fieldInt = (Integer) fieldValue;
+                    Integer sObjInt = (Integer) sObj.get(fieldNode.id);
+                    return fieldInt <= sObjInt;
+                } else if(fieldValue instanceOf Decimal) {
+                    Decimal fieldDec = (Decimal) fieldValue;
+                    Decimal sObjDec = (Decimal) sObj.get(fieldNode.id);
+                    return fieldDec <= sObjDec;
+                } else if(fieldValue instanceOf Double) {
+                    Double fieldDouble = (Double) fieldValue;
+                    Double sObjDouble = (Double) sObj.get(fieldNode.id);
+                    return fieldDouble <= sObjDouble;
+                } else if(fieldValue instanceOf Long) {
+                    Long fieldLong = (Long) fieldValue;
+                    Long sObjLong = (Long) sObj.get(fieldNode.id);
+                    return fieldLong <= sObjLong;
+                } else if(fieldValue instanceOf String) {
+                    String fieldString = (String) fieldValue;
+                    String sObjString = (String) sObj.get(fieldNode.id);
+                    return fieldString <= sObjString;
+                } else {
+                    throw new QueryException('Invalid field type');
+                }
+            } when 'includes' {
+                List<Object> values = (List<Object>) fieldValue;
+                return values.contains(sObj.get(fieldNode.id));
+            } when 'excludes' {
+                List<Object> values = (List<Object>) fieldValue;
+                return !values.contains(sObj.get(fieldNode.id));
             }
         }
 
@@ -100,6 +350,8 @@ public with sharing class MockDatabase {
             return isWhereOrConditonMet(whereField, sObj, params);
         } else if(whereField.nodeType == 'conditional subexpression') {
             return isConditionalSubExprMet(whereField, sObj, params);
+        } if(whereField.nodeType == 'not') {
+            return !isWhereConditionMet(whereField.left, sObj, params);
         }
 
         throw new QueryException('Invalid where condition');
@@ -115,27 +367,117 @@ public with sharing class MockDatabase {
         return isWhereConditionMet(whereField, sObj, params);
     }
 
-    private sObject copyWithFields(sObject obj, Tokenizer.Node selectNode) {
+    private Map<String, Object> handleSubQuery(sObject obj, String objApiName, Tokenizer.Node field, Map<String, Object> params) {
+        Tokenizer.Node subquerySelectNode = field.right;
+        Tokenizer.Node subqueryFromNode = subquerySelectNode.right;
+
+        Tokenizer.Node subqueryObjNode = subqueryFromNode.left;
+        String subqueryChildRelationshipName = subqueryObjNode.id;
+
+        Boolean isValidRelationship = false;
+        String subQueryObjName;
+        String subQueryFieldName;
+        SObjectType childObjectType = ((SObject)Type.forName(objApiName).newInstance()).getSObjectType();
+        for (ChildRelationship relation : childObjectType.getDescribe().getChildRelationships()) {
+            if(relation.getRelationshipName()?.toLowerCase() == subqueryChildRelationshipName) {
+                subQueryObjName = relation.getChildSObject().getDescribe().getName();
+                subQueryFieldName = relation.getField().getDescribe().getName();
+                subqueryChildRelationshipName = relation.getRelationshipName();
+                isValidRelationship = true;
+                break;
+            }
+        }
+        if(!isValidRelationship) {
+            throw new QueryException('Invalid relationship name: ' + subqueryChildRelationshipName);
+        }
+
+        // clone the tree so we can modify it
+        Tokenizer.Node subqueryCloneSelectNode = Tokenizer.clone(subquerySelectNode);
+        Tokenizer.Node subqueryCloneFromNode = subqueryCloneSelectNode.right;
+        Tokenizer.Node subqueryCloneWhereNode = subqueryCloneFromNode.right;
+
+        subqueryCloneFromNode.left.id = subqueryObjName.toLowerCase();
+        if(subqueryCloneWhereNode == null) {
+            subqueryCloneWhereNode = new Tokenizer.NodeBuilder()
+                .setId('where')
+                .setNodeType('where')
+                .build();
+            subqueryCloneFromNode.right = subqueryCloneWhereNode;
+        }
+
+        Tokenizer.Node queryConditionNode = new Tokenizer.NodeBuilder()
+            .setId('=')
+            .setNodeType('operator')
+            .setLeft(new Tokenizer.NodeBuilder()
+                .setId(subQueryFieldName.toLowerCase())
+                .setNodeType('field')
+                .build())
+            .setRight(new Tokenizer.NodeBuilder()
+                .setId(((String) obj.Id).toLowerCase())
+                .setNodeType('string')
+                .build())
+            .build();
+
+        if(subqueryCloneWhereNode.left == null) {
+            subqueryCloneWhereNode.left = queryConditionNode;
+        } else {
+            subqueryCloneWhereNode.left = new Tokenizer.NodeBuilder()
+                .setId('and')
+                .setNodeType('and')
+                .setLeft(queryConditionNode)
+                .setRight(subqueryCloneWhereNode.left)
+                .build();
+        }
+
+        List<sObject> subQueryObjects = doQuery(subqueryCloneSelectNode, params);
+        Map<String, Object> subQueryResults = new Map<String, Object> {
+            'records' => subQueryObjects,
+            'subqueryRelationshipName' => subqueryChildRelationshipName
+        };
+        return subQueryResults;
+    }
+
+    private sObject copyWithFields(sObject obj, Tokenizer.Node selectNode, Map<String, Object> params) {
         Tokenizer.Node field = selectNode.left;
         sObject sObj = (sObject) Type.forName(obj.getSObjectType().getDescribe().getName()).newInstance();
-
+        String objApiName = obj.getSObjectType().getDescribe().getName();
+        sObj.put('Id', obj.Id);
         while(field != null) {
 
-            String fieldName = field.id;
-            Object fieldValue = obj.get(fieldName);
-            if (fieldValue != null) {
-                sObj.put(fieldName, fieldValue);
+            if(field.nodeType == 'subquery') {
+
+                Map<String, Object> subQueryResults = handleSubQuery(obj, objApiName, field, params);
+
+                String subQueryChildRelationshipName = (String) subQueryResults.get('subqueryRelationshipName');
+                List<sObject> subQueryRecords = (List<sObject>) subQueryResults.get('records');
+
+                // so we can't mock the subquery results directly, but we can serialize them and then deserialize them
+                // here we serialize the subquery results, which can't be instaniated,
+                // then deserialize them into a map, then add the map to the parent object
+                Map<String, Object> objMap = (Map<String, Object>) JSON.deserializeUntyped(JSON.serialize(sObj));
+                Map<String, Object> subQueryResultMap = new Map<String, Object>();
+                
+                subQueryResultMap.put('records', subQueryRecords);
+                subQueryResultMap.put('size', subQueryRecords.size());
+                subQueryResultMap.put('done', true);
+
+                objMap.put(subQueryChildRelationshipName, subQueryResultMap);
+                sObj = (sObject) JSON.deserialize(JSON.serialize(objMap), Type.forName(objApiName));
+            } else {
+                String fieldName = field.id;
+                Object fieldValue = obj.get(fieldName);
+                if (fieldValue != null) {
+                    Map<String, Object> objMap = (Map<String, Object>) JSON.deserializeUntyped(JSON.serialize(sObj));
+                    objMap.put(fieldName, fieldValue);
+                    sObj = (sObject) JSON.deserialize(JSON.serialize(objMap), Type.forName(objApiName));
+                }
             }
             field = field.left;
         }
         return sObj;
     }
 
-    // @description: This method is used to query the mock database by traversing the AST
-    private List<sObject> doQuery(String query, Map<String, Object> params) {
-        Tokenizer parser = new Tokenizer();
-        Tokenizer.Node selectNode = parser.parse(query);
-
+    private List<sObject> doQuery(Tokenizer.Node selectNode, Map<String, Object> params) {
         Tokenizer.Node fromNode = selectNode.right;
         Tokenizer.Node whereNode;
 
@@ -158,11 +500,18 @@ public with sharing class MockDatabase {
                 continue;
             }
 
-            sObject sObj = copyWithFields(obj, selectNode);
+            sObject sObj = copyWithFields(obj, selectNode, params);
             results.add(sObj);
         }
 
         return results;
+    }
+
+    // @description: This method is used to query the mock database by traversing the AST
+    private List<sObject> doQuery(String query, Map<String, Object> params) {
+        Tokenizer parser = new Tokenizer();
+        Tokenizer.Node selectNode = parser.parse(query);
+        return doQuery(selectNode, params);
     }
 
     /** DML methods **/
@@ -236,7 +585,7 @@ public with sharing class MockDatabase {
     }
 
     // @description: This method is used to query the mock database by traversing the AST with bind variables
-    public Object query(String query, Map<String, Object> params) {
+    public Object queryWithBinds(String query, Map<String, Object> params) {
         Map<String, Object> lowerCaseParams = new Map<String, Object>();
         for(String key : params.keySet()) {
             lowerCaseParams.put(key.toLowerCase(), params.get(key));

@@ -28,7 +28,7 @@ public with sharing class Tokenizer {
         public Node right;
     }
     
-    private class NodeBuilder {
+    public class NodeBuilder {
         String id;
         String nodeType;
         Node left;
@@ -53,6 +53,22 @@ public with sharing class Tokenizer {
         public Node build() {
             return new Node(nodeType, id, left, right);
         }
+    }
+
+    public static Node clone(Node head) {
+        if(head == null) {
+            return null;
+        }
+        NodeBuilder nb = new NodeBuilder()
+            .setId(head.id)
+            .setNodeType(head.nodeType);
+        if(head.left != null) {
+            nb.setLeft(clone(head.left));
+        }
+        if(head.right != null) {
+            nb.setRight(clone(head.right));
+        }
+        return nb.build();
     }
     
     // @description : Consumes a token from the query, throwing an error if the token is not present
@@ -363,7 +379,27 @@ public with sharing class Tokenizer {
         );
     }
 
+    private Intermediary parseNot(String query) {
+        query = consume(query, 'not');
+        query = consume(query, ' ');
+        query = ParserUtils.skipWhitespace(query);
+
+        Intermediary subExpr = parseConditionalExpr(query);
+        query = subExpr.subquery;
+        return new Intermediary(
+            new NodeBuilder()
+                .setId('not')
+                .setNodeType('not')
+                .setLeft(subExpr.head)
+                .build(),
+            query
+        );
+    } 
+
     private Intermediary parseConditionalOperationExpr(String query) {
+        if(lookahead(query, 3) == 'not') {
+            return parseNot(query);
+        }
         Intermediary fieldIntermediary = parseField(query);
         query = fieldIntermediary.subquery;
         query = ParserUtils.skipWhitespace(query);
@@ -438,13 +474,26 @@ public with sharing class Tokenizer {
         Intermediary restOfExpr = parseConditionalExpr(query);
         query = restOfExpr.subquery;
 
-        return new Intermediary(
-            new NodeBuilder()
+        Tokenizer.Node head = new NodeBuilder()
                 .setId(token)
                 .setNodeType(token)
                 .setLeft(leftIntermediary.head)
                 .setRight(restOfExpr.head)
-                .build(),
+                .build();
+
+        Tokenizer.Node prev = head;
+        Tokenizer.Node curr = head.right;
+        while(curr != null) {
+            if(curr.nodeType == 'or') {
+                prev.right = curr.left;
+                curr.left = head;
+                head = curr;
+            }
+            curr = curr.right;
+        }
+
+        return new Intermediary(
+            head,
             query
         );
     }
@@ -462,8 +511,15 @@ public with sharing class Tokenizer {
             value.head.left = restOfList.head;
             value.subquery = restOfList.subquery;
         }
-        
-        return value;
+        query = value.subquery;
+        return new Intermediary(
+            new NodeBuilder()
+            .setId('value list')
+            .setNodeType('value list')
+            .setLeft(value.head)
+            .build(),
+            query
+        );
     }
     
     private Intermediary parseOperator(String query) {
@@ -480,7 +536,9 @@ public with sharing class Tokenizer {
             'not in',
             '=',
             '>',
-            '<'
+            '<',
+            'includes',
+            'excludes'
         };
         for(String token : opTokens) {
             if(query.length() >= token.length() && lookahead(query, token.length()) == token) {
@@ -662,10 +720,11 @@ public with sharing class Tokenizer {
     
     private Intermediary parseLimit(String query) {
         query = ParserUtils.skipWhitespace(query);
-        if(query.length() == 0 || query.length() < 5) return null;
-        if(query.subString(0, 5) != 'limit') return null;
+        if(query.length() < 5 || lookahead(query, 5) != 'limit') { 
+            return null;
+        }
         
-        query = query.subString(5);
+        query = consume(query, 'limit');
         Intermediary limitSize = parseNum(query);
         return new Intermediary(
         	new NodeBuilder()
@@ -697,10 +756,10 @@ public with sharing class Tokenizer {
     
     private Intermediary parseHaving(String query) {
         query = ParserUtils.skipWhitespace(query);
-        if(query.length() == 0) return null;
-        if(query.length() < 6) return null;
-        if(query.subString(0, 6) != 'having') return null;
-        
+        if(query.length() < 6 || lookahead(query, 6) != 'having') {
+            return null;
+        }
+
         query = consume(query, 'having');
         query = ParserUtils.skipWhitespace(query);
         Intermediary aggregateFunc = parseAggregateFunc(query);
