@@ -25,6 +25,18 @@ public with sharing class MockDatabase {
         this.db = new Map<String, Map<String, sObject>>();
     }
 
+    private String getFieldApiName(Schema.SObjectType sObjType, String fieldName) {
+        Schema.DescribeSObjectResult fieldDsor = sObjType.getDescribe();
+        String fieldApiName = null;
+        for(Schema.SObjectField field : fieldDsor.fields.getMap().values()) {
+            if(field.getDescribe().getName() == fieldName) {
+                return field.getDescribe().getName();
+            }
+        }
+
+        throw new QueryException('Invalid field name: ' + fieldName);
+    }
+
     private Object getFieldNodeValue(Tokenizer.Node valueNode, sObject sObj, Map<String, Object> params) {
 
         Boolean isBindVar = (valueNode.nodeType == 'bind variable');
@@ -367,7 +379,111 @@ public with sharing class MockDatabase {
         return isWhereConditionMet(whereField, sObj, params);
     }
 
-    private Map<String, Object> handleSubQuery(sObject obj, String objApiName, Tokenizer.Node field, Map<String, Object> params) {
+    // @description : return a parent sObject from a field name and a child sObject
+    // @param sObj : the child sObject
+    // @param fieldName : the field name of the parent sObject from the child
+    //                  : ex. OpportunityLineItem, the field is Opportunity
+    private Map<String, Object> getParentObject(sObject sObj, String fieldName) {
+        // api name of the child sObject
+        String objApiName = sObj.getSObjectType().getDescribe().getName();
+        // api name of the id object on the child (i.e. OpportunityId)
+        String fieldApiName;
+        // api name of the relationship field on the child (i.e. Opportunity)
+        String fieldRelationshipName;
+        // api name of the parent sObject
+        String parentObjApiName;
+
+
+        String sObjApiName = sObj.getSObjectType().getDescribe().getName();
+        SObjectType t = ((SObject)Type.forName(sObjApiName).newInstance()).getSObjectType();
+        String relatedApiName = t.getDescribe().getName();
+        for (SObjectField f : t.getDescribe().fields.getMap().values()) {
+            if (f.getDescribe().getType() == DisplayType.Reference && f.getDescribe().getRelationshipName().toLowerCase() == fieldName) {
+                List<Schema.sObjectType> objTypeList = f.getDescribe().getReferenceTo();
+            
+                if(objTypeList.size() == 1) {
+                    parentObjApiName = objTypeList[0].getDescribe().getName();
+                } else {
+                    // handle polymorphic
+                }
+
+                fieldApiName = f.getDescribe().getName();
+                fieldRelationshipName = f.getDescribe().getRelationshipName();
+
+                sObject parentRecord = ((sObject) Type.forName(parentObjApiName).newInstance()).getSObjectType().newSObject();
+                
+                Map<String, sObject> mockRecordsChild = this.db.get(objApiName);
+                Id parentId = (Id) mockRecordsChild.get(sObj.Id).get(fieldApiName);
+
+                parentRecord.put('Id', parentId);
+                Map<String, Object> objInfo = new Map<String, Object> {
+                    'fieldApiName' => fieldApiName,
+                    'fieldRelationshipName' => fieldRelationshipName,
+                    'parentObjApiName' => parentObjApiName,
+                    'objApiName' => objApiName,
+                    'parentRecord' => parentRecord
+                };
+                return objInfo;
+            }
+        }
+
+        throw new QueryException('Invalid relationship name: ' + fieldName);
+    }
+
+    private sObject sObjectFromMap(Map<String, Object> sObjMap, String sObjApiName) {
+        sObject sObj = (sObject) JSON.deserialize(JSON.serialize(sObjMap), Type.forName(sObjApiName));
+        return sObj;
+    }
+
+    private Map<String, Object> mapFromSObject(sObject sObj) {
+        Map<String, Object> sObjMap = (Map<String, Object>) JSON.deserializeUntyped(JSON.serialize(sObj));
+        return sObjMap;
+    }
+
+    private sObject buildObjWithRelations(sObject sObj, List<String> fieldParts, String finalField) {
+        fieldParts = new List<String>(fieldParts);
+        String fieldPart = fieldParts[0];
+
+        Map<String, Object> parentInfo = getParentObject(sObj, fieldPart);
+        sObject parentRecord = (sObject) parentInfo.get('parentRecord');
+        String fieldApiName = (String) parentInfo.get('fieldApiName');
+        String fieldRelationshipName = (String) parentInfo.get('fieldRelationshipName');
+        String objApiName = (String) parentInfo.get('objApiName');
+
+        Map<String, Object> sObjClone = mapFromSObject(sObj);
+        String parentRecordApiName = (String) parentInfo.get('parentObjApiName');
+        fieldParts.remove(0);
+        if(!fieldParts.isEmpty()) {
+            if(sObjClone.containsKey(fieldRelationshipName)) {
+                parentRecord = sObjectFromMap((Map<String, Object>)sObjClone.get(fieldRelationshipName), parentRecordApiName);
+            }
+            sObject nextParent = buildObjWithRelations(parentRecord, fieldParts, finalField);
+            sObjClone.put(fieldApiName, nextParent.Id);
+            sObjClone.put(fieldRelationshipName, nextParent);
+        } else {
+            Map<String, sObject> mockRecords = this.db.get(parentRecordApiName);
+            String finalFieldApiName = getFieldApiName(parentRecord.getSObjectType(), finalField);
+            if(sObjClone.containsKey(fieldRelationshipName)) {
+                parentRecord = sObjectFromMap((Map<String, Object>)sObjClone.get(fieldRelationshipName), parentRecordApiName);
+            }
+
+            parentRecord.put(finalFieldApiName, mockRecords.get(parentRecord.Id).get(finalFieldApiName));
+            sObjClone.put(fieldApiName, parentRecord.Id);
+            sObjClone.put(fieldRelationshipName, parentRecord);
+        }
+        return sObjectFromMap(sObjClone, objApiName);
+    }
+
+    private sObject handleParentSubQuery(sObject sObj, String sObjApiName, Tokenizer.Node field, Map<String, Object> params) {
+        String fieldName = field.id;
+
+        List<String> fieldParts = fieldName.split('\\.');
+        String finalField = fieldParts[fieldParts.size()-1];
+        fieldParts.remove(fieldParts.size()-1);
+        return buildObjWithRelations(sObj, fieldParts, finalField);
+    }
+
+    private Map<String, Object> handleChildSubQuery(sObject obj, String objApiName, Tokenizer.Node field, Map<String, Object> params) {
         Tokenizer.Node subquerySelectNode = field.right;
         Tokenizer.Node subqueryFromNode = subquerySelectNode.right;
 
@@ -446,7 +562,7 @@ public with sharing class MockDatabase {
 
             if(field.nodeType == 'subquery') {
 
-                Map<String, Object> subQueryResults = handleSubQuery(obj, objApiName, field, params);
+                Map<String, Object> subQueryResults = handleChildSubQuery(obj, objApiName, field, params);
 
                 String subQueryChildRelationshipName = (String) subQueryResults.get('subqueryRelationshipName');
                 List<sObject> subQueryRecords = (List<sObject>) subQueryResults.get('records');
@@ -465,7 +581,12 @@ public with sharing class MockDatabase {
                 sObj = (sObject) JSON.deserialize(JSON.serialize(objMap), Type.forName(objApiName));
             } else {
                 String fieldName = field.id;
-                Object fieldValue = obj.get(fieldName);
+                Object fieldValue;
+                if(fieldName.contains('.')) {
+                    sObj = handleParentSubQuery(sObj, objApiName, field, params);
+                } else {
+                    fieldValue = obj.get(fieldName);
+                }
                 if (fieldValue != null) {
                     Map<String, Object> objMap = (Map<String, Object>) JSON.deserializeUntyped(JSON.serialize(sObj));
                     objMap.put(fieldName, fieldValue);
@@ -503,7 +624,6 @@ public with sharing class MockDatabase {
             sObject sObj = copyWithFields(obj, selectNode, params);
             results.add(sObj);
         }
-
         return results;
     }
 
@@ -585,12 +705,12 @@ public with sharing class MockDatabase {
     }
 
     // @description: This method is used to query the mock database by traversing the AST with bind variables
-    public Object queryWithBinds(String query, Map<String, Object> params) {
+    public List<sObject> queryWithBinds(String query, Map<String, Object> params) {
         Map<String, Object> lowerCaseParams = new Map<String, Object>();
         for(String key : params.keySet()) {
             lowerCaseParams.put(key.toLowerCase(), params.get(key));
         }
 
-        return doQuery(query, lowerCaseParams);        
+        return doQuery(query, lowerCaseParams);       
     }
 }

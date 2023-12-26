@@ -59,20 +59,23 @@ db.doInsert(oppLine);
 Map<String, Object> args = new Map<String, Object> {
     'acctId1' => acct.Id,
     'acctId2' => acct2.Id,
-    'acctIds' => acctIds
+    'acctIds' => acctIds,
+    'oppId' => mockOpp.Id
 };
 
-List<Opportunity> createdOpps = 
-    (List<Opportunity>) db.queryWithBinds(
-        'SELECT (SELECT Id FROM OpportunityLineItems) ' + 
-        'FROM Opportunity ' + 
-        'WHERE Id IN (' + 
-            'SELECT OpportunityId ' +
-            'FROM OpportunityLineItem' + 
-        ')', args);
-for(Opportunity opp : createdOpps) {
-    System.debug(opp.Id);
-    for(OpportunityLineItem line : opp.OpportunityLineItems) {
-        System.debug(line.Id);
-    }
+List<OpportunityLineItem> createdOppLines = 
+    (List<OpportunityLineItem>) db.queryWithBinds(
+        'SELECT Opportunity.Account.Name, Opportunity.Name, Opportunity.Account.BillingStreet, Opportunity.CloseDate FROM OpportunityLineItem', args);
+System.debug(createdOppLines);
+for(OpportunityLineItem oppLine : createdOppLines) {
+    System.debug('Opportunity Line = ' + oppLine);
+    System.debug('Opportunity Line Id = ' + oppLine.Id);
+    System.debug('Opportunity = ' + oppLine.Opportunity);
+    System.debug('Opportunity Id = ' + oppLine.Opportunity.Id);
+    System.debug('Opportunity Name = ' + oppLine.Opportunity.Name);
+    System.debug('Opportunity Account = ' + oppLine.Opportunity.Account);
+    System.debug('Opportunity Account Name = ' + oppLine.Opportunity.Account.Name);
+    System.debug('Opportunity Account Billing Street = ' + oppLine.Opportunity.Account.BillingStreet);
+    System.debug('Opportunity Close Date = ' + oppLine.Opportunity.CloseDate);
+
 }
