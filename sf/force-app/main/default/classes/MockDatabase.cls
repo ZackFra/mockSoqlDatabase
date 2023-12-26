@@ -666,10 +666,6 @@ public with sharing class MockDatabase {
         List<sObject> results = new List<sObject>();
         for(sObject obj : mockObjects.values()) {
             if(!checkWhereCondition(obj, whereNode, params)) {
-                System.debug('failed where condition');
-                System.debug(obj);
-                System.debug(whereNode);
-                System.debug(params);
                 continue;
             }
 
