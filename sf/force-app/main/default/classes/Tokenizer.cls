@@ -199,7 +199,7 @@ public with sharing class Tokenizer {
         query = ParserUtils.skipWhitespace(query);
         Intermediary selectExpr;
         
-        if(query.subString(0, 1) == '(') {
+        if(lookahead(query, 1) == '(') {
             query = consume(query, '(');
             Intermediary soqlSubQuery = parseQuery(query);
             query = soqlSubQuery.subquery;
@@ -223,7 +223,11 @@ public with sharing class Tokenizer {
         if(nextChar == ',') {
             query = consume(query, ',');
             Intermediary restOfExpr = parseSelectExpr(query);
-            selectExpr.head.left = restOfExpr.head;
+            Node curr = selectExpr.head;
+            while(curr.left != null) {
+                curr = curr.left;
+            }
+            curr.left = restOfExpr.head;
             selectExpr.subquery = restOfExpr.subquery;
         }
         return selectExpr;

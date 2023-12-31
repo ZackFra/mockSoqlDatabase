@@ -1,3 +1,4 @@
-Tokenizer t = new Tokenizer();
-
-System.debug(t.parse('SELECT Opportunity.Account.Name, Opportunity.Name, Opportunity.Account.BillingStreet, Opportunity.CloseDate FROM OpportunityLineItem WHERE Opportunity.Id = :oppId'));
+        Account acct = new Account(Name = 'Test');
+        MockDatabase mockDb = new MockDatabase();
+        mockDb.doInsert(acct);
+        List<Contact> queriedAccts = (List<Contact>) mockDb.query('SELECT Id, Name, Name FROM Account');

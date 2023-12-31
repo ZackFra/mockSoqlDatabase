@@ -37,6 +37,87 @@ public with sharing class MockDatabase {
         throw new QueryException('Invalid field name: ' + fieldName);
     }
 
+    private Boolean idsReferenceSameSObject(String sObj1ApiName, String field1, String sObj2ApiName, String field2) {
+
+        Type t1 = type.forName(sObj1ApiName);
+        Type t2 = type.forName(sObj2ApiName);
+
+        if(t1 == null || t2 == null) {
+            throw new QueryException('Invalid object name');
+        }
+
+        sObject sObj1Instance = (sObject) t1.newInstance();
+        sObject sObj2Instance = (sObject) t2.newInstance();
+
+        Schema.DescribeSObjectResult sObj1Dsor = sObj1Instance.getSObjectType().getDescribe();
+        Schema.DescribeSObjectResult sObj2Dsor = sObj2Instance.getSObjectType().getDescribe();
+
+        Schema.SObjectField sObj1Field = sObj1Dsor.fields.getMap().get(field1);
+        Schema.SObjectField sObj2Field = sObj2Dsor.fields.getMap().get(field2);
+
+        if(sObj1Field == null || sObj2Field == null) {
+            throw new QueryException('Invalid field name');
+        }
+
+        Schema.DisplayType sObj1FieldType = sObj1Field.getDescribe().getType();
+        Schema.DisplayType sObj2FieldType = sObj2Field.getDescribe().getType();
+
+        List<Schema.DisplayType> validTypes = new List<Schema.DisplayType> {
+            Schema.DisplayType.REFERENCE,
+            Schema.DisplayType.ID
+        };
+
+        if(!validTypes.contains(sObj1FieldType) || !validTypes.contains(sObj2FieldType)) {
+            throw new QueryException('Invalid field type');
+        }
+
+        // if both are IDs, check that they refer to the same object type
+        if(sObj1FieldType == Schema.DisplayType.ID && sObj2FieldType == Schema.DisplayType.ID) {
+            // NOTE: as the code exists now, we shouldn't get here, but I'm leaving this here in case we change the code
+            // a query where both fields are IDs should throw an exception before getting here
+            return sObj1Instance.getSObjectType() == sObj2Instance.getSObjectType();
+        }
+
+        // if one is a reference and the other is an ID, check that the ID is a reference to the reference's object type
+        if(sObj1FieldType == Schema.DisplayType.REFERENCE && sObj2FieldType == Schema.DisplayType.ID) {
+            List<Schema.sObjectType> sObj1FieldRefs = sObj1Field.getDescribe().getReferenceTo();
+            for(Schema.SObjectType ref : sObj1FieldRefs) {
+                if(ref == sObj2Instance.getSObjectType()) {
+                    return true;
+                }
+            }
+            return false;
+        }
+
+        // check that for the other way around too
+        if(sObj1FieldType == Schema.DisplayType.ID && sObj2FieldType == Schema.DisplayType.REFERENCE) {
+            List<Schema.sObjectType> sObj2FieldRefs = sObj2Field.getDescribe().getReferenceTo();
+            for(Schema.SObjectType ref : sObj2FieldRefs) {
+                if(ref == sObj1Instance.getSObjectType()) {
+                    return true;
+                }
+            }
+            return false;
+        }
+
+        // if they're both references then check that they can refer to the same object type
+        if(sObj1FieldType == Schema.DisplayType.REFERENCE && sObj2FieldType == Schema.DisplayType.REFERENCE) {
+            List<Schema.sObjectType> sObj1FieldRefs = sObj1Field.getDescribe().getReferenceTo();
+            List<Schema.sObjectType> sObj2FieldRefs = sObj2Field.getDescribe().getReferenceTo();
+
+            for(Schema.SObjectType ref1 : sObj1FieldRefs) {
+                for(Schema.SObjectType ref2 : sObj2FieldRefs) {
+                    if(ref1 == ref2) {
+                        return true;
+                    }
+                }
+            }
+            return false;
+        }
+
+        return false;
+    }
+
     private Object getFieldNodeValue(Tokenizer.Node valueNode, sObject sObj, Map<String, Object> params) {
 
         Boolean isBindVar = (valueNode.nodeType == 'bind variable');
@@ -107,24 +188,24 @@ public with sharing class MockDatabase {
                 throw new QueryException('Invalid field name: ' + fieldName);
             }
 
+
+
             Schema.DisplayType childObjFieldType = childObjField.getDescribe().getType();
 
             if(childObjFieldType != Schema.DisplayType.REFERENCE && childObjFieldType != Schema.DisplayType.ID) {
                 throw new QueryException('Subquery must select an ID field');
             }
-
-            Boolean isSameType = false;
-            if(childObjFieldType == Schema.DisplayType.ID && sObj.getSObjectType() == childObj.getSObjectType()) {
-                isSameType = true;
-            } else {
-                List<Schema.SObjectType> refType = childObjField.getDescribe().getReferenceTo();
-                for(Schema.SObjectType ref : refType) {
-                    if(ref == sObj.getSObjectType()) {
-                        isSameType = true;
-                        break;
-                    }
-                }
+            String parentFieldApiName = getFieldApiName(sObj.getSObjectType(), fieldName);
+            Schema.SObjectField parentField = sObj.getSObjectType().getDescribe().fields.getMap().get(parentFieldApiName);
+            if(parentField == null) {
+                throw new QueryException('Invalid field name: ' + fieldName);
             }
+
+            Schema.DisplayType parentFieldType = parentField.getDescribe().getType();
+            String childObjFieldName = childObjField.getDescribe().getName();
+            String childObjApiName = childObj.getSObjectType().getDescribe().getName();
+            Boolean isSameType = idsReferenceSameSObject(objApiName, fieldName, childObjApiName, childObjfieldName);
+
             if(!isSameType) {
                 throw new QueryException('Subquery must select a field of the same type as the parent object');
             }
@@ -596,7 +677,9 @@ public with sharing class MockDatabase {
         List<sObject> subQueryObjects = doQuery(subqueryCloneSelectNode, params);
         Map<String, Object> subQueryResults = new Map<String, Object> {
             'records' => subQueryObjects,
-            'subqueryRelationshipName' => subqueryChildRelationshipName
+            'subqueryRelationshipName' => subqueryChildRelationshipName,
+            'done' => true,
+            'totalSize' => subQueryObjects.size()
         };
         return subQueryResults;
     }
@@ -607,9 +690,9 @@ public with sharing class MockDatabase {
         String objApiName = obj.getSObjectType().getDescribe().getName();
         sObj.put('Id', obj.Id);
         while(field != null) {
-
-            if(field.nodeType == 'subquery') {
-
+            Boolean isChildSubQuery = (field.nodeType == 'subquery');
+            Boolean isParentSubQuery = (field.id.contains('.'));
+            if(isChildSubQuery) {
                 Map<String, Object> subQueryResults = handleChildSubQuery(obj, objApiName, field, params);
 
                 String subQueryChildRelationshipName = (String) subQueryResults.get('subqueryRelationshipName');
@@ -622,20 +705,17 @@ public with sharing class MockDatabase {
                 Map<String, Object> subQueryResultMap = new Map<String, Object>();
                 
                 subQueryResultMap.put('records', subQueryRecords);
-                subQueryResultMap.put('size', subQueryRecords.size());
+                subQueryResultMap.put('totalSize', subQueryRecords.size());
                 subQueryResultMap.put('done', true);
 
                 objMap.put(subQueryChildRelationshipName, subQueryResultMap);
                 sObj = (sObject) JSON.deserialize(JSON.serialize(objMap), Type.forName(objApiName));
+            } else if(isParentSubQuery) {
+                sObj = handleParentSubQuery(sObj, objApiName, field, params);
             } else {
                 String fieldName = field.id;
-                Object fieldValue;
-                if(fieldName.contains('.')) {
-                    sObj = handleParentSubQuery(sObj, objApiName, field, params);
-                } else {
-                    fieldValue = obj.get(fieldName);
-                }
-                if (fieldValue != null) {
+                Object fieldValue = obj.get(fieldName);
+                if(fieldValue != null) {
                     Map<String, Object> objMap = (Map<String, Object>) JSON.deserializeUntyped(JSON.serialize(sObj));
                     objMap.put(fieldName, fieldValue);
                     sObj = (sObject) JSON.deserialize(JSON.serialize(objMap), Type.forName(objApiName));
@@ -644,6 +724,42 @@ public with sharing class MockDatabase {
             field = field.left;
         }
         return sObj;
+    }
+
+    private Boolean hasDuplicateFields(Tokenizer.Node selectNode) {
+        Tokenizer.Node curr = selectNode;
+        Set<String> fieldNames = new Set<String>();
+        while(curr != null) {
+            if(curr.nodeType == 'field') {
+                String fieldName = curr.id;
+                if(fieldNames.contains(fieldName)) {
+                    return true;
+                }
+                fieldNames.add(fieldName);
+            }
+            curr = curr.left;
+        }
+        return false;
+    }
+
+    private Boolean hasDuplicateSubQueries(Tokenizer.Node selectNode) {
+        Tokenizer.Node curr = selectNode;
+        Set<String> subQueryRelationshipNames = new Set<String>();
+        while(curr != null) {
+            if(curr.nodeType == 'subquery') {
+                Tokenizer.Node subQuerySelectNode = curr.right;
+                Tokenizer.Node subQueryFromNode = subQuerySelectNode.right;
+                Tokenizer.Node subQueryObjectNode = subQueryFromNode.left;
+                String subQueryRelationshipName = subQueryObjectNode.id;
+
+                if(subQueryRelationshipNames.contains(subQueryRelationshipName)) {
+                    return true;
+                }
+                subQueryRelationshipNames.add(subQueryRelationshipName);
+            }
+            curr = curr.left;
+        }
+        return false;
     }
 
     private List<sObject> doQuery(Tokenizer.Node selectNode, Map<String, Object> params) {
@@ -661,6 +777,14 @@ public with sharing class MockDatabase {
         Map<String, sObject> mockObjects = this.db.get(objApiName);
         if (mockObjects == null) {
             return new List<sObject>();
+        }
+
+        if(hasDuplicateSubQueries(selectNode)) {
+            throw new QueryException('Cannot follow the same aggregate relationship twice');
+        }
+
+        if(hasDuplicateFields(selectNode)) {
+            throw new QueryException('Duplicate field selected');
         }
 
         List<sObject> results = new List<sObject>();
@@ -685,18 +809,19 @@ public with sharing class MockDatabase {
     /** DML methods **/
 
     public void doInsert(sObject obj) {
+        if(obj.Id != null) {
+            throw new DmlException('Cannot insert an object with an Id');
+        }
         String objName = obj.getSObjectType().getDescribe().getName();
         Map<String, sObject> mockObjects = this.db.get(objName);
 
         String fakeId = getFakeId(obj.getSObjectType());
         obj.put('Id', fakeId);
-        if (mockObjects == null) {
+        mockObjects = this.db.get(objName);
+        if(mockObjects == null) {
             mockObjects = new Map<String, sObject>();
             this.db.put(objName, mockObjects);
-        } else if (mockObjects.get(obj.Id) != null) {
-            throw new DmlException('Duplicate id');
         }
-
         mockObjects.put(obj.Id, obj);
     }
 
