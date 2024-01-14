@@ -25,7 +25,15 @@ var __importStar = (this && this.__importStar) || function (mod) {
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.deactivate = exports.activate = void 0;
 const vscode = __importStar(require("vscode"));
+function disposeTerminals() {
+    Array.from(vscode.window.terminals)
+        .filter(terminal => (terminal.name === 'Dev-Force'))
+        .forEach(terminal => {
+        terminal.dispose();
+    });
+}
 function executeAnon(debug, file) {
+    disposeTerminals();
     if (!file) {
         vscode.window.showInformationMessage('No active file found.');
         return;
@@ -33,9 +41,6 @@ function executeAnon(debug, file) {
     let dirPath = file.split('\\').slice(0, -1);
     dirPath.push('output.log');
     const outputDir = dirPath.join('\\');
-    if (vscode.window.terminals.length > 0) {
-        vscode.window.terminals[0].dispose();
-    }
     const terminal = vscode.window.createTerminal('Dev-Force');
     if (debug) {
         terminal.sendText(`sf apex run --file ${file} | Select-String -Pattern USER_DEBUG | Out-String | Out-File -FilePath ${outputDir} -Encoding utf8`);
@@ -46,6 +51,7 @@ function executeAnon(debug, file) {
     terminal.show();
 }
 function pullLatestLogFromSF(debug, outputDir) {
+    disposeTerminals();
     const terminal = vscode.window.createTerminal('Dev-Force');
     terminal.sendText(`$username = sf org display --json | ConvertFrom-Json | Select-Object -ExpandProperty result | Select-Object -ExpandProperty username`);
     terminal.sendText(`$user = sf data query -q "SELECT Name FROM User WHERE Username = '$username'" --json | ConvertFrom-Json | Select-Object -ExpandProperty result | Select-Object -ExpandProperty records -First 1 | Select-Object -ExpandProperty Name`);
