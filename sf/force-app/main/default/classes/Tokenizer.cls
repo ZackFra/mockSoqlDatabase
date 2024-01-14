@@ -199,7 +199,10 @@ public with sharing class Tokenizer {
         query = ParserUtils.skipWhitespace(query);
         Intermediary selectExpr;
         
-        if(lookahead(query, 1) == '(') {
+        if(isAggregateFunction(query)) {
+            selectExpr = parseAggregateFunc(query);
+            query = selectExpr.subquery;
+        } else if(lookahead(query, 1) == '(') {
             query = consume(query, '(');
             Intermediary soqlSubQuery = parseQuery(query);
             query = soqlSubQuery.subquery;
@@ -815,6 +818,13 @@ public with sharing class Tokenizer {
         }
         query = ParserUtils.skipWhitespace(query);
         query = consume(query, '(');
+        if(nb.id == 'count' && lookahead(query, 1) == ')') {
+            query = consume(query, ')');
+            return new Intermediary(
+            	nb.build(),
+                query
+            );
+        }
         
         Intermediary field = parseField(query);
         nb.setLeft(field.head);

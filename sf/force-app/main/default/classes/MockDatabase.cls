@@ -210,7 +210,7 @@ public with sharing class MockDatabase {
                 throw new QueryException('Subquery must select a field of the same type as the parent object');
             }
 
-            List<sObject> subQueryObjects = doQuery(subquerySelectNode, params);
+            List<sObject> subQueryObjects = (List<sObject>) doQuery(subquerySelectNode, params);
             List<Id> subQueryIds = new List<Id>();
             for(sObject subQueryObj : subQueryObjects) {
                 subQueryIds.add((Id) subQueryObj.get(fieldApiName));
@@ -674,7 +674,7 @@ public with sharing class MockDatabase {
                 .build();
         }
 
-        List<sObject> subQueryObjects = doQuery(subqueryCloneSelectNode, params);
+        List<sObject> subQueryObjects = (List<sObject>) doQuery(subqueryCloneSelectNode, params);
         Map<String, Object> subQueryResults = new Map<String, Object> {
             'records' => subQueryObjects,
             'subqueryRelationshipName' => subqueryChildRelationshipName,
@@ -692,6 +692,7 @@ public with sharing class MockDatabase {
         while(field != null) {
             Boolean isChildSubQuery = (field.nodeType == 'subquery');
             Boolean isParentSubQuery = (field.id.contains('.'));
+
             if(isChildSubQuery) {
                 Map<String, Object> subQueryResults = handleChildSubQuery(obj, objApiName, field, params);
 
@@ -762,12 +763,15 @@ public with sharing class MockDatabase {
         return false;
     }
 
-    private List<sObject> doQuery(Tokenizer.Node selectNode, Map<String, Object> params) {
+    private Object doQuery(Tokenizer.Node selectNode, Map<String, Object> params) {
         Tokenizer.Node fromNode = selectNode.right;
         Tokenizer.Node whereNode;
 
-        if(fromNode.right != null) {
-            whereNode = fromNode.right;
+        Tokenizer.Node curr = fromNode;
+
+        if(curr != null && curr.right != null && curr.right.nodeType == 'where') {
+            whereNode = curr.right;
+            curr = curr.right;
         }
 
         Tokenizer.Node objNode = fromNode.left;
@@ -787,20 +791,41 @@ public with sharing class MockDatabase {
             throw new QueryException('Duplicate field selected');
         }
 
-        List<sObject> results = new List<sObject>();
+        Object results;
+        List<sObject> sObjects = new List<sObject>();
+        Integer count = 0;
+        Boolean isCount = isSingularCount(selectNode);
+
         for(sObject obj : mockObjects.values()) {
             if(!checkWhereCondition(obj, whereNode, params)) {
                 continue;
             }
 
+            if(isCount) {
+                count++;
+                continue;
+            }
+
             sObject sObj = copyWithFields(obj, selectNode, params);
-            results.add(sObj);
+            sObjects.add(sObj);
         }
+
+        if(isCount) {
+            results = count;
+        } else {
+            results = sObjects;
+        }
+
         return results;
     }
 
+    // if all we're doing is counting, no other aggregate funcs
+    private Boolean isSingularCount(Tokenizer.Node selectNode) {
+        return (selectNode.left.id == 'count' && selectNode.left.right == null && selectNode.left.left == null);
+    } 
+
     // @description: This method is used to query the mock database by traversing the AST
-    private List<sObject> doQuery(String query, Map<String, Object> params) {
+    private Object doQuery(String query, Map<String, Object> params) {
         Tokenizer parser = new Tokenizer();
         Tokenizer.Node selectNode = parser.parse(query);
         return doQuery(selectNode, params);
@@ -873,12 +898,12 @@ public with sharing class MockDatabase {
     /** SOQL methods **/
 
     // @description: This method is used to query the mock database by traversing the AST
-    public List<sObject> query(String query) {
+    public Object query(String query) {
         return doQuery(query, null);
     }
 
     // @description: This method is used to query the mock database by traversing the AST with bind variables
-    public List<sObject> queryWithBinds(String query, Map<String, Object> params) {
+    public Object queryWithBinds(String query, Map<String, Object> params) {
         Map<String, Object> lowerCaseParams = new Map<String, Object>();
         for(String key : params.keySet()) {
             lowerCaseParams.put(key.toLowerCase(), params.get(key));

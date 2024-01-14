@@ -423,4 +423,48 @@ public with sharing class MockDatabaseTest {
             Assert.isTrue(foundName, 'Expected queried contact to be the same as inserted contact');
         }
     }
+
+    @IsTest
+    public static void testQueryWithSubQueryInWhereClauseMultipleNone() {
+        Account acct = new Account(Name = 'Test');
+        MockDatabase mockDb = new MockDatabase();
+        mockDb.doInsert(acct);
+
+        List<Contact> conList = new List<Contact>();
+        for(Integer i = 0; i < 5; i++) {
+            Contact con = new Contact(
+                FirstName = 'Steve',
+                LastName = 'Banner' + i,
+                AccountId = acct.Id
+            );
+            conList.add(con);
+        }
+        mockDb.doInsert(conList);
+
+        List<Contact> queriedCons = (List<Contact>) mockDb.query('SELECT Id, FirstName, LastName, Account.Name FROM Contact WHERE AccountId IN (SELECT Id FROM Account WHERE Name = \'Test2\')');
+        Assert.areEqual(0, queriedCons.size(), 'Incorrect number of contacts queried');
+    }
+
+    @IsTest
+    public static void testCount() {
+        Account a = new Account(Name = 'Test');
+        Account b = new Account(Name = 'Test2');
+        MockDatabase mockDb = new MockDatabase();
+        mockDb.doInsert(a);
+        mockDb.doInsert(b);
+
+        Integer count = (Integer) mockDb.query('SELECT COUNT() FROM Account');
+        Assert.areEqual(2, count, 'Incorrect number of accounts queried');
+    }
+
+    public static void testCountWithWhereClause() {
+        Account a = new Account(Name = 'Test');
+        Account b = new Account(Name = 'Test2');
+        MockDatabase mockDb = new MockDatabase();
+        mockDb.doInsert(a);
+        mockDb.doInsert(b);
+
+        Integer count = (Integer) mockDb.query('SELECT COUNT() FROM Account WHERE Name = \'Test\'');
+        Assert.areEqual(1, count, 'Incorrect number of accounts queried');
+    }
 }
