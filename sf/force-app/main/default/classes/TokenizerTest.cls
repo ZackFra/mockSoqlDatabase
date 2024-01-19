@@ -1090,4 +1090,57 @@ public with sharing class TokenizerTest {
         Assert.isNull(valueNode5.right, 'Expected right to be null');
 
     }
+
+    @IsTest
+    public static void testAlias() {
+        Tokenizer t = new Tokenizer();
+        Tokenizer.Node head = t.parse('SELECT COUNT(Id) cnt1 FROM Account GROUP BY Id');
+
+        Assert.areEqual('select', head.id, 'Expected id to be "select"');
+        Assert.areEqual('select', head.nodeType, 'Expected nodeType to be "select"');
+        Assert.isNotNull(head.left, 'Expected left to be not null');
+        Assert.isNotNull(head.right, 'Expected right to not be null');
+
+        Tokenizer.Node countNode = head.left;
+        Assert.areEqual('count', countNode.id, 'Expected id to be "count"');
+        Assert.areEqual('aggregate function', countNode.nodeType, 'Expected nodeType to be "function"');
+        Assert.isNull(countNode.left, 'Expected left to be null');
+        Assert.isNotNull(countNode.right, 'Expected right to not be null');
+
+        Tokenizer.Node idNode = countNode.right;
+        Assert.areEqual('id', idNode.id, 'Expected id to be "id"');
+        Assert.areEqual('field', idNode.nodeType, 'Expected nodeType to be "field"');
+        Assert.isNotNull(idNode.left, 'Expected left to not be null');
+        Assert.isNull(idNode.right, 'Expected right to be null');
+
+        Tokenizer.Node aliasNode = idNode.left;
+        Assert.areEqual('cnt1', aliasNode.id, 'Expected id to be "cnt1"');
+        Assert.areEqual('alias', aliasNode.nodeType, 'Expected nodeType to be "alias"');
+        Assert.isNull(aliasNode.left, 'Expected left to be null');
+        Assert.isNull(aliasNode.right, 'Expected right to be null');
+
+        Tokenizer.Node fromNode = head.right;
+        Assert.areEqual('from', fromNode.id, 'Expected id to be "from"');
+        Assert.areEqual('from', fromNode.nodeType, 'Expected nodeType to be "from"');
+        Assert.isNotNull(fromNode.left, 'Expected left to be not null');
+        Assert.isNotNull(fromNode.right, 'Expected right to not be null');
+
+        Tokenizer.Node accountNode = fromNode.left;
+        Assert.areEqual('account', accountNode.id, 'Expected id to be "account"');
+        Assert.areEqual('object', accountNode.nodeType, 'Expected nodeType to be "object"');
+        Assert.isNull(accountNode.left, 'Expected left to be null');
+        Assert.isNull(accountNode.right, 'Expected right to be null');
+
+        Tokenizer.Node groupByNode = fromNode.right;
+        Assert.areEqual('group by', groupByNode.id, 'Expected id to be "group by"');
+        Assert.areEqual('group by', groupByNode.nodeType, 'Expected nodeType to be "group by"');
+        Assert.isNotNull(groupByNode.left, 'Expected left to be not null');
+        Assert.isNull(groupByNode.right, 'Expected right to be null');
+
+        Tokenizer.Node idNode2 = groupByNode.left;
+        Assert.areEqual('id', idNode2.id, 'Expected id to be "id"');
+        Assert.areEqual('field', idNode2.nodeType, 'Expected nodeType to be "field"');
+        Assert.isNull(idNode2.left, 'Expected left to be null');
+        Assert.isNull(idNode2.right, 'Expected right to be null');
+    }
 }

@@ -362,14 +362,6 @@ public with sharing class Tokenizer {
             leftIntermediary.subquery
         );
     }
-    
-    private Boolean isAnd(String query) {
-        return lookahead(query, 3) == 'and';
-    }
-
-    private Boolean isOr(String query) {
-        return lookahead(query, 2) == 'or';
-    }
 
     private Intermediary parseConditionalSubExpr(String query) {
         query = consume(query, '(');
@@ -465,11 +457,11 @@ public with sharing class Tokenizer {
 
         // if the next token is an AND or OR, parse it
         String token = null;
-        if(isAnd(query)) {
+        if(lookahead(query, 3) == 'and') {
             token = 'and';
         }
 
-        if(isOr(query)) {
+        if(lookahead(query, 2) == 'or') {
             token = 'or';
         }
 
@@ -745,8 +737,12 @@ public with sharing class Tokenizer {
     
     private Intermediary parseForUpdate(String query) {
         query = ParserUtils.skipWhitespace(query);
-        if(query.length() == 0 || query.length() < 3) return null;
-        if(lookahead(query, 3) != 'for') return null;
+        if(query.length() == 0 || query.length() < 3) { 
+            return null;
+        }
+        if(lookahead(query, 3) != 'for') {
+            return null;
+        }
         
         query = query.subString(3);
         query = ParserUtils.skipWhitespace(query);
@@ -794,6 +790,38 @@ public with sharing class Tokenizer {
             query
         );
     }
+
+    // @description : Parses an alias, which is a string of characters that is not a number
+    private Intermediary parseAlias(String query) {
+        // if the next character is not a space, it's not an alias
+        if(lookahead(query, 1) != ' ') {
+            return null;
+        }
+
+        query = ParserUtils.skipWhitespace(query);
+        // if the next character is not a letter, it's not an alias
+        if(!lookahead(query, 1).isAlpha()) {
+            return null;
+        }
+
+        String aliasName = '';
+        while(query.length() > 0 && ParserUtils.validCharForFieldOrObject(lookahead(query, 1))) {
+            aliasName += lookahead(query, 1);
+            query = query.subString(1);
+        }
+
+        if(aliasName.isNumeric()) {
+            throw new ParsingException(aliasName, 'alias name');
+        }
+
+        return new Intermediary(
+            new NodeBuilder()
+                .setId(aliasName)
+                .setNodeType('alias')
+                .build(),
+            query
+        );
+    }
     
     private Intermediary parseAggregateFunc(String query) {
         NodeBuilder nb = new NodeBuilder()
@@ -817,6 +845,7 @@ public with sharing class Tokenizer {
             throw new ParsingException( query, 'aggregate function');
         }
         query = ParserUtils.skipWhitespace(query);
+        
         query = consume(query, '(');
         if(nb.id == 'count' && lookahead(query, 1) == ')') {
             query = consume(query, ')');
@@ -825,11 +854,26 @@ public with sharing class Tokenizer {
                 query
             );
         }
-        
+
+        query = ParserUtils.skipWhitespace(query);
         Intermediary field = parseField(query);
-        nb.setLeft(field.head);
+        
         query = field.subquery;
         query = consume(query, ')');
+
+        Intermediary alias = null;
+        query = ParserUtils.skipWhitespace(query);
+        if(lookahead(query, 5) != 'from ') {
+            // NOTE: alias might still be null after parsing, that's ok
+            alias = parseAlias(query);
+        }
+
+        if(alias != null) {
+            field.head.left = alias.head;
+            query = alias.subquery;
+        }
+
+        nb.setRight(field.head);
         
         
         return new Intermediary(

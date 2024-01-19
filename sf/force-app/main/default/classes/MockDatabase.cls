@@ -766,11 +766,17 @@ public with sharing class MockDatabase {
     private Object doQuery(Tokenizer.Node selectNode, Map<String, Object> params) {
         Tokenizer.Node fromNode = selectNode.right;
         Tokenizer.Node whereNode;
+        Tokenizer.Node groupByNode;
 
-        Tokenizer.Node curr = fromNode;
+        Tokenizer.Node curr = fromNode.right;
 
-        if(curr != null && curr.right != null && curr.right.nodeType == 'where') {
-            whereNode = curr.right;
+        if(curr != null && curr.nodeType == 'where') {
+            whereNode = curr;
+            curr = curr.right;
+        }
+
+        if(curr != null && curr.nodeType == 'group by') {
+            groupByNode = curr;
             curr = curr.right;
         }
 
@@ -794,24 +800,65 @@ public with sharing class MockDatabase {
         Object results;
         List<sObject> sObjects = new List<sObject>();
         Integer count = 0;
+        Boolean isAggregateQuery = (groupByNode != null);
         Boolean isCount = isSingularCount(selectNode);
+
+        List<Map<String, Object>> aggregateResults = new List<Map<String, ObjecT>>();
+        
+        // get list of all fields to group by, if is aggregate query
+        List<String> groupByFields = new List<String>();
+        if(isAggregateQuery) {
+            Tokenizer.Node currGroupByNode = groupByNode.left;
+            while(currGroupByNode != null) {
+                groupByFields.add(currGroupByNode.id);
+                currGroupByNode = currGroupByNode.left;
+            }
+        }
 
         for(sObject obj : mockObjects.values()) {
             if(!checkWhereCondition(obj, whereNode, params)) {
                 continue;
             }
 
-            if(isCount) {
+            if(isCount && !isAggregateQuery) {
                 count++;
                 continue;
             }
 
-            sObject sObj = copyWithFields(obj, selectNode, params);
-            sObjects.add(sObj);
+            if(isAggregateQuery) {
+                Boolean isAccountedFor = false;
+                for(Map<String, Object> ar : aggregateResults) {
+                    Boolean isSame = true;
+                    for(String groupByField : groupByFields) {
+                        isSame = (isSame && (obj.get(groupByField) == ar.get(groupByField)));
+                    }
+                    if(isSame) {
+                        isAccountedFor = true;
+                        break;
+                    }
+                }
+
+                if(isAccountedFor) {
+                    continue;
+                }
+
+                Map<String, Object> aggregateResult = new Map<String, Object>();
+                for(String groupByField : groupByFields) {
+                    aggregateResult.put(groupByField, obj.get(groupByField));
+                }
+                aggregateResults.add(aggregateResult);
+            } else {
+                sObject sObj = copyWithFields(obj, selectNode, params);
+                sObjects.add(sObj);
+            }
         }
 
         if(isCount) {
             results = count;
+        } else if(isAggregateQuery) {
+            System.debug('aggregateResults = ' + aggregateResults);
+            throw new QueryException('Aggregate queries are not supported');
+            // TODO: figure out how to do aggregates
         } else {
             results = sObjects;
         }

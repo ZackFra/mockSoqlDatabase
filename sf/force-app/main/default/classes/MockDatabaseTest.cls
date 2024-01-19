@@ -457,6 +457,7 @@ public with sharing class MockDatabaseTest {
         Assert.areEqual(2, count, 'Incorrect number of accounts queried');
     }
 
+    @IsTest
     public static void testCountWithWhereClause() {
         Account a = new Account(Name = 'Test');
         Account b = new Account(Name = 'Test2');
