@@ -953,6 +953,7 @@ public with sharing class MockDatabase {
 
     // @description: This method is used to query the mock database by traversing the AST with bind variables
     public Object queryWithBinds(String query, Map<String, Object> params) {
+        System.debug('');
         Map<String, Object> lowerCaseParams = new Map<String, Object>();
         for(String key : params.keySet()) {
             lowerCaseParams.put(key.toLowerCase(), params.get(key));
