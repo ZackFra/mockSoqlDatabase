@@ -23,7 +23,7 @@ jobs:
           echo y | sf plugins install sfdx-git-delta
       - name: Generate Manifest
         run: |
-          sf sgd:source:delta --to "HEAD" --from "HEAD~1" --output "."
+          sf sgd:source:delta --to "HEAD" --from "HEAD~1" --output ".\sf"
       - name: Login to Org
         run: |
           cd sf
@@ -31,5 +31,7 @@ jobs:
           sf org login jwt --client-id=${{ secrets.CLIENT_ID }} --username=${{ secrets.SF_USERNAME }} --jwt-key-file=server.key --set-default-dev-hub --alias=DevHub
       - name: Run Tests
         run: |
+          ls
           cd sf
+          ls
           sf project deploy validate --manifest=package/package.xml -o DevHub -w 10
