@@ -14,9 +14,6 @@ jobs:
       - uses: actions/checkout@v3
         with: 
           fetch-depth: 0
-      - name: Change to SF Directory
-        run: |
-          cd sf
       - name: Install SFDX
         run: |
           npm i -g @salesforce/cli
@@ -26,12 +23,14 @@ jobs:
           echo y | sf plugins install sfdx-git-delta
       - name: Generate Manifest
         run: |
+          cd sf
           sf sgd:source:delta --to "HEAD" --from "HEAD~1" --output "."
       - name: Login to Org
         run: |
+          cd sf
           echo "${{ secrets.SERVER_KEY }}" > server.key
           sf org login jwt --client-id=${{ secrets.CLIENT_ID }} --username=${{ secrets.SF_USERNAME }} --jwt-key-file=server.key --set-default-dev-hub --alias=DevHub
       - name: Run Tests
         run: |
-          pwd
+          cd sf
           sf project deploy validate --manifest=package/package.xml -o DevHub -w 10
