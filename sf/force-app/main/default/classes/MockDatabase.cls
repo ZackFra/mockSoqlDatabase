@@ -957,7 +957,6 @@ public with sharing class MockDatabase {
         for(String key : params.keySet()) {
             lowerCaseParams.put(key.toLowerCase(), params.get(key));
         }
-        System.debug('');
         return doQuery(query, lowerCaseParams);       
     }
 }
