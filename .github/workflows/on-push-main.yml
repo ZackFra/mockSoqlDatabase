@@ -31,7 +31,5 @@ jobs:
           sf org login jwt --client-id=${{ secrets.CLIENT_ID }} --username=${{ secrets.SF_USERNAME }} --jwt-key-file=server.key --set-default-dev-hub --alias=DevHub
       - name: Run Tests
         run: |
-          ls
           cd sf
-          ls
           sf project deploy validate --manifest=package/package.xml -o DevHub -w 10
