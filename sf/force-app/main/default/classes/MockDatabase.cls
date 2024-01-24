@@ -847,10 +847,16 @@ public with sharing class MockDatabase {
                     aggregateResult.put(groupByField, obj.get(groupByField));
                 }
                 aggregateResults.add(aggregateResult);
+                // save the whole object for further processing
+                sObjects.add(obj);
             } else {
                 sObject sObj = copyWithFields(obj, selectNode, params);
                 sObjects.add(sObj);
             }
+        }
+
+        if(isAggregateQuery) {
+            // we have the field groups, now we need to aggregate the fields
         }
 
         if(isCount) {
