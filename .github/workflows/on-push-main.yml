@@ -1,0 +1,29 @@
+name: Validate Push On Main
+
+on:
+  push:
+    branches:
+      - main
+jobs:
+  run-test-classes:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+        with: 
+          fetch-depth: 0
+      - name: Install SFDX
+        run: |
+          npm i -g @salesforce/cli
+          sf --version
+      - name: Install sfdxGit delta
+        run: |
+          echo y | sf plugins install sfdx-git-delta
+      - name: Generate Manifest
+        run: |
+          sf sgd:source:delta --to "HEAD" --from "HEAD~1" --output ".\sf\manifest"
+      - name: Login to Org
+        run: |
+          sf login -u ${{ secrets.SF_USERNAME }} -p ${{ secrets.SF_PASSWORD }} -r ${{ secrets.SF_URL }}
+      - name: Run Tests
+        run: |
+          sf project deploy validate --manifest=.\sf\manifest\package\package.xml -w 10
