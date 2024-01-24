@@ -855,13 +855,10 @@ public with sharing class MockDatabase {
             }
         }
 
-        if(isAggregateQuery) {
-            // we have the field groups, now we need to aggregate the fields
-        }
-
         if(isCount) {
             results = count;
         } else if(isAggregateQuery) {
+            System.debug('test');
             System.debug('aggregateResults = ' + aggregateResults);
             throw new QueryException('Aggregate queries are not supported');
             // TODO: figure out how to do aggregates
