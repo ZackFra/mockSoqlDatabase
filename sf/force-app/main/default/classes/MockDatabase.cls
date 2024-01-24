@@ -858,7 +858,6 @@ public with sharing class MockDatabase {
         if(isCount) {
             results = count;
         } else if(isAggregateQuery) {
-            System.debug('test');
             System.debug('aggregateResults = ' + aggregateResults);
             throw new QueryException('Aggregate queries are not supported');
             // TODO: figure out how to do aggregates
