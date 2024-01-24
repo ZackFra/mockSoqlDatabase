@@ -5,7 +5,7 @@ on:
     branches:
       - main
     paths:
-      - 'sf\**'
+      - 'sf/**'
 
 jobs:
   run-test-classes:
