@@ -24,7 +24,7 @@ jobs:
       - name: Generate Manifest
         run: |
           sf sgd:source:delta --to "HEAD" --from "HEAD~1" --output ".\sf"
-      - name: Login to Org
+      - name: Log In to Org
         run: |
           cd sf
           echo "${{ secrets.SERVER_KEY }}" > server.key
