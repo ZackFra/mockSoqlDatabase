@@ -26,7 +26,8 @@ jobs:
           sf sgd:source:delta --to "HEAD" --from "HEAD~1" --output ".\sf\manifest"
       - name: Login to Org
         run: |
-          sf login -u ${{ secrets.SF_USERNAME }} -p ${{ secrets.SF_PASSWORD }} -r ${{ secrets.SF_URL }}
+          echo ${{ secrets.SERVER_KEY }} > server.key
+          sf login --client-id=${{ secrets.CLIENT_ID }} --jwt-key-file=server.key --username=${{ secrets.SF_USERNAME }}
       - name: Run Tests
         run: |
           sf project deploy validate --manifest=.\sf\manifest\package\package.xml -w 10
