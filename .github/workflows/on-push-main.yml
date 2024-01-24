@@ -27,6 +27,7 @@ jobs:
       - name: Login to Org
         run: |
           echo ${{ secrets.SERVER_KEY }} > server.key
+          sf --help
           sf org --help
           sf org login jwt --client-id=${{ secrets.CLIENT_ID }} --username=${{ secrets.SF_USERNAME }} --jwt-key-file=server.key
       - name: Run Tests
