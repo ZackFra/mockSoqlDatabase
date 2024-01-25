@@ -839,14 +839,14 @@ public with sharing class MockDatabase {
                 }
 
                 if(aggregateResult != null) {
-                    Tokenizer.Node curr = selectNode.left;
-                    while(curr != null) {
+                    Tokenizer.Node currSelect = selectNode.left;
+                    while(currSelect != null) {
                         if(curr.nodeType == 'field') {
-                            String fieldName = curr.id;
+                            String fieldName = currSelect.id;
                             String fieldApiName = getFieldApiName(obj.getSObjectType(), fieldName);
                             Schema.SObjectField field = obj.getSObjectType().getDescribe().fields.getMap().get(fieldApiName);
                             Schema.DisplayType fieldType = field.getDescribe().getType();
-                            
+
                             Boolean isCurrency = (fieldType == Schema.DisplayType.CURRENCY);
                             Boolean isDouble = (fieldType == Schema.DisplayType.DOUBLE);
                             Boolean isInteger = (fieldType == Schema.DisplayType.INTEGER);
