@@ -11,7 +11,8 @@ Map<String, String> queries = new Map<String, String> {
     'SELECT_ID_FROM_ACCOUNT_WITH_THREE_ANDS' => 'SELECT Id FROM Contact WHERE FirstName = \'test\' AND LastName = \'test2\' AND Account.Name = \'testAcct\'',
     'SELECT_ID_FROM_ACCOUNT_WITH_BIND_VARIABLE' => 'SELECT Id, Name, BillingStreet FROM Account WHERE Id = :acctid2',
     'SELECT_COUNT_FROM_ACCOUNT' => 'SELECT COUNT() FROM Account',
-    'SELECT_COUNT_FROM_ACCOUNT_WITH_ALIAS' => 'SELECT COUNT(Id) cnt FROM Account GROUP BY Name'
+    'SELECT_COUNT_FROM_ACCOUNT_WITH_ALIAS' => 'SELECT COUNT(Id) cnt FROM Account GROUP BY Name',
+    'SELECT_NAME_ID_FROM_ACCOUNT_GROUP_BY' => 'SELECT Name, Id FROM Account GROUP BY Name, Id'
 };
 
-System.debug(LoggingLevel.DEBUG, 'Tokenize: ' + parser.parse(queries.get('SELECT_COUNT_FROM_ACCOUNT_WITH_ALIAS')));
+System.debug(LoggingLevel.DEBUG, 'Tokenize: ' + parser.parse(queries.get('SELECT_NAME_ID_FROM_ACCOUNT_GROUP_BY')));

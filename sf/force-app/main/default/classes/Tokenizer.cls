@@ -238,11 +238,16 @@ public with sharing class Tokenizer {
     
     private Intermediary parseFieldList(String query) {
         query = ParserUtils.skipWhitespace(query);
-        
-        Intermediary field = parseField(query);
-        query = ParserUtils.skipWhitespace(field.subquery);
-        if(query.length() == 0) {
-            return field;
+        Intermediary nextItem;
+        if(isAggregateFunction(query)) {
+            nextItem = parseAggregateFunc(query);
+            query = nextItem.subquery;
+        } else {
+            nextItem = parseField(query);
+            query = ParserUtils.skipWhitespace(nextItem.subquery);
+            if(query.length() == 0) {
+                return nextItem;
+            }
         }
         
         String nextChar = lookahead(query, 1);
@@ -251,10 +256,10 @@ public with sharing class Tokenizer {
         if(nextChar == ',' && nextCharAfterThat != '(') {
             query = query.subString(1);
             Intermediary restOfList = parseFieldList(query);
-            field.head.left = restOfList.head;
-            field.subquery = restOfList.subquery;
+            nextItem.head.left = restOfList.head;
+            nextItem.subquery = restOfList.subquery;
         }
-        return field;
+        return nextItem;
     }
 
     private Boolean isAggregateFunction(String query) {
@@ -793,10 +798,6 @@ public with sharing class Tokenizer {
 
     // @description : Parses an alias, which is a string of characters that is not a number
     private Intermediary parseAlias(String query) {
-        // if the next character is not a space, it's not an alias
-        if(lookahead(query, 1) != ' ') {
-            return null;
-        }
 
         query = ParserUtils.skipWhitespace(query);
         // if the next character is not a letter, it's not an alias
@@ -863,16 +864,19 @@ public with sharing class Tokenizer {
 
         Intermediary alias = null;
         query = ParserUtils.skipWhitespace(query);
+        System.debug('query = ' + query);
         if(lookahead(query, 5) != 'from ') {
             // NOTE: alias might still be null after parsing, that's ok
             alias = parseAlias(query);
+            System.debug(alias);
         }
+        System.debug('query = ' + query);
 
         if(alias != null) {
             field.head.left = alias.head;
             query = alias.subquery;
         }
-
+        System.debug('query = ' + query);
         nb.setRight(field.head);
         
         

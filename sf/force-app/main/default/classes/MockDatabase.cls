@@ -830,7 +830,8 @@ public with sharing class MockDatabase {
                 for(Map<String, Object> ar : aggregateResults) {
                     Boolean isSame = true;
                     for(String groupByField : groupByFields) {
-                        isSame = (isSame && (obj.get(groupByField) == ar.get(groupByField)));
+                        String fieldApiName = getFieldApiName(obj.getSObjectType(), groupByField);
+                        isSame = (isSame && (obj.get(fieldApiName) == ar.get(fieldApiName)));
                     }
                     if(isSame) {
                         aggregateResult = ar;
@@ -838,43 +839,64 @@ public with sharing class MockDatabase {
                     }
                 }
 
-                if(aggregateResult != null) {
-                    Tokenizer.Node currSelect = selectNode.left;
-                    while(currSelect != null) {
-                        if(curr.nodeType == 'field') {
-                            String fieldName = currSelect.id;
-                            String fieldApiName = getFieldApiName(obj.getSObjectType(), fieldName);
-                            Schema.SObjectField field = obj.getSObjectType().getDescribe().fields.getMap().get(fieldApiName);
-                            Schema.DisplayType fieldType = field.getDescribe().getType();
 
-                            Boolean isCurrency = (fieldType == Schema.DisplayType.CURRENCY);
-                            Boolean isDouble = (fieldType == Schema.DisplayType.DOUBLE);
-                            Boolean isInteger = (fieldType == Schema.DisplayType.INTEGER);
-                            Boolean isPercent = (fieldType == Schema.DisplayType.PERCENT);
-                            
-                            Boolean isNumeric = (isCurrency || isDouble || isInteger || isPercent);
-                            if(isNumeric) {
-                                Decimal currValue = (Decimal) aggregateResult.get(fieldName);
-                                Decimal newValue = (Decimal) obj.get(fieldName);
-                                aggregateResult.put(fieldName, currValue + newValue);
-                            } else if(fieldType == Schema.DisplayType.DATE || fieldType == Schema.DisplayType.DATETIME || fieldType == Schema.DisplayType.TIME) {
-                                throw new QueryException('Aggregate queries are not supported');
-                            } else {
-                                throw new QueryException('Invalid field type');
-                            }
-                        }
-                        curr = curr.left;
+                if(aggregateResult == null) {
+                    aggregateResult = new Map<String, Object>();
+                    for(String groupByField : groupByFields) {
+                        String fieldApiName = getFieldApiName(obj.getSObjectType(), groupByField);
+                        aggregateResult.put(fieldApiName, obj.get(fieldApiName));
                     }
+                    // pointer logic, we won't have to add this again
+                    aggregateResults.add(aggregateResult);
                 }
 
-                aggregateResult = new Map<String, Object>();
-                for(String groupByField : groupByFields) {
-                    aggregateResult.put(groupByField, obj.get(groupByField));
+                Tokenizer.Node currSelect = selectNode.left;
+                Integer exprNumber = 0;
+                while(currSelect != null) {
+                    Boolean isAggregateFunc = (currSelect.nodeType == 'aggregate function');
+                    Boolean isSum = (isAggregateFunc && currSelect.id == 'sum');
+                    if(isSum) {
+                        Tokenizer.Node fieldNode = currSelect.right;
+                        Tokenizer.Node aliasNode = fieldNode.left;
+                        String fieldName = fieldNode.id;
+                        String fieldApiName = getFieldApiName(obj.getSObjectType(), fieldName);
+                        Schema.SObjectField field = obj.getSObjectType().getDescribe().fields.getMap().get(fieldApiName);
+                        Schema.DisplayType fieldType = field.getDescribe().getType();
+
+                        Boolean isCurrency = (fieldType == Schema.DisplayType.CURRENCY);
+                        Boolean isDouble = (fieldType == Schema.DisplayType.DOUBLE);
+                        Boolean isInteger = (fieldType == Schema.DisplayType.INTEGER);
+                        Boolean isPercent = (fieldType == Schema.DisplayType.PERCENT);
+                        
+                        Boolean isNumeric = (isCurrency || isDouble || isInteger || isPercent);
+                        if(isNumeric) {
+                            String alias = 'expr' + exprNumber;
+
+                            if(aliasNode != null) {
+                                alias = aliasNode.id;
+                            } else {
+                                exprNumber++;
+                            }
+
+                            Decimal currValue = (Decimal) aggregateResult.get(alias);
+                            Decimal newValue = (Decimal) obj.get(fieldApiName);
+                            Decimal sum;
+                            if(currValue == null) {
+                                sum = newValue;
+                            } else {
+                                sum = currValue + newValue;
+                            }
+
+                            aggregateResult.put(alias, sum);
+                        } else if(fieldType == Schema.DisplayType.DATE || fieldType == Schema.DisplayType.DATETIME || fieldType == Schema.DisplayType.TIME) {
+                            throw new QueryException('Aggregate queries are not supported');
+                        } else {
+                            throw new QueryException('Invalid field type');
+                        }
+                    }
+                    currSelect = currSelect.left;
                 }
 
-                aggregateResults.add(aggregateResult);
-                // save the whole object for further processing
-                sObjects.add(obj);
             } else {
                 sObject sObj = copyWithFields(obj, selectNode, params);
                 sObjects.add(sObj);
@@ -884,7 +906,6 @@ public with sharing class MockDatabase {
         if(isCount) {
             results = count;
         } else if(isAggregateQuery) {
-
             throw new QueryException('Aggregate queries are not supported');
             // TODO: figure out how to do aggregates
         } else {
