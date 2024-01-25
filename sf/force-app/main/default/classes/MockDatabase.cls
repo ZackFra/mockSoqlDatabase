@@ -826,26 +826,52 @@ public with sharing class MockDatabase {
             }
 
             if(isAggregateQuery) {
-                Boolean isAccountedFor = false;
+                Map<String, Object> aggregateResult;
                 for(Map<String, Object> ar : aggregateResults) {
                     Boolean isSame = true;
                     for(String groupByField : groupByFields) {
                         isSame = (isSame && (obj.get(groupByField) == ar.get(groupByField)));
                     }
                     if(isSame) {
-                        isAccountedFor = true;
+                        aggregateResult = ar;
                         break;
                     }
                 }
 
-                if(isAccountedFor) {
-                    continue;
+                if(aggregateResult != null) {
+                    Tokenizer.Node curr = selectNode.left;
+                    while(curr != null) {
+                        if(curr.nodeType == 'field') {
+                            String fieldName = curr.id;
+                            String fieldApiName = getFieldApiName(obj.getSObjectType(), fieldName);
+                            Schema.SObjectField field = obj.getSObjectType().getDescribe().fields.getMap().get(fieldApiName);
+                            Schema.DisplayType fieldType = field.getDescribe().getType();
+                            
+                            Boolean isCurrency = (fieldType == Schema.DisplayType.CURRENCY);
+                            Boolean isDouble = (fieldType == Schema.DisplayType.DOUBLE);
+                            Boolean isInteger = (fieldType == Schema.DisplayType.INTEGER);
+                            Boolean isPercent = (fieldType == Schema.DisplayType.PERCENT);
+                            
+                            Boolean isNumeric = (isCurrency || isDouble || isInteger || isPercent);
+                            if(isNumeric) {
+                                Decimal currValue = (Decimal) aggregateResult.get(fieldName);
+                                Decimal newValue = (Decimal) obj.get(fieldName);
+                                aggregateResult.put(fieldName, currValue + newValue);
+                            } else if(fieldType == Schema.DisplayType.DATE || fieldType == Schema.DisplayType.DATETIME || fieldType == Schema.DisplayType.TIME) {
+                                throw new QueryException('Aggregate queries are not supported');
+                            } else {
+                                throw new QueryException('Invalid field type');
+                            }
+                        }
+                        curr = curr.left;
+                    }
                 }
 
-                Map<String, Object> aggregateResult = new Map<String, Object>();
+                aggregateResult = new Map<String, Object>();
                 for(String groupByField : groupByFields) {
                     aggregateResult.put(groupByField, obj.get(groupByField));
                 }
+
                 aggregateResults.add(aggregateResult);
                 // save the whole object for further processing
                 sObjects.add(obj);
@@ -957,7 +983,6 @@ public with sharing class MockDatabase {
         for(String key : params.keySet()) {
             lowerCaseParams.put(key.toLowerCase(), params.get(key));
         }
-        System.debug('');
         return doQuery(query, lowerCaseParams);       
     }
 }
