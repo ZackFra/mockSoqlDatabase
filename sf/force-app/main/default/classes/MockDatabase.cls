@@ -763,6 +763,30 @@ public with sharing class MockDatabase {
         return false;
     }
 
+    private Boolean isFieldNumeric(Schema.DisplayType fieldType) {
+        Boolean isCurrency = (fieldType == Schema.DisplayType.CURRENCY);
+        Boolean isDouble = (fieldType == Schema.DisplayType.DOUBLE);
+        Boolean isInteger = (fieldType == Schema.DisplayType.INTEGER);
+        Boolean isPercent = (fieldType == Schema.DisplayType.PERCENT);
+        
+        return (isCurrency || isDouble || isInteger || isPercent);
+    }
+
+    private Boolean isAggregateQuery(Tokenizer.Node selectNode) {
+        if(isSingularCount(selectNode)) {
+            return false;
+        }
+
+        Tokenizer.Node curr = selectNode;
+        while(curr != null) {
+            if(curr.nodeType == 'aggregate function') {
+                return true;
+            }
+            curr = curr.left;
+        }
+        return false;
+    }
+
     private Object doQuery(Tokenizer.Node selectNode, Map<String, Object> params) {
         Tokenizer.Node fromNode = selectNode.right;
         Tokenizer.Node whereNode;
@@ -800,18 +824,31 @@ public with sharing class MockDatabase {
         Object results;
         List<sObject> sObjects = new List<sObject>();
         Integer count = 0;
-        Boolean isAggregateQuery = (groupByNode != null);
+        Boolean isAggregateQuery = isAggregateQuery(selectNode);
         Boolean isCount = isSingularCount(selectNode);
 
         List<Map<String, Object>> aggregateResults = new List<Map<String, ObjecT>>();
         
         // get list of all fields to group by, if is aggregate query
         List<String> groupByFields = new List<String>();
+        List<String> selectFields = new List<String>();
         if(isAggregateQuery) {
-            Tokenizer.Node currGroupByNode = groupByNode.left;
-            while(currGroupByNode != null) {
-                groupByFields.add(currGroupByNode.id);
-                currGroupByNode = currGroupByNode.left;
+            if(groupByNode != null) {
+                Tokenizer.Node currGroupByNode = groupByNode.left;
+                while(currGroupByNode != null) {
+                    groupByFields.add(currGroupByNode.id);
+                    currGroupByNode = currGroupByNode.left;
+                }
+            }
+            Tokenizer.Node currSelectNode = selectNode.left;
+            while(currSelectNode != null) {
+                if(currSelectNode.nodeType == 'field') {
+                    if(!groupByFields.contains(currSelectNode.id)) {
+                        throw new QueryException('Field must be grouped or aggregated: ' + currSelectNode.id);
+                    }
+                    selectFields.add(currSelectNode.id);
+                }
+                currSelectNode = currSelectNode.left;
             }
         }
 
@@ -854,45 +891,119 @@ public with sharing class MockDatabase {
                 Integer exprNumber = 0;
                 while(currSelect != null) {
                     Boolean isAggregateFunc = (currSelect.nodeType == 'aggregate function');
-                    Boolean isSum = (isAggregateFunc && currSelect.id == 'sum');
-                    if(isSum) {
-                        Tokenizer.Node fieldNode = currSelect.right;
-                        Tokenizer.Node aliasNode = fieldNode.left;
-                        String fieldName = fieldNode.id;
-                        String fieldApiName = getFieldApiName(obj.getSObjectType(), fieldName);
-                        Schema.SObjectField field = obj.getSObjectType().getDescribe().fields.getMap().get(fieldApiName);
-                        Schema.DisplayType fieldType = field.getDescribe().getType();
+                    Boolean isAggrSum = (isAggregateFunc && currSelect.id == 'sum');
+                    Boolean isAggrCount = (isAggregateFunc && currSelect.id == 'count');
+                    Boolean isAggrMax = (isAggregateFunc && currSelect.id == 'max');
+                    Boolean isAggrMin = (isAggregateFunc && currSelect.id == 'min');
+                    Boolean isAggrAvg = (isAggregateFunc && currSelect.id == 'avg');
+                    Boolean isAggrCountDistinct = (isAggregateFunc && currSelect.id == 'count_distinct');
 
-                        Boolean isCurrency = (fieldType == Schema.DisplayType.CURRENCY);
-                        Boolean isDouble = (fieldType == Schema.DisplayType.DOUBLE);
-                        Boolean isInteger = (fieldType == Schema.DisplayType.INTEGER);
-                        Boolean isPercent = (fieldType == Schema.DisplayType.PERCENT);
-                        
-                        Boolean isNumeric = (isCurrency || isDouble || isInteger || isPercent);
-                        if(isNumeric) {
-                            String alias = 'expr' + exprNumber;
+                    if(currSelect.nodeType == 'field') {
+                        currSelect = currSelect.left;
+                        continue;
+                    }
 
-                            if(aliasNode != null) {
-                                alias = aliasNode.id;
-                            } else {
-                                exprNumber++;
-                            }
 
-                            Decimal currValue = (Decimal) aggregateResult.get(alias);
-                            Decimal newValue = (Decimal) obj.get(fieldApiName);
-                            Decimal sum;
-                            if(currValue == null) {
-                                sum = newValue;
-                            } else {
-                                sum = currValue + newValue;
-                            }
+                    Tokenizer.Node fieldNode = currSelect.right;
+                    Tokenizer.Node aliasNode = fieldNode.left;
+                    String fieldName = fieldNode.id;
+                    String fieldApiName = getFieldApiName(obj.getSObjectType(), fieldName);
+                    Schema.SObjectField field = obj.getSObjectType().getDescribe().fields.getMap().get(fieldApiName);
+                    Schema.DisplayType fieldType = field.getDescribe().getType();
+                    String alias = 'expr' + exprNumber;
 
-                            aggregateResult.put(alias, sum);
-                        } else if(fieldType == Schema.DisplayType.DATE || fieldType == Schema.DisplayType.DATETIME || fieldType == Schema.DisplayType.TIME) {
-                            throw new QueryException('Aggregate queries are not supported');
-                        } else {
+                    if(aliasNode != null) {
+                        alias = aliasNode.id;
+                    } else {
+                        exprNumber++;
+                    }
+
+                    if(isAggrCountDistinct) {
+                        Integer currValue = (Integer) aggregateResult.get(alias);
+                        if(currValue == null) {
+                            currValue = 0;
+                        }
+                        Set<Object> distinctValues = (Set<Object>) aggregateResult.get(alias + '__distinct');
+                        if(distinctValues == null) {
+                            distinctValues = new Set<Object>();
+                        }
+                        aggregateResult.put(alias + '__distinct', distinctValues);
+                        Object value = obj.get(fieldApiName);
+                        if(value != null) {
+                            distinctValues.add(value);
+                        }
+                        aggregateResult.put(alias, distinctValues.size());
+                    } else if(isAggrAvg) {
+                        if(!isFieldNumeric(fieldType)) {
                             throw new QueryException('Invalid field type');
                         }
+
+                        Decimal currValue = (Decimal) aggregateResult.get(alias);
+                        Decimal newValue = (Decimal) obj.get(fieldApiName);
+                        Decimal n = (Decimal) aggregateResult.get(alias + '__n');
+                        if(n == null) {
+                            n = 1;
+                        }
+
+                        if(currValue == null) {
+                            currValue = newValue;
+                        } else {
+                            currValue = currValue + (newValue - currValue) / n;
+                        }
+
+                        aggregateResult.put(alias, currValue);
+                        aggregateResult.put(alias + '__n', n + 1);
+                    } if(isAggrMin) {
+                        if(!isFieldNumeric(fieldType)) {
+                            throw new QueryException('Invalid field type');
+                        }
+
+                        Decimal currValue = (Decimal) aggregateResult.get(alias);
+                        Decimal newValue = (Decimal) obj.get(fieldApiName);
+
+                        if(currValue == null) {
+                            currValue = newValue;
+                        } else {
+                            currValue = Math.min(currValue, newValue);
+                        }
+
+                        aggregateResult.put(alias, currValue);
+                    } else if(isAggrMax) {
+                        if(!isFieldNumeric(fieldType)) {
+                            throw new QueryException('Invalid field type');
+                        }
+
+                        Decimal currValue = (Decimal) aggregateResult.get(alias);
+                        Decimal newValue = (Decimal) obj.get(fieldApiName);
+                        if(currValue == null) {
+                            currValue = newValue;
+                        } else {
+                            currValue = Math.max(currValue, newValue);
+                        }
+
+                        aggregateResult.put(alias, currValue);
+                    } else if(isAggrCount) {
+                        Integer currValue = (Integer) aggregateResult.get(alias);
+                        if(currValue == null) {
+                            currValue = 0;
+                        }
+                        aggregateResult.put(alias, currValue + 1);
+                    } else if(isAggrSum) {
+
+                        if(!isFieldNumeric(fieldType)) {
+                            throw new QueryException('Invalid field type');
+                        }
+
+                        Decimal currValue = (Decimal) aggregateResult.get(alias);
+                        Decimal newValue = (Decimal) obj.get(fieldApiName);
+                        Decimal sum;
+                        if(currValue == null) {
+                            sum = newValue;
+                        } else {
+                            sum = currValue + newValue;
+                        }
+
+                        aggregateResult.put(alias, sum);
                     }
                     currSelect = currSelect.left;
                 }
@@ -906,8 +1017,37 @@ public with sharing class MockDatabase {
         if(isCount) {
             results = count;
         } else if(isAggregateQuery) {
-            throw new QueryException('Aggregate queries are not supported');
-            // TODO: figure out how to do aggregates
+            List<AggregateResultProxy> aggregateResultsList = new List<AggregateResultProxy>();
+            for(Map<String, Object> ar : aggregateResults) {
+
+                // filter out grouped fields that are not selected in the select clause
+                for(String groupByField : groupByFields) {
+                    if(selectFields.contains(groupByField)) {
+                        continue;
+                    }
+
+                    for(String key : ar.keySet()) {
+                        if(key.toLowerCase() == groupByField) {
+                            ar.remove(key);
+                        }
+                    }
+                }
+
+                // remove any rolling sums for averages and distinct sets
+                for(String key : ar.keySet()) {
+                    Boolean isAvg = key.endsWith('__n');
+                    Boolean isDistinct = key.endsWith('__distinct');
+                    if(isAvg || isDistinct) {
+                        ar.remove(key);
+                    }
+                    
+                }
+
+
+                AggregateResultProxy arp = new AggregateResultProxy(ar);
+                aggregateResultsList.add(arp);
+            }
+            results = aggregateResultsList;
         } else {
             results = sObjects;
         }

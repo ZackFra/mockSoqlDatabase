@@ -270,7 +270,8 @@ public with sharing class Tokenizer {
         Boolean isMin = isLongEnough && lookahead(query, 3) == 'min';
         Boolean isMax = isLongEnough && lookahead(query, 3) == 'max';
         Boolean isCount = isLongEnough && lookahead(query, 5) == 'count';
-        return isSum || isAvg || isMin || isMax || isCount;
+        Boolean isCountDistinct = isLongEnough && lookahead(query, 14) == 'count_distinct';
+        return isSum || isAvg || isMin || isMax || isCount || isCountDistinct;
     }
 
     // @description : Returns true if the next three tokens in the query denote a subfield
@@ -827,20 +828,23 @@ public with sharing class Tokenizer {
     private Intermediary parseAggregateFunc(String query) {
         NodeBuilder nb = new NodeBuilder()
             .setNodeType('aggregate function');
-        if(lookahead(query, 5) == 'count') {
-            query = query.subString(5);
+        if(lookahead(query, 14) == 'count_distinct') {
+            query = consume(query, 'count_distinct');
+            nb.setId('count_distinct');
+        } else if(lookahead(query, 5) == 'count') {
+            query = consume(query, 'count');
             nb.setId('count');
         } else if(lookahead(query, 3) == 'sum') {
-            query = query.subString(3);
+            query = consume(query, 'sum');
             nb.setId('sum');
         } else if(lookahead(query, 3) == 'avg') {
-            query = query.subString(3);
+            query = consume(query, 'avg');
             nb.setId('avg');
         } else if(lookahead(query, 3) == 'min') {
-            query = query.subString(3);
+            query = consume(query, 'min');
             nb.setId('min');
         } else if(lookahead(query, 3) == 'max') {
-            query = query.subString(3);
+            query = consume(query, 'max');
             nb.setId('max');
         } else {
             throw new ParsingException( query, 'aggregate function');
@@ -864,19 +868,15 @@ public with sharing class Tokenizer {
 
         Intermediary alias = null;
         query = ParserUtils.skipWhitespace(query);
-        System.debug('query = ' + query);
         if(lookahead(query, 5) != 'from ') {
             // NOTE: alias might still be null after parsing, that's ok
             alias = parseAlias(query);
-            System.debug(alias);
         }
-        System.debug('query = ' + query);
 
         if(alias != null) {
             field.head.left = alias.head;
             query = alias.subquery;
         }
-        System.debug('query = ' + query);
         nb.setRight(field.head);
         
         

@@ -2,7 +2,7 @@ MockDatabase db = new MockDatabase();
 Account acct = new Account(
     Name = 'Test',
     BillingStreet = '123 Main St',
-    NumberOfEmployees = 5
+    NumberOfEmployees = 1
 );
 
 db.doInsert(acct);
@@ -17,8 +17,8 @@ db.doInsert(acct2);
 
 Account acct3 = new Account(
     Name = 'Test',
-    BillingStreet = '123 Main St',
-    NumberOfEmployees = 5
+    NumberOfEmployees = 2,
+    BillingStreet = '1234 Main St'
 );
 
 db.doInsert(acct3);
@@ -31,5 +31,7 @@ Contact con = new Contact(
 
 db.doInsert(con);
 
-List<Account> acctList = (List<Account>) db.query('SELECT Name, SUM(NumberOfEmployees) numOfEmpl FROM Account GROUP BY Name');
-Tokenizer t = new Tokenizer();
+List<AggregateResultProxy> arList = (List<AggregateResultProxy>) db.query('SELECT COUNT_DISTINCT(BillingStreet) distinctStr FROM Account');
+for(AggregateResultProxy ar : arList) {
+    System.debug(ar);
+}
