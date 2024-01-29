@@ -23,15 +23,31 @@ Account acct3 = new Account(
 
 db.doInsert(acct3);
 
+
+List<Contact> conList = new List<Contact>();
 Contact con = new Contact(
     FirstName = 'Test',
     LastName = 'Test',
     AccountId = acct.Id
 );
+conList.add(con);
 
-db.doInsert(con);
+Contact con2 = new Contact(
+    FirstName = 'Test 2',
+    LastName = 'Test 2',
+    AccountId = acct2.Id
+);
+conList.add(con2);
 
-List<AggregateResultProxy> arList = (List<AggregateResultProxy>) db.query('SELECT COUNT_DISTINCT(BillingStreet) distinctStr FROM Account');
+Contact con3 = new Contact(
+    FirstName = 'Test 3',
+    LastName = 'Test 3',
+    AccountId = acct.Id
+);
+conList.add(con3);
+
+db.doInsert(conList);
+List<AggregateResultProxy> arList = (List<AggregateResultProxy>) db.query('SELECT Account.Name, COUNT_DISTINCT(FirstName) distinctStr FROM Contact GROUP BY Account.Name');
 for(AggregateResultProxy ar : arList) {
     System.debug(ar);
 }

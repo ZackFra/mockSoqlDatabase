@@ -690,6 +690,10 @@ public with sharing class MockDatabase {
         String objApiName = obj.getSObjectType().getDescribe().getName();
         sObj.put('Id', obj.Id);
         while(field != null) {
+            if(field.nodeType == 'aggregate function') {
+                field = field.left;
+                continue;
+            }
             Boolean isChildSubQuery = (field.nodeType == 'subquery');
             Boolean isParentSubQuery = (field.id.contains('.'));
 
@@ -787,6 +791,50 @@ public with sharing class MockDatabase {
         return false;
     }
 
+    private Map<String, Object> getComparables(sObject obj, String field) {
+        sObject comparableRecord = obj;
+        String comparableField = field;
+        if(!comparableField.contains('.')) {
+            comparableField = getFieldApiName(comparableRecord.getSObjectType(), comparableField);
+            return new Map<String, Object> {
+                'comparableRecord' => comparableRecord,
+                'comparableField' => comparableField,
+                'relationshipName' => comparableField
+            };
+        }
+
+        List<String> fieldParts = comparableField.split('\\.');
+        String finalField = fieldParts[fieldParts.size()-1];
+        fieldParts.remove(fieldParts.size()-1);
+        String parentField = fieldParts[0];
+        sObject parentRecord;
+        String relationshipName = '';
+        while(!fieldParts.isEmpty()) {
+            Map<String, Object> parentInfo = getParentObject(obj, parentField);
+
+            parentRecord = (sObject) parentInfo.get('parentRecord');
+            String parentObjApiName = (String) parentInfo.get('parentObjApiName');
+            relationshipName += (String) parentInfo.get('fieldRelationshipName') + '.';
+            
+            parentRecord = this.db.get(parentObjApiName).get(parentRecord.Id);
+            
+
+            fieldParts.remove(0);
+            if(!fieldParts.isEmpty()) {
+                parentField = fieldParts[0];
+            }
+        }
+        comparableRecord = parentRecord;
+        comparableField = getFieldApiName(comparableRecord.getSObjectType(), finalField);
+        relationshipName += comparableField;
+
+        return new Map<String, Object> {
+            'comparableRecord' => comparableRecord,
+            'comparableField' => comparableField,
+            'relationshipName' => relationshipName
+        };
+    }
+
     private Object doQuery(Tokenizer.Node selectNode, Map<String, Object> params) {
         Tokenizer.Node fromNode = selectNode.right;
         Tokenizer.Node whereNode;
@@ -867,8 +915,11 @@ public with sharing class MockDatabase {
                 for(Map<String, Object> ar : aggregateResults) {
                     Boolean isSame = true;
                     for(String groupByField : groupByFields) {
-                        String fieldApiName = getFieldApiName(obj.getSObjectType(), groupByField);
-                        isSame = (isSame && (obj.get(fieldApiName) == ar.get(fieldApiName)));
+                        Map<String, Object> comparableInfo = getComparables(obj, groupByField);
+                        sObject comparableRecord = (sObject) comparableInfo.get('comparableRecord');
+                        String comparableField = (String) comparableInfo.get('comparableField');
+                        String relationshipName = (String) comparableInfo.get('relationshipName');
+                        isSame = (isSame && (comparableRecord.get(comparableField) == ar.get(relationshipName)));
                     }
                     if(isSame) {
                         aggregateResult = ar;
@@ -880,8 +931,13 @@ public with sharing class MockDatabase {
                 if(aggregateResult == null) {
                     aggregateResult = new Map<String, Object>();
                     for(String groupByField : groupByFields) {
-                        String fieldApiName = getFieldApiName(obj.getSObjectType(), groupByField);
-                        aggregateResult.put(fieldApiName, obj.get(fieldApiName));
+                        Map<String, Object> comparableInfo = getComparables(obj, groupByField);
+                        sObject comparableRecord = (sObject) comparableInfo.get('comparableRecord');
+                        String comparableField = (String) comparableInfo.get('comparableField');
+                        String relationshipName = (String) comparableInfo.get('relationshipName');
+
+                        String fieldApiName = getFieldApiName(comparableRecord.getSObjectType(), comparableField);
+                        aggregateResult.put(relationshipName, comparableRecord.get(comparableField));
                     }
                     // pointer logic, we won't have to add this again
                     aggregateResults.add(aggregateResult);
@@ -907,9 +963,19 @@ public with sharing class MockDatabase {
                     Tokenizer.Node fieldNode = currSelect.right;
                     Tokenizer.Node aliasNode = fieldNode.left;
                     String fieldName = fieldNode.id;
-                    String fieldApiName = getFieldApiName(obj.getSObjectType(), fieldName);
-                    Schema.SObjectField field = obj.getSObjectType().getDescribe().fields.getMap().get(fieldApiName);
-                    Schema.DisplayType fieldType = field.getDescribe().getType();
+
+                    Map<String, Object> comparableInfo = getComparables(obj, fieldName);
+                    sObject comparableRecord = (sObject) comparableInfo.get('comparableRecord');
+                    String comparableField = (String) comparableInfo.get('comparableField');
+
+                    Map<String, Schema.SObjectField> fieldMap = comparableRecord.getSObjectType().getDescribe().fields.getMap();
+                    Schema.DisplayType fieldType = fieldMap
+                        .get(comparableField)
+                        .getDescribe()
+                        .getType();
+
+                    Schema.SObjectField field = fieldMap.get(comparableField);
+                    
                     String alias = 'expr' + exprNumber;
 
                     if(aliasNode != null) {
@@ -928,7 +994,7 @@ public with sharing class MockDatabase {
                             distinctValues = new Set<Object>();
                         }
                         aggregateResult.put(alias + '__distinct', distinctValues);
-                        Object value = obj.get(fieldApiName);
+                        Object value = comparableRecord.get(comparableField);
                         if(value != null) {
                             distinctValues.add(value);
                         }
@@ -939,7 +1005,7 @@ public with sharing class MockDatabase {
                         }
 
                         Decimal currValue = (Decimal) aggregateResult.get(alias);
-                        Decimal newValue = (Decimal) obj.get(fieldApiName);
+                        Decimal newValue = (Decimal) comparableRecord.get(comparableField);
                         Decimal n = (Decimal) aggregateResult.get(alias + '__n');
                         if(n == null) {
                             n = 1;
@@ -959,7 +1025,7 @@ public with sharing class MockDatabase {
                         }
 
                         Decimal currValue = (Decimal) aggregateResult.get(alias);
-                        Decimal newValue = (Decimal) obj.get(fieldApiName);
+                        Decimal newValue = (Decimal) comparableRecord.get(comparableField);
 
                         if(currValue == null) {
                             currValue = newValue;
@@ -974,7 +1040,7 @@ public with sharing class MockDatabase {
                         }
 
                         Decimal currValue = (Decimal) aggregateResult.get(alias);
-                        Decimal newValue = (Decimal) obj.get(fieldApiName);
+                        Decimal newValue = (Decimal) comparableRecord.get(comparableField);
                         if(currValue == null) {
                             currValue = newValue;
                         } else {
@@ -995,7 +1061,7 @@ public with sharing class MockDatabase {
                         }
 
                         Decimal currValue = (Decimal) aggregateResult.get(alias);
-                        Decimal newValue = (Decimal) obj.get(fieldApiName);
+                        Decimal newValue = (Decimal) comparableRecord.get(comparableField);
                         Decimal sum;
                         if(currValue == null) {
                             sum = newValue;
