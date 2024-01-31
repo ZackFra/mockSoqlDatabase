@@ -1,7 +1,7 @@
 // a map with no put method
-public with sharing class AggregateResultProxy {
+public with sharing class Aggregate {
     private Map<String, Object> ar;
-    public AggregateResultProxy(Map<String, Object> ar) {
+    public Aggregate(Map<String, Object> ar) {
         this.ar = ar;
     }
 

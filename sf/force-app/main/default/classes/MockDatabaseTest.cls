@@ -468,4 +468,150 @@ public with sharing class MockDatabaseTest {
         Integer count = (Integer) mockDb.query('SELECT COUNT() FROM Account WHERE Name = \'Test\'');
         Assert.areEqual(1, count, 'Incorrect number of accounts queried');
     }
+
+    @IsTest
+    public static void testLikeOperator() {
+        Account a = new Account(Name = 'Test');
+        Account b = new Account(Name = 'Test2');
+        Account c = new Account(Name = 'Test3');
+        Account d = new Account(Name = 'Not Test');
+        MockDatabase mockDb = new MockDatabase();
+        mockDb.doInsert(a);
+        mockDb.doInsert(b);
+        mockDb.doInsert(c);
+        mockDb.doInsert(d);
+
+        List<Account> queriedAccts = (List<Account>) mockDb.query('SELECT Id, Name FROM Account WHERE Name LIKE \'Test%\'');
+        Assert.areEqual(3, queriedAccts.size(), 'Incorrect number of accounts queried');
+    }
+
+    @IsTest
+    public static void testWhereConditionWithAnd() {
+        Account a = new Account(Name = 'Test');
+        Account b = new Account(Name = 'Test2');
+        Account c = new Account(Name = 'Test3');
+        Account d = new Account(Name = 'Not Test');
+        MockDatabase mockDb = new MockDatabase();
+        mockDb.doInsert(a);
+        mockDb.doInsert(b);
+        mockDb.doInsert(c);
+        mockDb.doInsert(d);
+
+        List<Account> queriedAccts = (List<Account>) mockDb.query('SELECT Id, Name FROM Account WHERE Name LIKE \'%Test%\' AND Name != \'Test\'');
+        Assert.areEqual(3, queriedAccts.size(), 'Incorrect number of accounts queried');
+    }
+
+    @IsTest
+    public static void testWhereConditionWithOr() {
+        Account a = new Account(Name = 'Test');
+        Account b = new Account(Name = 'Test2');
+        Account c = new Account(Name = 'Test3');
+        Account d = new Account(Name = 'Not Test');
+        MockDatabase mockDb = new MockDatabase();
+        mockDb.doInsert(a);
+        mockDb.doInsert(b);
+        mockDb.doInsert(c);
+        mockDb.doInsert(d);
+
+        List<Account> queriedAccts = (List<Account>) mockDb.query('SELECT Id, Name FROM Account WHERE Name LIKE \'%Test%\' OR Name != \'Test\'');
+        Assert.areEqual(4, queriedAccts.size(), 'Incorrect number of accounts queried');
+    }
+
+    @IsTest
+    public static void testQueryWithBinds() {
+        Account a = new Account(Name = 'Test');
+        Account b = new Account(Name = 'Test2');
+        Account c = new Account(Name = 'Test3');
+        Account d = new Account(Name = 'Not Test');
+        MockDatabase mockDb = new MockDatabase();
+        mockDb.doInsert(a);
+        mockDb.doInsert(b);
+        mockDb.doInsert(c);
+        mockDb.doInsert(d);
+
+        Map<String, Object> binds = new Map<String, Object> {
+            'name' => 'Test'
+        };
+
+        List<Account> queriedAccts = (List<Account>) mockDb.queryWithBinds('SELECT Id, Name FROM Account WHERE Name = :name', binds);
+        Assert.areEqual(1, queriedAccts.size(), 'Incorrect number of accounts queried');
+    }
+
+    @IsTest
+    public static void testQueryWithBindsList() {
+        Account a = new Account(Name = 'Test');
+        Account b = new Account(Name = 'Test2');
+        Account c = new Account(Name = 'Test3');
+        Account d = new Account(Name = 'Not Test');
+        MockDatabase mockDb = new MockDatabase();
+        mockDb.doInsert(a);
+        mockDb.doInsert(b);
+        mockDb.doInsert(c);
+        mockDb.doInsert(d);
+
+        List<String> names = new List<String>{'Test', 'Test2'};
+
+        Map<String, Object> binds = new Map<String, Object> {
+            'names' => names
+        };
+
+        List<Account> queriedAccts = (List<Account>) mockDb.queryWithBinds('SELECT Id, Name FROM Account WHERE Name IN :names', binds);
+        Assert.areEqual(2, queriedAccts.size(), 'Incorrect number of accounts queried');
+    }
+
+    @IsTest
+    public static void testQueryWithValueList() {
+        Account a = new Account(Name = 'Test');
+        Account b = new Account(Name = 'Test2');
+        Account c = new Account(Name = 'Test3');
+        Account d = new Account(Name = 'Not Test');
+        MockDatabase mockDb = new MockDatabase();
+        mockDb.doInsert(a);
+        mockDb.doInsert(b);
+        mockDb.doInsert(c);
+        mockDb.doInsert(d);
+
+        List<Account> queriedAccts = (List<Account>) mockDb.query('SELECT Id, Name FROM Account WHERE Name IN (\'Test\', \'Test2\')');
+        Assert.areEqual(2, queriedAccts.size(), 'Incorrect number of accounts queried');
+    }
+
+    @IsTest
+    public static void testWhereClauseParentSubQuery() {
+        Account acct = new Account(Name = 'Test');
+        Account acct2 = new Account(Name = 'Test2');
+        List<Account> accts = new List<Account>{acct, acct2};
+        MockDatabase mockDb = new MockDatabase();
+        mockDb.doInsert(accts);
+
+        Contact con = new Contact(
+            FirstName = 'Steve',
+            LastName = 'Banner',
+            AccountId = acct.Id
+        );
+
+        mockDb.doInsert(con);
+
+        List<Contact> queriedCons = (List<Contact>) mockDb.query('SELECT Id, FirstName, LastName, Account.Name FROM Contact WHERE Account.Name = \'Test\'');
+        Contact queriedCon = queriedCons[0];
+        Assert.areEqual(1, queriedCons.size(), 'Incorrect number of contacts queried');
+        Assert.areEqual('Test', queriedCon.Account.Name, 'Expected account name to be \'Test\'');
+        Assert.areEqual('Steve', queriedCon.FirstName, 'Expected first name to be \'Steve\'');
+        Assert.areEqual('Banner', queriedCon.LastName, 'Expected last name to be \'Banner\'');
+        Assert.areEqual(con.Id, queriedCon.Id, 'Expected queried contact to be the same as inserted contact');
+    }
+
+    @IsTest
+    public static void testAllOperators() {
+
+        Account a = new Account(Name = 'Test', NumberOfEmployees = 5);
+        Account b = new Account(Name = 'Test2', NumberOfEmployees = 10);
+        Account c = new Account(Name = 'Test3', NumberOfEmployees = 15);
+        Account d = new Account(Name = 'Not Test', NumberOfEmployees = 20);
+        MockDatabase mockDb = new MockDatabase();
+        List<Account> acctList = new List<Account>{a, b, c, d};
+        mockDb.doInsert(acctList);
+
+        List<Account> queriedAccts = (List<Account>) mockDb.query('SELECT Id, Name, NumberOfEmployees FROM Account WHERE NumberOfEmployees > 5 AND NumberOfEmployees < 20 AND NumberOfEmployees >= 10 AND NumberOfEmployees <= 15 AND NumberOfEmployees != 20 AND NumberOfEmployees IN (5, 10, 15)');
+        Assert.areEqual(2, queriedAccts.size(), 'Incorrect number of accounts queried');
+    }
 }
