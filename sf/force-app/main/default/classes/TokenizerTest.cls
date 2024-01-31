@@ -1,5 +1,255 @@
 @IsTest
 public with sharing class TokenizerTest {
+
+    @IsTest
+    public static void testToString() {
+        Tokenizer t = new Tokenizer();
+        Tokenizer.Node head = t.parse('SELECT Id FROM Account');
+        String result = head.toString();
+        String expectedResult = '{ id: id, nodeType: field},{ id: select, nodeType: select},{ id: account, nodeType: object},{ id: from, nodeType: from},';
+        Assert.areEqual(
+            expectedResult,
+            result, 
+            'Expected result to be "' + expectedResult + '"'
+        );
+    }
+
+    @IsTest
+    public static void testClone() {
+        Tokenizer t = new Tokenizer();
+        Tokenizer.Node head = t.parse('SELECT Id FROM Account');
+        Tokenizer.Node clone = Tokenizer.clone(head);
+        Assert.areEqual(
+            head.toString(),
+            clone.toString(),
+            'Expected clone to be the same as the original'
+        );
+    }
+
+    // fails for the wrong reason
+    @IsTest
+    public static void testAggrFuncFail1() {
+        Tokenizer t = new Tokenizer();
+        try {
+            Tokenizer.Node head = t.parse('SELECT SUM_DISTINCT(Amount) FROM Opportunity');
+            Assert.fail('Expected exception to be thrown');
+        } catch(Exception e) {
+            Assert.isTrue(
+                e.getMessage().startsWith('Parsing exception, expected "("'),
+                'Expected exception message to start with "Parsing exception, expected "(""'
+            );
+        }
+    }
+
+    @IsTest
+    public static void testAggrFuncFail2() {
+        Tokenizer t = new Tokenizer();
+        try {
+            Tokenizer.Node head = t.parse('SELECT C(Amount) FROM Opportunity');
+            Assert.fail('Expected exception to be thrown');
+        } catch(Exception e) {
+            Assert.isTrue(
+                e.getMessage().startsWith('Parsing exception, expected "from"'),
+                'Expected exception message to start with "Parsing exception, expected "from""'
+            );
+        }
+    }
+
+    @IsTest
+    public static void testAggrFuncFail3() {
+        Tokenizer t = new Tokenizer();
+        try {
+            Tokenizer.Node head = t.parse('SELECT SUM(DISTINCT Amount) FROM Opportunity');
+            Assert.fail('Expected exception to be thrown');
+        } catch(Exception e) {
+            Assert.isTrue(
+                e.getMessage().startsWith('Parsing exception, expected ")"'),
+                'Expected exception message to start with "Parsing exception, expected ")"'
+            );
+        }
+    }
+
+    @IsTest
+    public static void testParseBoolean() {
+        Tokenizer t = new Tokenizer();
+        Tokenizer.Node head = t.parse('SELECT Id FROM Account WHERE IsDeleted = true');
+        assertNode(head, 'select', 'select', false, false);
+
+        Tokenizer.Node idNode = head.left;
+        assertNode(idNode, 'id', 'field', true, true);
+
+        Tokenizer.Node fromNode = head.right;
+        assertNode(fromNode, 'from', 'from', false, false);
+
+        Tokenizer.Node accountNode = fromNode.left;
+        assertNode(accountNode, 'account', 'object', true, true);
+
+        Tokenizer.Node whereNode = fromNode.right;
+        assertNode(whereNode, 'where', 'where', false, true);
+
+        Tokenizer.Node operatorNode = whereNode.left;
+        assertNode(operatorNode, '=', 'operator', false, false);
+
+        Tokenizer.Node isDeletedNode = operatorNode.left;
+        assertNode(isDeletedNode, 'isdeleted', 'field', true, true);
+
+        Tokenizer.Node valueNode = operatorNode.right;
+        assertNode(valueNode, 'true', 'boolean', true, true);
+    }
+
+    @IsTest
+    public static void testOrderBy() {
+        Tokenizer t = new Tokenizer();
+        Tokenizer.Node head = t.parse('SELECT Id FROM Account ORDER BY Name, Id');
+
+        assertNode(head, 'select', 'select', false, false);
+
+        Tokenizer.Node idNode = head.left;
+        assertNode(idNode, 'id', 'field', true, true);
+
+        Tokenizer.Node fromNode = head.right;
+        assertNode(fromNode, 'from', 'from', false, false);
+
+        Tokenizer.Node accountNode = fromNode.left;
+        assertNode(accountNode, 'account', 'object', true, true);
+
+        Tokenizer.Node orderByNode = fromNode.right;
+        assertNode(orderByNode, 'order by', 'order by', false, true);
+
+        Tokenizer.Node nameNode = orderByNode.left;
+        assertNode(nameNode, 'name', 'field', false, true);
+
+        Tokenizer.Node idNode2 = nameNode.left;
+        assertNode(idNode2, 'id', 'field', true, true);
+    }
+
+    @IsTest
+    public static void testLimit() {
+        Tokenizer t = new Tokenizer();
+        Tokenizer.Node head = t.parse('SELECT Id FROM Account LIMIT 10');
+
+        assertNode(head, 'select', 'select', false, false);
+
+        Tokenizer.Node idNode = head.left;
+        assertNode(idNode, 'id', 'field', true, true);
+
+        Tokenizer.Node fromNode = head.right;
+        assertNode(fromNode, 'from', 'from', false, false);
+
+        Tokenizer.Node accountNode = fromNode.left;
+        assertNode(accountNode, 'account', 'object', true, true);
+
+        Tokenizer.Node limitNode = fromNode.right;
+        assertNode(limitNode, 'limit', 'limit', false, true);
+
+        Tokenizer.Node valueNode = limitNode.left;
+        assertNode(valueNode, '10', 'number', true, true);
+    }
+
+    @IsTest
+    public static void testForUpdate() {
+        Tokenizer t = new Tokenizer();
+        Tokenizer.Node head = t.parse('SELECT Id FROM Account FOR UPDATE');
+        assertNode(head, 'select', 'select', false, false);
+
+        Tokenizer.Node idNode = head.left;
+        assertNode(idNode, 'id', 'field', true, true);
+
+        Tokenizer.Node fromNode = head.right;
+        assertNode(fromNode, 'from', 'from', false, false);
+
+        Tokenizer.Node accountNode = fromNode.left;
+        assertNode(accountNode, 'account', 'object', true, true);
+
+        Tokenizer.Node forUpdateNode = fromNode.right;
+        assertNode(forUpdateNode, 'for update', 'for update', true, true);
+    }
+
+    @IsTest 
+    public static void testHavingClause() {
+        Tokenizer t = new Tokenizer();
+        Tokenizer.Node head = t.parse('SELECT Id FROM Account GROUP BY Id HAVING COUNT(Id) > 0');
+
+        assertNode(head, 'select', 'select', false, false);
+
+        Tokenizer.Node idNode = head.left;
+        assertNode(idNode, 'id', 'field', true, true);
+
+        Tokenizer.Node fromNode = head.right;
+        assertNode(fromNode, 'from', 'from', false, false);
+
+        Tokenizer.Node accountNode = fromNode.left;
+        assertNode(accountNode, 'account', 'object', true, true);
+
+        Tokenizer.Node groupByNode = fromNode.right;
+        assertNode(groupByNode, 'group by', 'group by', false, false);
+
+        Tokenizer.Node idNode2 = groupByNode.left;
+        assertNode(idNode2, 'id', 'field', true, true);
+
+        Tokenizer.Node havingNode = groupByNode.right;
+        assertNode(havingNode, 'having', 'having', false, true);
+
+        Tokenizer.Node operatorNode = havingNode.left;
+        assertNode(operatorNode, '>', 'operator', false, false);
+
+        Tokenizer.Node aggregateFunctionNode = operatorNode.left;
+        assertNode(aggregateFunctionNode, 'count', 'aggregate function', true, false);
+
+        Tokenizer.Node idNode3 = aggregateFunctionNode.right;
+        assertNode(idNode3, 'id', 'field', true, true);
+
+        Tokenizer.Node valueNode = operatorNode.right;
+        assertNode(valueNode, '0', 'number', true, true);
+
+    }
+
+    @IsTest
+    public static void testAggrFuncs() {
+        List<String> aggrFuncs = new List<String> {
+            'avg',
+            'count',
+            'count_distinct',
+            'min',
+            'max',
+            'sum'
+        };
+        for(String func : aggrFuncs) {
+            Tokenizer t = new Tokenizer();
+            Tokenizer.Node head = t.parse('SELECT ' + func + '(Amount) FROM Opportunity');
+            
+            // we expect this to come back in a particular order
+            Assert.areEqual('select', head.id, 'Expected id to be "select"');
+            Assert.areEqual('select', head.nodeType, 'Expected nodeType to be "select"');
+            Assert.isNotNull(head.left, 'Expected left to be not null');
+            Assert.isNotNull(head.right, 'Expected right to be not null');
+    
+            Tokenizer.Node sumNode = head.left;
+            Assert.areEqual(func, sumNode.id, 'Expected id to be "' + func + '"');
+            Assert.areEqual('aggregate function', sumNode.nodeType, 'Expected nodeType to be "aggregate function"');
+            Assert.isNull(sumNode.left, 'Expected left to be null');
+            Assert.isNotNull(sumNode.right, 'Expected right to be not null');
+    
+            Tokenizer.Node amountNode = sumNode.right;
+            Assert.areEqual('amount', amountNode.id, 'Expected id to be "amount"');
+            Assert.areEqual('field', amountNode.nodeType, 'Expected nodeType to be "field"');
+            Assert.isNull(amountNode.left, 'Expected left to be null');
+            Assert.isNull(amountNode.right, 'Expected right to be null');
+    
+            Tokenizer.Node fromNode = head.right;
+            Assert.areEqual('from', fromNode.id, 'Expected id to be "from"');
+            Assert.areEqual('from', fromNode.nodeType, 'Expected nodeType to be "from"');
+            Assert.isNotNull(fromNode.left, 'Expected left to be not null');
+            Assert.isNull(fromNode.right, 'Expected right to be null');
+    
+            Tokenizer.Node opportunityNode = fromNode.left;
+            Assert.areEqual('opportunity', opportunityNode.id, 'Expected id to be "opportunity"');
+            Assert.areEqual('object', opportunityNode.nodeType, 'Expected nodeType to be "object"');
+            Assert.isNull(opportunityNode.left, 'Expected left to be null');
+            Assert.isNull(opportunityNode.right, 'Expected right to be null');       
+        }
+    }
+
     @IsTest
     public static void testSelectAccount() {
         Tokenizer t = new Tokenizer();
@@ -1095,52 +1345,89 @@ public with sharing class TokenizerTest {
     public static void testAlias() {
         Tokenizer t = new Tokenizer();
         Tokenizer.Node head = t.parse('SELECT COUNT(Id) cnt1 FROM Account GROUP BY Id');
-
-        Assert.areEqual('select', head.id, 'Expected id to be "select"');
-        Assert.areEqual('select', head.nodeType, 'Expected nodeType to be "select"');
-        Assert.isNotNull(head.left, 'Expected left to be not null');
-        Assert.isNotNull(head.right, 'Expected right to not be null');
+        assertNode(head, 'select', 'select', false, false);
 
         Tokenizer.Node countNode = head.left;
-        Assert.areEqual('count', countNode.id, 'Expected id to be "count"');
-        Assert.areEqual('aggregate function', countNode.nodeType, 'Expected nodeType to be "function"');
-        Assert.isNull(countNode.left, 'Expected left to be null');
-        Assert.isNotNull(countNode.right, 'Expected right to not be null');
+        assertNode(countNode, 'count', 'aggregate function', true, false);
 
         Tokenizer.Node idNode = countNode.right;
-        Assert.areEqual('id', idNode.id, 'Expected id to be "id"');
-        Assert.areEqual('field', idNode.nodeType, 'Expected nodeType to be "field"');
-        Assert.isNotNull(idNode.left, 'Expected left to not be null');
-        Assert.isNull(idNode.right, 'Expected right to be null');
+        assertNode(idNode, 'id', 'field', false, true);
 
         Tokenizer.Node aliasNode = idNode.left;
-        Assert.areEqual('cnt1', aliasNode.id, 'Expected id to be "cnt1"');
-        Assert.areEqual('alias', aliasNode.nodeType, 'Expected nodeType to be "alias"');
-        Assert.isNull(aliasNode.left, 'Expected left to be null');
-        Assert.isNull(aliasNode.right, 'Expected right to be null');
+        assertNode(aliasNode, 'cnt1', 'alias', true, true);
 
         Tokenizer.Node fromNode = head.right;
-        Assert.areEqual('from', fromNode.id, 'Expected id to be "from"');
-        Assert.areEqual('from', fromNode.nodeType, 'Expected nodeType to be "from"');
-        Assert.isNotNull(fromNode.left, 'Expected left to be not null');
-        Assert.isNotNull(fromNode.right, 'Expected right to not be null');
+        assertNode(fromNode, 'from', 'from', false, false);
 
         Tokenizer.Node accountNode = fromNode.left;
-        Assert.areEqual('account', accountNode.id, 'Expected id to be "account"');
-        Assert.areEqual('object', accountNode.nodeType, 'Expected nodeType to be "object"');
-        Assert.isNull(accountNode.left, 'Expected left to be null');
-        Assert.isNull(accountNode.right, 'Expected right to be null');
+        assertNode(accountNode, 'account', 'object', true, true);
 
         Tokenizer.Node groupByNode = fromNode.right;
-        Assert.areEqual('group by', groupByNode.id, 'Expected id to be "group by"');
-        Assert.areEqual('group by', groupByNode.nodeType, 'Expected nodeType to be "group by"');
-        Assert.isNotNull(groupByNode.left, 'Expected left to be not null');
-        Assert.isNull(groupByNode.right, 'Expected right to be null');
+        assertNode(groupByNode, 'group by', 'group by', false, true);
 
         Tokenizer.Node idNode2 = groupByNode.left;
-        Assert.areEqual('id', idNode2.id, 'Expected id to be "id"');
-        Assert.areEqual('field', idNode2.nodeType, 'Expected nodeType to be "field"');
-        Assert.isNull(idNode2.left, 'Expected left to be null');
-        Assert.isNull(idNode2.right, 'Expected right to be null');
+        assertNode(idNode2, 'id', 'field', true, true);
+    }
+
+    @IsTest
+    public static void testParseValueList() {
+        Tokenizer t = new Tokenizer();
+
+        Tokenizer.Node head = t.parse('SELECT Id FROM Contact WHERE FirstName IN (\'test\', \'test2\')');
+        assertNode(head, 'select', 'select', false, false);
+
+        Tokenizer.Node idNode = head.left;
+        assertNode(idNode, 'id', 'field', true, true);
+
+        Tokenizer.Node fromNode = head.right;
+        assertNode(fromNode, 'from', 'from', false, false);
+
+        Tokenizer.Node contactNode = fromNode.left;
+        assertNode(contactNode, 'contact', 'object', true, true);
+
+        Tokenizer.Node whereNode = fromNode.right;
+        assertNode(whereNode, 'where', 'where', false, true);
+
+        Tokenizer.Node inNode = whereNode.left;
+        assertNode(inNode, 'in', 'operator', false, false);
+
+        Tokenizer.Node firstNameNode = inNode.left;
+        assertNode(firstNameNode, 'firstname', 'field', true, true);
+
+        Tokenizer.Node valueListNode = inNode.right;
+        assertNode(valueListNode, 'value list', 'value list', false, true);
+
+        Tokenizer.Node valueNode = valueListNode.left;
+        assertNode(valueNode, 'test', 'string', false, true);
+
+        Tokenizer.Node valueListNode2 = valueNode.left;
+        assertNode(valueListNode2, 'value list', 'value list', false, true);
+
+        Tokenizer.Node valueNode2 = valueListNode2.left;
+        assertNode(valueNode2, 'test2', 'string', true, true);
+    }
+
+    @IsTest
+    public static void testSingularCount() {
+        Tokenizer t = new Tokenizer();
+        Tokenizer.Node head = t.parse('SELECT COUNT() FROM Account');
+        assertNode(head, 'select', 'select', false, false);
+
+        Tokenizer.Node countNode = head.left;
+        assertNode(countNode, 'count', 'aggregate function', true, true);
+
+        Tokenizer.Node fromNode = head.right;
+        assertNode(fromNode, 'from', 'from', false, true);
+
+        Tokenizer.Node accountNode = fromNode.left;
+        assertNode(accountNode, 'account', 'object', true, true);
+
+    }
+
+    private static void assertNode(Tokenizer.Node node, String id, String nodeType, Boolean isLeftNull, Boolean isRightNull) {
+        Assert.areEqual(id, node.id, 'Expected id to be "' + id + '"');
+        Assert.areEqual(nodeType, node.nodeType, 'Expected nodeType to be "' + nodeType + '"');
+        Assert.areEqual(isLeftNull, node.left == null, 'Expected left to be ' + (isLeftNull ? 'null' : 'not null'));
+        Assert.areEqual(isRightNull, node.right == null, 'Expected right to be ' + (isRightNull ? 'null' : 'not null'));
     }
 }
