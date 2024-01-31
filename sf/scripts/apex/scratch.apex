@@ -6,5 +6,5 @@ MockDatabase mockDb = new MockDatabase();
 List<Account> acctList = new List<Account>{a, b, c, d};
 mockDb.doInsert(acctList);
 
-List<Account> queriedAccts = (List<Account>) mockDb.query('SELECT Id, Name, NumberOfEmployees FROM Account WHERE NumberOfEmployees > 5 AND NumberOfEmployees < 20');
+List<Account> queriedAccts = (List<Account>) mockDb.query('SELECT Id, Name, NumberOfEmployees FROM Account WHERE NumberOfEmployees > 5 AND NumberOfEmployees < 20 AND NumberOfEmployees >= 10 AND NumberOfEmployees <= 15 AND NumberOfEmployees != 20 AND NumberOfEmployees IN (5, 10, 15)');
 System.debug(queriedAccts.size());
