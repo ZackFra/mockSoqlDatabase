@@ -614,4 +614,56 @@ public with sharing class MockDatabaseTest {
         List<Account> queriedAccts = (List<Account>) mockDb.query('SELECT Id, Name, NumberOfEmployees FROM Account WHERE NumberOfEmployees > 5 AND NumberOfEmployees < 20 AND NumberOfEmployees >= 10 AND NumberOfEmployees <= 15 AND NumberOfEmployees != 20 AND NumberOfEmployees IN (5, 10, 15)');
         Assert.areEqual(2, queriedAccts.size(), 'Incorrect number of accounts queried');
     }
+
+    @IsTest
+    public static void testWhereClauseComparisonNonString() {
+            
+            Account a = new Account(Name = 'Test', NumberOfEmployees = 5);
+            Account b = new Account(Name = 'Test2', NumberOfEmployees = 10);
+            Account c = new Account(Name = 'Test3', NumberOfEmployees = 15);
+            Account d = new Account(Name = 'Not Test', NumberOfEmployees = 20);
+            MockDatabase mockDb = new MockDatabase();
+            List<Account> acctList = new List<Account>{a, b, c, d};
+            mockDb.doInsert(acctList);
+    
+            List<Account> queriedAccts = (List<Account>) mockDb.query('SELECT Id, Name, NumberOfEmployees FROM Account WHERE NumberOfEmployees = 5');
+            Assert.areEqual(1, queriedAccts.size(), 'Incorrect number of accounts queried');
+    }
+
+    @IsTest
+    public static void testWhereClauseNotIn() {
+                
+        Account a = new Account(Name = 'Test', NumberOfEmployees = 5);
+        Account b = new Account(Name = 'Test2', NumberOfEmployees = 10);
+        Account c = new Account(Name = 'Test3', NumberOfEmployees = 15);
+        Account d = new Account(Name = 'Not Test', NumberOfEmployees = 20);
+        MockDatabase mockDb = new MockDatabase();
+        List<Account> acctList = new List<Account>{a, b, c, d};
+        mockDb.doInsert(acctList);
+
+        List<Account> queriedAccts = (List<Account>) mockDb.query('SELECT Id, Name, NumberOfEmployees FROM Account WHERE NumberOfEmployees NOT IN (5, 10, 15)');
+        Assert.areEqual(1, queriedAccts.size(), 'Incorrect number of accounts queried');
+    }
+
+
+    @IsTest
+    public static void testWhereClauseSubQuery() {          
+        Account a = new Account(Name = 'Test', NumberOfEmployees = 5);
+        Account b = new Account(Name = 'Test2', NumberOfEmployees = 10);
+        Account c = new Account(Name = 'Test3', NumberOfEmployees = 15);
+        Account d = new Account(Name = 'Not Test', NumberOfEmployees = 20);
+        MockDatabase mockDb = new MockDatabase();
+        List<Account> acctList = new List<Account>{a, b, c, d};
+        mockDb.doInsert(acctList);
+
+        Contact con = new Contact(
+            FirstName = 'Steve',
+            LastName = 'Banner',
+            AccountId = a.Id
+        );
+        mockDb.doInsert(con);
+
+        List<Account> queriedAccts = (List<Account>) mockDb.query('SELECT Id, Name, NumberOfEmployees FROM Account WHERE Id IN (SELECT AccountId FROM Contact WHERE Account.Name = \'Test\')');
+        Assert.areEqual(1, queriedAccts.size(), 'Incorrect number of accounts queried');
+    }
 }

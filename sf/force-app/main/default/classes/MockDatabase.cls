@@ -29,7 +29,7 @@ public with sharing class MockDatabase {
         Schema.DescribeSObjectResult fieldDsor = sObjType.getDescribe();
         String fieldApiName = null;
         for(Schema.SObjectField field : fieldDsor.fields.getMap().values()) {
-            if(field.getDescribe().getName() == fieldName) {
+            if(field.getDescribe().getName().toLowerCase() == fieldName) {
                 return field.getDescribe().getName();
             }
         }
@@ -157,11 +157,11 @@ public with sharing class MockDatabase {
                 throw new QueryException('Subquery must select only one field');
             }
 
-            Tokenizer.Node fromNode = subquerySelectNode.right;
-            Tokenizer.Node objNode = fromNode.left;
+            Tokenizer.Node subqueryFromNode = subquerySelectNode.right;
+            Tokenizer.Node subqueryObjNode = subqueryFromNode.left;
 
             String fieldName = subqueryFieldNode.id;
-            String objName = objNode.id;
+            String objName = subqueryObjNode.id;
             String objApiName = getSObjectApiName(objName);
             Type t = type.forName(objApiName);
             if(t == null) {
@@ -195,8 +195,8 @@ public with sharing class MockDatabase {
             if(childObjFieldType != Schema.DisplayType.REFERENCE && childObjFieldType != Schema.DisplayType.ID) {
                 throw new QueryException('Subquery must select an ID field');
             }
-            String parentFieldApiName = getFieldApiName(sObj.getSObjectType(), fieldName);
-            Schema.SObjectField parentField = sObj.getSObjectType().getDescribe().fields.getMap().get(parentFieldApiName);
+            String parentFieldApiName = getFieldApiName(childObj.getSObjectType(), fieldName);
+            Schema.SObjectField parentField = childObj.getSObjectType().getDescribe().fields.getMap().get(parentFieldApiName);
             if(parentField == null) {
                 throw new QueryException('Invalid field name: ' + fieldName);
             }
@@ -274,16 +274,10 @@ public with sharing class MockDatabase {
         
         switch on operatorNode.id {
             when '=' {
-                if(sObjectFieldValue instanceof String) {
-                    return ((String) sObjectFieldValue).toLowerCase() == ((String)fieldValue).toLowerCase();
-                }
-                return sObjectFieldValue == fieldValue;
+                return (String.valueOf(sObjectFieldValue).toLowerCase() == ((String)fieldValue).toLowerCase());
             }
             when '!=', '<>' {
-                if(sObjectFieldValue instanceof String) {
-                    return ((String) sObjectFieldValue).toLowerCase() != ((String)fieldValue).toLowerCase();
-                }
-                return sObjectFieldValue != fieldValue;
+                return (String.valueOf(sObjectFieldValue).toLowerCase() != ((String)fieldValue).toLowerCase());
             }
 
             when 'like' {
@@ -312,11 +306,8 @@ public with sharing class MockDatabase {
                         values[i] = (Object) ((String) values[i]).toLowerCase();
                     }
                 }
-                if(sObjectFieldValue instanceof String) {
-                    String nodeValue = ((String) sObjectFieldValue).toLowerCase();
-                    return !values.contains(nodeValue);
-                }
-                return !values.contains(sObjectFieldValue);
+                String nodeValue = String.valueOf(sObjectFieldValue).toLowerCase();
+                return !values.contains(nodeValue);
             }
             when '>' {
                 if(sObjectFieldValue instanceOf Date) {
