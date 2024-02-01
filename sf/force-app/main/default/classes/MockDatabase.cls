@@ -200,7 +200,7 @@ public with sharing class MockDatabase {
             if(parentField == null) {
                 throw new QueryException('Invalid field name: ' + fieldName);
             }
-
+            
             Schema.DisplayType parentFieldType = parentField.getDescribe().getType();
             String childObjFieldName = childObjField.getDescribe().getName();
             String childObjApiName = childObj.getSObjectType().getDescribe().getName();
@@ -241,6 +241,7 @@ public with sharing class MockDatabase {
         );
     }
 
+
     private Boolean isWhereCompareConditionMet(Tokenizer.Node operatorNode, sObject sObj, Map<String, Object> params) {
         Tokenizer.Node fieldNode = operatorNode.left;
         Tokenizer.Node valueNode = operatorNode.right;
@@ -271,200 +272,10 @@ public with sharing class MockDatabase {
             parentRecord = this.db.get(parentObjApiName).get(parentRecord.Id);
             sObjectFieldValue = parentRecord.get(finalField);
         }
-        
-        switch on operatorNode.id {
-            when '=' {
-                return (String.valueOf(sObjectFieldValue).toLowerCase() == ((String)fieldValue).toLowerCase());
-            }
-            when '!=', '<>' {
-                return (String.valueOf(sObjectFieldValue).toLowerCase() != ((String)fieldValue).toLowerCase());
-            }
 
-            when 'like' {
-                String regexPattern = String.valueOf(fieldValue)
-                    .toLowerCase()
-                    .replaceAll('%', '.*')
-                    .replaceAll('_', '.');
-                Pattern regex = Pattern.compile(regexPattern);
-                Matcher regexMatcher = regex.matcher(String.valueOf(sObjectFieldValue).toLowerCase());
-                return regexMatcher.matches();
-            }
-            when 'in' {
-                List<Object> values = (List<Object>) fieldValue;
-                for(Integer i = 0; i < values.size(); i++) {
-                    if(values[i] instanceof String) {
-                        values[i] = (Object) ((String) values[i]).toLowerCase();
-                    }
-                }
-                String nodeValue = String.valueOf(sObjectFieldValue).toLowerCase();
-                return values.contains(nodeValue);
-            }
-            when 'not in' {
-                List<Object> values = (List<Object>) fieldValue;
-                for(Integer i = 0; i < values.size(); i++) {
-                    if(values[i] instanceof String) {
-                        values[i] = (Object) ((String) values[i]).toLowerCase();
-                    }
-                }
-                String nodeValue = String.valueOf(sObjectFieldValue).toLowerCase();
-                return !values.contains(nodeValue);
-            }
-            when '>' {
-                if(sObjectFieldValue instanceOf Date) {
-                    Date fieldDate = (Date) fieldValue;
-                    Date sObjDate = (Date) sObjectFieldValue;
-                    return sObjDate > fieldDate;
-                } else if(sObjectFieldValue instanceOf DateTime) {
-                    DateTime fieldDateTime = (DateTime) fieldValue;
-                    DateTime sObjDateTime = (DateTime) sObjectFieldValue;
-                    return sObjDateTime > fieldDateTime;
-                } else if(sObjectFieldValue instanceOf Time) {
-                    Time fieldTime = (Time) fieldValue;
-                    Time sObjTime = (Time) sObjectFieldValue;
-                    return sObjTime > fieldTime;
-                } else if(sObjectFieldValue instanceOf Integer) {
-                    Integer fieldInt = Integer.valueOf((String)fieldValue);
-                    Integer sObjInt = (Integer) sObjectFieldValue;
-                    return sObjInt > fieldInt;
-                } else if(sObjectFieldValue instanceOf Decimal) {
-                    Decimal fieldDec = Decimal.valueOf((String)fieldValue);
-                    Decimal sObjDec = (Decimal) sObjectFieldValue;
-                    return sObjDec > fieldDec;
-                } else if(sObjectFieldValue instanceOf Double) {
-                    Double fieldDouble = Double.valueOf((String)fieldValue);
-                    Double sObjDouble = (Double) sObjectFieldValue;
-                    return sObjDouble > fieldDouble;
-                } else if(sObjectFieldValue instanceOf Long) {
-                    Long fieldLong = Long.valueOf((String) fieldValue);
-                    Long sObjLong = (Long) sObjectFieldValue;
-                    return sObjLong > fieldLong;
-                } else if(sObjectFieldValue instanceOf String) {
-                    String fieldString = ((String) fieldValue).toLowerCase();
-                    String sObjString = ((String) sObjectFieldValue).toLowerCase();
-                    return sObjString > fieldString;
-                } else {
-                    throw new QueryException('Invalid field type');
-                }
-            }
-            when '<' {
-                if(sObjectFieldValue instanceOf Date) {
-                    Date fieldDate = (Date) fieldValue;
-                    Date sObjDate = (Date) sObjectFieldValue;
-                    return sObjDate.daysBetween(fieldDate) < 0;
-                } else if(sObjectFieldValue instanceOf DateTime) {
-                    DateTime fieldDateTime = (DateTime) fieldValue;
-                    DateTime sObjDateTime = (DateTime) sObjectFieldValue;
-                    return sObjDateTime < fieldDateTime;
-                } else if(sObjectFieldValue instanceOf Time) {
-                    Time fieldTime = (Time) fieldValue;
-                    Time sObjTime = (Time) sObjectFieldValue;
-                    return sObjTime < fieldTime;
-                } else if(sObjectFieldValue instanceOf Integer) {
-                    Integer fieldInt = Integer.valueOf( (String) fieldValue);
-                    Integer sObjInt = (Integer) sObjectFieldValue;
-                    return sObjInt < fieldInt;
-                } else if(sObjectFieldValue instanceOf Decimal) {
-                    Decimal fieldDec = Decimal.valueOf( (String) fieldValue);
-                    Decimal sObjDec = (Decimal) sObjectFieldValue;
-                    return sObjDec < fieldDec;
-                } else if(sObjectFieldValue instanceOf Double) {
-                    Double fieldDouble = Double.valueOf((String) fieldValue);
-                    Double sObjDouble = (Double) sObjectFieldValue;
-                    return sObjDouble < fieldDouble;
-                } else if(sObjectFieldValue instanceOf Long) {
-                    Long fieldLong = Long.valueOf( (String) fieldValue);
-                    Long sObjLong = (Long) sObjectFieldValue;
-                    return sObjLong < fieldLong;
-                } else if(sObjectFieldValue instanceOf String) {
-                    String fieldString = ((String) fieldValue).toLowerCase();
-                    String sObjString = ((String) sObjectFieldValue).toLowerCase();
-                    return sObjString < fieldString;
-                } else {
-                    throw new QueryException('Invalid field type');
-                }
-            }
-            when '>=' {
-                if(sObjectFieldValue instanceOf Date) {
-                    Date fieldDate = (Date) fieldValue;
-                    Date sObjDate = (Date) sObjectFieldValue;
-                    return sObjDate >= fieldDate;
-                } else if(sObjectFieldValue instanceOf DateTime) {
-                    DateTime fieldDateTime = (DateTime) fieldValue;
-                    DateTime sObjDateTime = (DateTime) sObjectFieldValue;
-                    return sObjDateTime >= fieldDateTime;
-                } else if(sObjectFieldValue instanceOf Time) {
-                    Time fieldTime = (Time) fieldValue;
-                    Time sObjTime = (Time) sObjectFieldValue;
-                    return sObjTime >= fieldTime;
-                } else if(sObjectFieldValue instanceOf Integer) {
-                    Integer fieldInt = Integer.valueOf( (String) fieldValue);
-                    Integer sObjInt = (Integer) sObjectFieldValue;
-                    return sObjInt >= fieldInt;
-                } else if(sObjectFieldValue instanceOf Decimal) {
-                    Decimal fieldDec = Decimal.valueOf( (String) fieldValue);
-                    Decimal sObjDec = (Decimal) sObjectFieldValue;
-                    return sObjDec >= fieldDec;
-                } else if(sObjectFieldValue instanceOf Double) {
-                    Double fieldDouble = Double.valueOf( (String) fieldValue);
-                    Double sObjDouble = (Double) sObjectFieldValue;
-                    return sObjDouble >= fieldDouble;
-                } else if(sObjectFieldValue instanceOf Long) {
-                    Long fieldLong = Long.valueOf( (String) fieldValue);
-                    Long sObjLong = (Long) sObjectFieldValue;
-                    return sObjLong >= fieldLong;
-                } else if(sObjectFieldValue instanceOf String) {
-                    String fieldString = ((String) fieldValue).toLowerCase();
-                    String sObjString = ((String) sObjectFieldValue).toLowerCase();
-                    return sObjString >= fieldString;
-                } else {
-                    throw new QueryException('Invalid field type');
-                }
-            } when '<=' {
-                if(sObjectFieldValue instanceOf Date) {
-                    Date fieldDate = (Date) fieldValue;
-                    Date sObjDate = (Date) sObjectFieldValue;
-                    return sObjDate <= fieldDate;
-                } else if(sObjectFieldValue instanceOf DateTime) {
-                    DateTime fieldDateTime = (DateTime) fieldValue;
-                    DateTime sObjDateTime = (DateTime) sObjectFieldValue;
-                    return sObjDateTime <= fieldDateTime;
-                } else if(sObjectFieldValue instanceOf Time) {
-                    Time fieldTime = (Time) fieldValue;
-                    Time sObjTime = (Time) sObjectFieldValue;
-                    return sObjTime <= fieldTime;
-                } else if(sObjectFieldValue instanceOf Integer) {
-                    Integer fieldInt = Integer.valueOf( (String) fieldValue);
-                    Integer sObjInt = (Integer) sObjectFieldValue;
-                    return sObjInt <= fieldInt;
-                } else if(sObjectFieldValue instanceOf Decimal) {
-                    Decimal fieldDec = Decimal.valueOf( (String) fieldValue);
-                    Decimal sObjDec = (Decimal) sObjectFieldValue;
-                    return sObjDec <= fieldDec;
-                } else if(sObjectFieldValue instanceOf Double) {
-                    Double fieldDouble = Double.valueOf( (String) fieldValue);
-                    Double sObjDouble = (Double) sObjectFieldValue;
-                    return sObjDouble <= fieldDouble;
-                } else if(sObjectFieldValue instanceOf Long) {
-                    Long fieldLong = Long.valueOf( (String) fieldValue);
-                    Long sObjLong = (Long) sObjectFieldValue;
-                    return sObjLong <= fieldLong;
-                } else if(sObjectFieldValue instanceOf String) {
-                    String fieldString = ((String) fieldValue).toLowerCase();
-                    String sObjString = ((String) sObjectFieldValue).toLowerCase();
-                    return sObjString <= fieldString;
-                } else {
-                    throw new QueryException('Invalid field type');
-                }
-            } when 'includes' {
-                List<Object> values = (List<Object>) fieldValue;
-                return values.contains(sObjectFieldValue);
-            } when 'excludes' {
-                List<Object> values = (List<Object>) fieldValue;
-                return !values.contains(sObjectFieldValue);
-            }
-        }
-
-        throw new QueryException('Invalid where condition');
+        MockDatabaseUtils.OperatorHandlerFactory handlerFactory = new MockDatabaseUtils.OperatorHandlerFactory();
+        MockDatabaseUtils.OperatorHandler handler = handlerFactory.getHandler(operatorNode.id);
+        return handler.handle(sObjectFieldValue, fieldValue);
     }
 
     private Boolean isConditionalSubExprMet(Tokenizer.Node subExprNode, sObject sObj, Map<String, Object> params) {

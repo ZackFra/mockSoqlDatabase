@@ -645,7 +645,6 @@ public with sharing class MockDatabaseTest {
         Assert.areEqual(1, queriedAccts.size(), 'Incorrect number of accounts queried');
     }
 
-
     @IsTest
     public static void testWhereClauseSubQuery() {          
         Account a = new Account(Name = 'Test', NumberOfEmployees = 5);
@@ -666,4 +665,48 @@ public with sharing class MockDatabaseTest {
         List<Account> queriedAccts = (List<Account>) mockDb.query('SELECT Id, Name, NumberOfEmployees FROM Account WHERE Id IN (SELECT AccountId FROM Contact WHERE Account.Name = \'Test\')');
         Assert.areEqual(1, queriedAccts.size(), 'Incorrect number of accounts queried');
     }
+
+    @IsTest
+    public static void testSumFunc() {
+        Account a = new Account(Name = 'Test', NumberOfEmployees = 5);
+        Account b = new Account(Name = 'Test2', NumberOfEmployees = 10);
+        Account c = new Account(Name = 'Test3', NumberOfEmployees = 15);
+        Account d = new Account(Name = 'Not Test', NumberOfEmployees = 20);
+        MockDatabase mockDb = new MockDatabase();
+        List<Account> acctList = new List<Account>{a, b, c, d};
+        mockDb.doInsert(acctList);
+
+        List<Aggregate> queriedAccts = (List<Aggregate>) mockDb.query('SELECT SUM(NumberOfEmployees) FROM Account');
+        Decimal sum = (Decimal) queriedAccts[0].get('expr0');
+        Assert.areEqual(50, sum, 'Incorrect sum');
+    }
+
+    @IsTest
+    public static void testSingulerCount() {
+        Account a = new Account(Name = 'Test', NumberOfEmployees = 5);
+        Account b = new Account(Name = 'Test2', NumberOfEmployees = 10);
+        Account c = new Account(Name = 'Test3', NumberOfEmployees = 15);
+        Account d = new Account(Name = 'Not Test', NumberOfEmployees = 20);
+        MockDatabase mockDb = new MockDatabase();
+        List<Account> acctList = new List<Account>{a, b, c, d};
+        mockDb.doInsert(acctList);
+
+        Integer count = (Integer) mockDb.query('SELECT COUNT() FROM Account');
+        Assert.areEqual(4, count, 'Incorrect count');
+    }
+
+    @IsTest
+    public static void testCountWithGroupBy() {
+        Account a = new Account(Name = 'Test', NumberOfEmployees = 5);
+        Account b = new Account(Name = 'Test2', NumberOfEmployees = 10);
+        Account c = new Account(Name = 'Test3', NumberOfEmployees = 15);
+        Account d = new Account(Name = 'Not Test', NumberOfEmployees = 20);
+        MockDatabase mockDb = new MockDatabase();
+        List<Account> acctList = new List<Account>{a, b, c, d};
+        mockDb.doInsert(acctList);
+
+        List<Aggregate> queriedAccts = (List<Aggregate>) mockDb.query('SELECT COUNT(Id) FROM Account GROUP BY Name');
+        Assert.areEqual(4, queriedAccts.size(), 'Incorrect count');
+    }
+    
 }
