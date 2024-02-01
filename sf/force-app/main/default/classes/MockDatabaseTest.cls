@@ -708,5 +708,20 @@ public with sharing class MockDatabaseTest {
         List<Aggregate> queriedAccts = (List<Aggregate>) mockDb.query('SELECT COUNT(Id) FROM Account GROUP BY Name');
         Assert.areEqual(4, queriedAccts.size(), 'Incorrect count');
     }
+
+    @IsTest
+    public static void testCountDistinct() {
+        Account a = new Account(Name = 'Test', NumberOfEmployees = 5);
+        Account b = new Account(Name = 'Test2', NumberOfEmployees = 10);
+        Account c = new Account(Name = 'Test3', NumberOfEmployees = 15);
+        Account d = new Account(Name = 'Not Test', NumberOfEmployees = 20);
+        MockDatabase mockDb = new MockDatabase();
+        List<Account> acctList = new List<Account>{a, b, c, d};
+        mockDb.doInsert(acctList);
+
+        List<Aggregate> queriedAccts = (List<Aggregate>) mockDb.query('SELECT COUNT_DISTINCT(Name) FROM Account');
+        Integer count = (Integer) queriedAccts[0].get('expr0');
+        Assert.areEqual(4, count, 'Incorrect count');
+    }
     
 }
