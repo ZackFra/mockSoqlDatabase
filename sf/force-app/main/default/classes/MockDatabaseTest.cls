@@ -723,5 +723,101 @@ public with sharing class MockDatabaseTest {
         Integer count = (Integer) queriedAccts[0].get('expr0');
         Assert.areEqual(4, count, 'Incorrect count');
     }
+
+    @IsTest
+    public static void testMinFunc() {
+        Account a = new Account(Name = 'Test', NumberOfEmployees = 5);
+        Account b = new Account(Name = 'Test2', NumberOfEmployees = 10);
+        Account c = new Account(Name = 'Test3', NumberOfEmployees = 15);
+        Account d = new Account(Name = 'Not Test', NumberOfEmployees = 20);
+        MockDatabase mockDb = new MockDatabase();
+        List<Account> acctList = new List<Account>{a, b, c, d};
+        mockDb.doInsert(acctList);
+
+        List<Aggregate> queriedAccts = (List<Aggregate>) mockDb.query('SELECT MIN(NumberOfEmployees) FROM Account');
+        Decimal min = (Decimal) queriedAccts[0].get('expr0');
+        Assert.areEqual(5, min, 'Incorrect min');
+    }
+
+    @IsTest
+    public static void testMaxFunc() {
+        Account a = new Account(Name = 'Test', NumberOfEmployees = 5);
+        Account b = new Account(Name = 'Test2', NumberOfEmployees = 10);
+        Account c = new Account(Name = 'Test3', NumberOfEmployees = 15);
+        Account d = new Account(Name = 'Not Test', NumberOfEmployees = 20);
+        MockDatabase mockDb = new MockDatabase();
+        List<Account> acctList = new List<Account>{a, b, c, d};
+        mockDb.doInsert(acctList);
+
+        List<Aggregate> queriedAccts = (List<Aggregate>) mockDb.query('SELECT MAX(NumberOfEmployees) FROM Account');
+        Decimal max = (Decimal) queriedAccts[0].get('expr0');
+        Assert.areEqual(20, max, 'Incorrect max');
+    }
+
+    @IsTest
+    public static void testSumWithAlias() {
+        Account a = new Account(Name = 'Test', NumberOfEmployees = 5);
+        Account b = new Account(Name = 'Test2', NumberOfEmployees = 10);
+        Account c = new Account(Name = 'Test3', NumberOfEmployees = 15);
+        Account d = new Account(Name = 'Not Test', NumberOfEmployees = 20);
+        MockDatabase mockDb = new MockDatabase();
+        List<Account> acctList = new List<Account>{a, b, c, d};
+        mockDb.doInsert(acctList);
+
+        List<Aggregate> queriedAccts = (List<Aggregate>) mockDb.query('SELECT SUM(NumberOfEmployees) sum FROM Account');
+        Decimal sum = (Decimal) queriedAccts[0].get('sum');
+        Assert.areEqual(50, sum, 'Incorrect sum');
+    }
+
+    @IsTest
+    public static void testAvgFunc() {
+        Account a = new Account(Name = 'Test', NumberOfEmployees = 5);
+        Account b = new Account(Name = 'Test2', NumberOfEmployees = 10);
+        Account c = new Account(Name = 'Test3', NumberOfEmployees = 15);
+        Account d = new Account(Name = 'Not Test', NumberOfEmployees = 20);
+        MockDatabase mockDb = new MockDatabase();
+        List<Account> acctList = new List<Account>{a, b, c, d};
+        mockDb.doInsert(acctList);
+
+        List<Aggregate> queriedAccts = (List<Aggregate>) mockDb.query('SELECT AVG(NumberOfEmployees) FROM Account');
+        Decimal avg = (Decimal) queriedAccts[0].get('expr0');
+        Assert.areEqual(12.5, avg, 'Incorrect avg');
+    }
+
+    @IsTest 
+    public static void testSumWithGroupBy() {
+        Account a = new Account(Name = 'Test', NumberOfEmployees = 5);
+        Account b = new Account(Name = 'Test2', NumberOfEmployees = 10);
+        Account c = new Account(Name = 'Test3', NumberOfEmployees = 5);
+        Account d = new Account(Name = 'Not Test', NumberOfEmployees = 20);
+        MockDatabase mockDb = new MockDatabase();
+        List<Account> acctList = new List<Account>{a, b, c, d};
+        mockDb.doInsert(acctList);
+
+        List<Aggregate> queriedAccts = (List<Aggregate>) mockDb.query('SELECT NumberOfEmployees, SUM(NumberOfEmployees) FROM Account GROUP BY NumberOfEmployees');
+        Assert.areEqual(3, queriedAccts.size(), 'Incorrect count');
+    }
     
+    @IsTest
+    public static void testGroupBySelectBadField() {
+        Account a = new Account(Name = 'Test', NumberOfEmployees = 5);
+        Account b = new Account(Name = 'Test2', NumberOfEmployees = 10);
+        Account c = new Account(Name = 'Test3', NumberOfEmployees = 5);
+        Account d = new Account(Name = 'Not Test', NumberOfEmployees = 20);
+        MockDatabase mockDb = new MockDatabase();
+        List<Account> acctList = new List<Account>{a, b, c, d};
+        mockDb.doInsert(acctList);
+        Boolean exceptionThrown = false;
+        try {
+            List<Aggregate> queriedAccts = (List<Aggregate>) mockDb.query('SELECT Name, SUM(NumberOfEmployees) FROM Account GROUP BY NumberOfEmployees');
+        } catch(QueryException e) {
+            Assert.isTrue(
+                e.getMessage().contains('Field must be grouped or aggregated'),
+                'Expected exception message to contain \'Field must be grouped or aggregated\''
+            );
+            exceptionThrown = true;
+        } finally {
+            Assert.isTrue(exceptionThrown, 'Expected exception to be thrown');
+        }
+    }
 }
