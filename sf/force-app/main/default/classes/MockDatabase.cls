@@ -700,6 +700,7 @@ public with sharing class MockDatabase {
                         throw new QueryException('Field must be grouped or aggregated: ' + currSelectNode.id);
                     }
 
+                    // check for duplicate aliases
                     Tokenizer.Node aliasNode = currSelectNode.right;
                     String alias;
                     if(aliasNode != null) {
@@ -713,8 +714,7 @@ public with sharing class MockDatabase {
 
                     Integer initAliasSize = aliases.size();
                     aliases.add(alias);
-                    System.debug(aliases);
-                    System.debug(aliases.size());
+                    
                     if(initAliasSize == aliases.size()) {
                         throw new QueryException('Duplicate alias: ' + alias);
                     }
