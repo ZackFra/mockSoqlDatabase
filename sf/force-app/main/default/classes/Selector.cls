@@ -1,11 +1,11 @@
 public with sharing class Selector {
     public static Selector db;
 	
-    public List<Object> query(String queryString) {
+    public Object query(String queryString) {
         return Database.query(queryString);
     }
 
-    public List<Object> query(String queryString, Map<String, Object> parameters) {
+    public Object query(String queryString, Map<String, Object> parameters) {
         return Database.queryWithBinds(queryString, parameters, AccessLevel.USER_MODE);
     }
     

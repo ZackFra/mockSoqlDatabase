@@ -1,4 +1,4 @@
-public with sharing class Tokenizer {
+public with sharing class Lexer {
     
     public class Node {
         private Node(String nodeType, string id, Node left, Node right) {
@@ -198,7 +198,7 @@ public with sharing class Tokenizer {
     private Intermediary parseSelectExpr(String query) {
         query = ParserUtils.skipWhitespace(query);
         Intermediary selectExpr;
-        
+
         if(isAggregateFunction(query)) {
             selectExpr = parseAggregateFunc(query);
             query = selectExpr.subquery;
@@ -217,7 +217,7 @@ public with sharing class Tokenizer {
                 query
             );
         } else {
-            selectExpr = parseFieldList(query);
+            selectExpr = parseFieldListWithAliases(query);
             query = selectExpr.subquery;
         }
         
@@ -235,14 +235,72 @@ public with sharing class Tokenizer {
         }
         return selectExpr;
     }
+
+    // @description : Parses a list of fields, with optional aliases
+    // @return : Intermediary, the head of the list of fields
+    private Intermediary parseFieldListWithAliases(String query) {
+        query = ParserUtils.skipWhitespace(query);
+        Intermediary nextItem;
+        if(isAggregateFunction(query)) {
+            nextItem = parseAggregateFunc(query);
+            query = nextItem.subquery;
+        } else {
+            nextItem = parseField(query);
+            query = ParserUtils.skipWhitespace(nextItem.subquery);
+        }
+        
+        String nextChar = lookahead(query, 1);
+        String nextCharAfterThat = lookahead(ParserUtils.skipWhitespace(query.subString(1)), 1);
+        Boolean isAggrFuncNext = isAggregateFunction(ParserUtils.skipWhitespace(query.subString(1)));
+        
+        if(nextChar == ',' && nextCharAfterThat != '(' && !isAggrFuncNext) {
+            query = query.subString(1);
+            Intermediary restOfList = parseFieldListWithAliases(query);
+            nextItem.head.left = restOfList.head;
+            nextItem.subquery = restOfList.subquery;
+        }
+
+        Intermediary alias = null;
+        query = ParserUtils.skipWhitespace(nextItem.subquery);
+        if(lookahead(query, 5) != 'from ' && lookahead(query, 1) != ',') {
+            // NOTE: alias might still be null after parsing, that's ok
+            alias = parseAlias(query);
+        }
+        
+        if(alias != null) {
+            nextItem.head.right = alias.head;
+            query = alias.subquery;
+            nextItem.subquery = query;
+        }
+
+        query = ParserUtils.skipWhitespace(nextItem.subquery);
+        nextChar = lookahead(query, 1);
+        nextCharAfterThat = lookahead(ParserUtils.skipWhitespace(query.subString(1)), 1);
+        isAggrFuncNext = isAggregateFunction(ParserUtils.skipWhitespace(query.subString(1)));
+        
+        if(nextChar == ',' && nextCharAfterThat != '(' && !isAggrFuncNext) {
+            query = query.subString(1);
+            Intermediary restOfList = parseFieldListWithAliases(query);
+            nextItem.head.left = restOfList.head;
+            nextItem.subquery = restOfList.subquery;
+        }
+
+
+        return nextItem;        
+    }
     
     private Intermediary parseFieldList(String query) {
         query = ParserUtils.skipWhitespace(query);
-        
-        Intermediary field = parseField(query);
-        query = ParserUtils.skipWhitespace(field.subquery);
-        if(query.length() == 0) {
-            return field;
+        Intermediary nextItem;
+        if(isAggregateFunction(query)) {
+            nextItem = parseAggregateFunc(query);
+            query = nextItem.subquery;
+        } else {
+            nextItem = parseField(query);
+            query = ParserUtils.skipWhitespace(nextItem.subquery);
+            if(query.length() == 0) {
+                return nextItem;
+            }
         }
         
         String nextChar = lookahead(query, 1);
@@ -251,10 +309,10 @@ public with sharing class Tokenizer {
         if(nextChar == ',' && nextCharAfterThat != '(') {
             query = query.subString(1);
             Intermediary restOfList = parseFieldList(query);
-            field.head.left = restOfList.head;
-            field.subquery = restOfList.subquery;
+            nextItem.head.left = restOfList.head;
+            nextItem.subquery = restOfList.subquery;
         }
-        return field;
+        return nextItem;
     }
 
     private Boolean isAggregateFunction(String query) {
@@ -265,7 +323,8 @@ public with sharing class Tokenizer {
         Boolean isMin = isLongEnough && lookahead(query, 3) == 'min';
         Boolean isMax = isLongEnough && lookahead(query, 3) == 'max';
         Boolean isCount = isLongEnough && lookahead(query, 5) == 'count';
-        return isSum || isAvg || isMin || isMax || isCount;
+        Boolean isCountDistinct = isLongEnough && lookahead(query, 14) == 'count_distinct';
+        return isSum || isAvg || isMin || isMax || isCount || isCountDistinct;
     }
 
     // @description : Returns true if the next three tokens in the query denote a subfield
@@ -288,13 +347,14 @@ public with sharing class Tokenizer {
         while(query.length() != 0 && 
               isNextTokenFieldOrObject(query) ||
               isSubField(query)) {
-                if(isSubField(query)) {
-                    fieldName += lookahead(query, 3);
-                    query = query.subString(3);
-                } else {
-                    fieldName += lookahead(query, 1);
-                    query = query.subString(1);
-                }
+
+            if(isSubField(query)) {
+                fieldName += lookahead(query, 3);
+                query = query.subString(3);
+            } else {
+                fieldName += lookahead(query, 1);
+                query = query.subString(1);
+            }
         }
         
         if(fieldName.isNumeric()) {
@@ -305,6 +365,7 @@ public with sharing class Tokenizer {
             .setId(fieldName)
             .setNodeType('field')
             .build();
+
         return new Intermediary(head, query);
     }
     
@@ -473,15 +534,15 @@ public with sharing class Tokenizer {
         Intermediary restOfExpr = parseConditionalExpr(query);
         query = restOfExpr.subquery;
 
-        Tokenizer.Node head = new NodeBuilder()
+        Node head = new NodeBuilder()
                 .setId(token)
                 .setNodeType(token)
                 .setLeft(leftIntermediary.head)
                 .setRight(restOfExpr.head)
                 .build();
 
-        Tokenizer.Node prev = head;
-        Tokenizer.Node curr = head.right;
+        Node prev = head;
+        Node curr = head.right;
         while(curr != null) {
             if(curr.nodeType == 'or') {
                 prev.right = curr.left;
@@ -793,10 +854,6 @@ public with sharing class Tokenizer {
 
     // @description : Parses an alias, which is a string of characters that is not a number
     private Intermediary parseAlias(String query) {
-        // if the next character is not a space, it's not an alias
-        if(lookahead(query, 1) != ' ') {
-            return null;
-        }
 
         query = ParserUtils.skipWhitespace(query);
         // if the next character is not a letter, it's not an alias
@@ -826,20 +883,23 @@ public with sharing class Tokenizer {
     private Intermediary parseAggregateFunc(String query) {
         NodeBuilder nb = new NodeBuilder()
             .setNodeType('aggregate function');
-        if(lookahead(query, 5) == 'count') {
-            query = query.subString(5);
+        if(lookahead(query, 14) == 'count_distinct') {
+            query = consume(query, 'count_distinct');
+            nb.setId('count_distinct');
+        } else if(lookahead(query, 5) == 'count') {
+            query = consume(query, 'count');
             nb.setId('count');
         } else if(lookahead(query, 3) == 'sum') {
-            query = query.subString(3);
+            query = consume(query, 'sum');
             nb.setId('sum');
         } else if(lookahead(query, 3) == 'avg') {
-            query = query.subString(3);
+            query = consume(query, 'avg');
             nb.setId('avg');
         } else if(lookahead(query, 3) == 'min') {
-            query = query.subString(3);
+            query = consume(query, 'min');
             nb.setId('min');
         } else if(lookahead(query, 3) == 'max') {
-            query = query.subString(3);
+            query = consume(query, 'max');
             nb.setId('max');
         } else {
             throw new ParsingException( query, 'aggregate function');
@@ -872,7 +932,6 @@ public with sharing class Tokenizer {
             field.head.left = alias.head;
             query = alias.subquery;
         }
-
         nb.setRight(field.head);
         
         

@@ -29,7 +29,7 @@ public with sharing class MockDatabase {
         Schema.DescribeSObjectResult fieldDsor = sObjType.getDescribe();
         String fieldApiName = null;
         for(Schema.SObjectField field : fieldDsor.fields.getMap().values()) {
-            if(field.getDescribe().getName() == fieldName) {
+            if(field.getDescribe().getName().toLowerCase() == fieldName) {
                 return field.getDescribe().getName();
             }
         }
@@ -118,7 +118,7 @@ public with sharing class MockDatabase {
         return false;
     }
 
-    private Object getFieldNodeValue(Tokenizer.Node valueNode, sObject sObj, Map<String, Object> params) {
+    private Object getFieldNodeValue(Lexer.Node valueNode, sObject sObj, Map<String, Object> params) {
 
         Boolean isBindVar = (valueNode.nodeType == 'bind variable');
         Boolean isParamsNull = (params == null);
@@ -135,7 +135,7 @@ public with sharing class MockDatabase {
 
         if(valueNode.nodeType == 'value list') {
             List<Object> values = new List<Object>();
-            Tokenizer.Node valueListNode = valueNode.left;
+            Lexer.Node valueListNode = valueNode.left;
             while(valueListNode != null) {
                 values.add(getFieldNodeValue(valueListNode, sObj, params));
                 valueListNode = valueListNode.left;
@@ -144,11 +144,11 @@ public with sharing class MockDatabase {
         }
 
         if(valueNode.nodeType == 'subquery') {
-            Tokenizer.Node subquerySelectNode = valueNode.right;
-            Tokenizer.Node subqueryFieldNode = subquerySelectNode.left;
+            Lexer.Node subquerySelectNode = valueNode.right;
+            Lexer.Node subqueryFieldNode = subquerySelectNode.left;
             Integer fieldsList = 0;
 
-            Tokenizer.Node curr = subqueryFieldNode;
+            Lexer.Node curr = subqueryFieldNode;
             while(curr != null) {
                 fieldsList++;
                 curr = curr.left;
@@ -157,11 +157,11 @@ public with sharing class MockDatabase {
                 throw new QueryException('Subquery must select only one field');
             }
 
-            Tokenizer.Node fromNode = subquerySelectNode.right;
-            Tokenizer.Node objNode = fromNode.left;
+            Lexer.Node subqueryFromNode = subquerySelectNode.right;
+            Lexer.Node subqueryObjNode = subqueryFromNode.left;
 
             String fieldName = subqueryFieldNode.id;
-            String objName = objNode.id;
+            String objName = subqueryObjNode.id;
             String objApiName = getSObjectApiName(objName);
             Type t = type.forName(objApiName);
             if(t == null) {
@@ -195,12 +195,12 @@ public with sharing class MockDatabase {
             if(childObjFieldType != Schema.DisplayType.REFERENCE && childObjFieldType != Schema.DisplayType.ID) {
                 throw new QueryException('Subquery must select an ID field');
             }
-            String parentFieldApiName = getFieldApiName(sObj.getSObjectType(), fieldName);
-            Schema.SObjectField parentField = sObj.getSObjectType().getDescribe().fields.getMap().get(parentFieldApiName);
+            String parentFieldApiName = getFieldApiName(childObj.getSObjectType(), fieldName);
+            Schema.SObjectField parentField = childObj.getSObjectType().getDescribe().fields.getMap().get(parentFieldApiName);
             if(parentField == null) {
                 throw new QueryException('Invalid field name: ' + fieldName);
             }
-
+            
             Schema.DisplayType parentFieldType = parentField.getDescribe().getType();
             String childObjFieldName = childObjField.getDescribe().getName();
             String childObjApiName = childObj.getSObjectType().getDescribe().getName();
@@ -221,9 +221,9 @@ public with sharing class MockDatabase {
         return valueNode.Id;
     }
 
-    private Boolean isWhereAndConditionMet(Tokenizer.Node andNode, sObject sObj, Map<String, Object> params) {
-        Tokenizer.Node leftNode = andNode.left;
-        Tokenizer.Node rightNode = andNode.right;
+    private Boolean isWhereAndConditionMet(Lexer.Node andNode, sObject sObj, Map<String, Object> params) {
+        Lexer.Node leftNode = andNode.left;
+        Lexer.Node rightNode = andNode.right;
 
         return (
             isWhereConditionMet(leftNode, sObj, params) &&
@@ -231,9 +231,9 @@ public with sharing class MockDatabase {
         );
     }
 
-    private Boolean isWhereOrConditonMet(Tokenizer.Node orNode, sObject sObj, Map<String, Object> params) {
-        Tokenizer.Node leftNode = orNode.left;
-        Tokenizer.Node rightNode = orNode.right;
+    private Boolean isWhereOrConditonMet(Lexer.Node orNode, sObject sObj, Map<String, Object> params) {
+        Lexer.Node leftNode = orNode.left;
+        Lexer.Node rightNode = orNode.right;
 
         return (
             isWhereConditionMet(leftNode, sObj, params) ||
@@ -241,9 +241,10 @@ public with sharing class MockDatabase {
         );
     }
 
-    private Boolean isWhereCompareConditionMet(Tokenizer.Node operatorNode, sObject sObj, Map<String, Object> params) {
-        Tokenizer.Node fieldNode = operatorNode.left;
-        Tokenizer.Node valueNode = operatorNode.right;
+
+    private Boolean isWhereCompareConditionMet(Lexer.Node operatorNode, sObject sObj, Map<String, Object> params) {
+        Lexer.Node fieldNode = operatorNode.left;
+        Lexer.Node valueNode = operatorNode.right;
         
         Object fieldValue = getFieldNodeValue(valueNode, sObj, params);
         
@@ -271,218 +272,17 @@ public with sharing class MockDatabase {
             parentRecord = this.db.get(parentObjApiName).get(parentRecord.Id);
             sObjectFieldValue = parentRecord.get(finalField);
         }
-        
-        switch on operatorNode.id {
-            when '=' {
-                if(sObjectFieldValue instanceof String) {
-                    return ((String) sObjectFieldValue).toLowerCase() == ((String)fieldValue).toLowerCase();
-                }
-                return sObjectFieldValue == fieldValue;
-            }
-            when '!=', '<>' {
-                if(sObjectFieldValue instanceof String) {
-                    return ((String) sObjectFieldValue).toLowerCase() != ((String)fieldValue).toLowerCase();
-                }
-                return sObjectFieldValue != fieldValue;
-            }
-            when 'like' {
-                String regexPattern = String.valueOf(fieldValue)
-                    .toLowerCase()
-                    .replaceAll('%', '.*')
-                    .replaceAll('_', '.');
-                Pattern regex = Pattern.compile(regexPattern);
-                Matcher regexMatcher = regex.matcher(String.valueOf(sObjectFieldValue).toLowerCase());
-                return regexMatcher.matches();
-            }
-            when 'in' {
-                List<Object> values = (List<Object>) fieldValue;
-                for(Integer i = 0; i < values.size(); i++) {
-                    if(values[i] instanceof String) {
-                        values[i] = (Object) ((String) values[i]).toLowerCase();
-                    }
-                }
-                if(sObjectFieldValue instanceof String) {
-                    String nodeValue = ((String) sObjectFieldValue).toLowerCase();
-                    return values.contains(nodeValue);
-                }
-                return values.contains(sObjectFieldValue);
-            }
-            when 'not in' {
-                List<Object> values = (List<Object>) fieldValue;
-                for(Integer i = 0; i < values.size(); i++) {
-                    if(values[i] instanceof String) {
-                        values[i] = (Object) ((String) values[i]).toLowerCase();
-                    }
-                }
-                if(sObjectFieldValue instanceof String) {
-                    String nodeValue = ((String) sObjectFieldValue).toLowerCase();
-                    return !values.contains(nodeValue);
-                }
-                return !values.contains(sObjectFieldValue);
-            }
-            when '>' {
-                if(fieldValue instanceOf Date) {
-                    Date fieldDate = (Date) fieldValue;
-                    Date sObjDate = (Date) sObjectFieldValue;
-                    return fieldDate > sObjDate;
-                } else if(fieldValue instanceOf DateTime) {
-                    DateTime fieldDateTime = (DateTime) fieldValue;
-                    DateTime sObjDateTime = (DateTime) sObjectFieldValue;
-                    return fieldDateTime > sObjDateTime;
-                } else if(fieldValue instanceOf Time) {
-                    Time fieldTime = (Time) fieldValue;
-                    Time sObjTime = (Time) sObjectFieldValue;
-                    return fieldTime > sObjTime;
-                } else if(fieldValue instanceOf Integer) {
-                    Integer fieldInt = (Integer) fieldValue;
-                    Integer sObjInt = (Integer) sObjectFieldValue;
-                    return fieldInt > sObjInt;
-                } else if(fieldValue instanceOf Decimal) {
-                    Decimal fieldDec = (Decimal) fieldValue;
-                    Decimal sObjDec = (Decimal) sObjectFieldValue;
-                    return fieldDec > sObjDec;
-                } else if(fieldValue instanceOf Double) {
-                    Double fieldDouble = (Double) fieldValue;
-                    Double sObjDouble = (Double) sObjectFieldValue;
-                    return fieldDouble > sObjDouble;
-                } else if(fieldValue instanceOf Long) {
-                    Long fieldLong = (Long) fieldValue;
-                    Long sObjLong = (Long) sObjectFieldValue;
-                    return fieldLong > sObjLong;
-                } else if(fieldValue instanceOf String) {
-                    String fieldString = ((String) fieldValue).toLowerCase();
-                    String sObjString = ((String) sObjectFieldValue).toLowerCase();
-                    return fieldString > sObjString;
-                } else {
-                    throw new QueryException('Invalid field type');
-                }
-            }
-            when '<' {
-                if(fieldValue instanceOf Date) {
-                    Date fieldDate = (Date) fieldValue;
-                    Date sObjDate = (Date) sObjectFieldValue;
-                    return fieldDate.daysBetween(sObjDate) < 0;
-                } else if(fieldValue instanceOf DateTime) {
-                    DateTime fieldDateTime = (DateTime) fieldValue;
-                    DateTime sObjDateTime = (DateTime) sObjectFieldValue;
-                    return fieldDateTime < sObjDateTime;
-                } else if(fieldValue instanceOf Time) {
-                    Time fieldTime = (Time) fieldValue;
-                    Time sObjTime = (Time) sObjectFieldValue;
-                    return fieldTime < sObjTime;
-                } else if(fieldValue instanceOf Integer) {
-                    Integer fieldInt = (Integer) fieldValue;
-                    Integer sObjInt = (Integer) sObjectFieldValue;
-                    return fieldInt < sObjInt;
-                } else if(fieldValue instanceOf Decimal) {
-                    Decimal fieldDec = (Decimal) fieldValue;
-                    Decimal sObjDec = (Decimal) sObjectFieldValue;
-                    return fieldDec < sObjDec;
-                } else if(fieldValue instanceOf Double) {
-                    Double fieldDouble = (Double) fieldValue;
-                    Double sObjDouble = (Double) sObjectFieldValue;
-                    return fieldDouble < sObjDouble;
-                } else if(fieldValue instanceOf Long) {
-                    Long fieldLong = (Long) fieldValue;
-                    Long sObjLong = (Long) sObjectFieldValue;
-                    return fieldLong < sObjLong;
-                } else if(fieldValue instanceOf String) {
-                    String fieldString = ((String) fieldValue).toLowerCase();
-                    String sObjString = ((String) sObjectFieldValue).toLowerCase();
-                    return fieldString < sObjString;
-                } else {
-                    throw new QueryException('Invalid field type');
-                }
-            }
-            when '>=' {
-                if(fieldValue instanceOf Date) {
-                    Date fieldDate = (Date) fieldValue;
-                    Date sObjDate = (Date) sObjectFieldValue;
-                    return fieldDate >= sObjDate;
-                } else if(fieldValue instanceOf DateTime) {
-                    DateTime fieldDateTime = (DateTime) fieldValue;
-                    DateTime sObjDateTime = (DateTime) sObjectFieldValue;
-                    return fieldDateTime >= sObjDateTime;
-                } else if(fieldValue instanceOf Time) {
-                    Time fieldTime = (Time) fieldValue;
-                    Time sObjTime = (Time) sObjectFieldValue;
-                    return fieldTime >= sObjTime;
-                } else if(fieldValue instanceOf Integer) {
-                    Integer fieldInt = (Integer) fieldValue;
-                    Integer sObjInt = (Integer) sObjectFieldValue;
-                    return fieldInt >= sObjInt;
-                } else if(fieldValue instanceOf Decimal) {
-                    Decimal fieldDec = (Decimal) fieldValue;
-                    Decimal sObjDec = (Decimal) sObjectFieldValue;
-                    return fieldDec >= sObjDec;
-                } else if(fieldValue instanceOf Double) {
-                    Double fieldDouble = (Double) fieldValue;
-                    Double sObjDouble = (Double) sObjectFieldValue;
-                    return fieldDouble >= sObjDouble;
-                } else if(fieldValue instanceOf Long) {
-                    Long fieldLong = (Long) fieldValue;
-                    Long sObjLong = (Long) sObjectFieldValue;
-                    return fieldLong >= sObjLong;
-                } else if(fieldValue instanceOf String) {
-                    String fieldString = ((String) fieldValue).toLowerCase();
-                    String sObjString = ((String) sObjectFieldValue).toLowerCase();
-                    return fieldString >= sObjString;
-                } else {
-                    throw new QueryException('Invalid field type');
-                }
-            } when '<=' {
-                if(fieldValue instanceOf Date) {
-                    Date fieldDate = (Date) fieldValue;
-                    Date sObjDate = (Date) sObjectFieldValue;
-                    return fieldDate <= sObjDate;
-                } else if(fieldValue instanceOf DateTime) {
-                    DateTime fieldDateTime = (DateTime) fieldValue;
-                    DateTime sObjDateTime = (DateTime) sObjectFieldValue;
-                    return fieldDateTime <= sObjDateTime;
-                } else if(fieldValue instanceOf Time) {
-                    Time fieldTime = (Time) fieldValue;
-                    Time sObjTime = (Time) sObjectFieldValue;
-                    return fieldTime <= sObjTime;
-                } else if(fieldValue instanceOf Integer) {
-                    Integer fieldInt = (Integer) fieldValue;
-                    Integer sObjInt = (Integer) sObjectFieldValue;
-                    return fieldInt <= sObjInt;
-                } else if(fieldValue instanceOf Decimal) {
-                    Decimal fieldDec = (Decimal) fieldValue;
-                    Decimal sObjDec = (Decimal) sObjectFieldValue;
-                    return fieldDec <= sObjDec;
-                } else if(fieldValue instanceOf Double) {
-                    Double fieldDouble = (Double) fieldValue;
-                    Double sObjDouble = (Double) sObjectFieldValue;
-                    return fieldDouble <= sObjDouble;
-                } else if(fieldValue instanceOf Long) {
-                    Long fieldLong = (Long) fieldValue;
-                    Long sObjLong = (Long) sObjectFieldValue;
-                    return fieldLong <= sObjLong;
-                } else if(fieldValue instanceOf String) {
-                    String fieldString = ((String) fieldValue).toLowerCase();
-                    String sObjString = ((String) sObjectFieldValue).toLowerCase();
-                    return fieldString <= sObjString;
-                } else {
-                    throw new QueryException('Invalid field type');
-                }
-            } when 'includes' {
-                List<Object> values = (List<Object>) fieldValue;
-                return values.contains(sObjectFieldValue);
-            } when 'excludes' {
-                List<Object> values = (List<Object>) fieldValue;
-                return !values.contains(sObjectFieldValue);
-            }
-        }
 
-        throw new QueryException('Invalid where condition');
+        MockDatabaseUtils.OperatorHandlerFactory handlerFactory = new MockDatabaseUtils.OperatorHandlerFactory();
+        MockDatabaseUtils.OperatorHandler handler = handlerFactory.getHandler(operatorNode.id);
+        return handler.handle(sObjectFieldValue, fieldValue);
     }
 
-    private Boolean isConditionalSubExprMet(Tokenizer.Node subExprNode, sObject sObj, Map<String, Object> params) {
+    private Boolean isConditionalSubExprMet(Lexer.Node subExprNode, sObject sObj, Map<String, Object> params) {
         return isWhereConditionMet(subExprNode.left, sObj, params);
     }
 
-    private Boolean isWhereConditionMet(Tokenizer.Node whereField, sObject sObj, Map<String, Object> params) {
+    private Boolean isWhereConditionMet(Lexer.Node whereField, sObject sObj, Map<String, Object> params) {
         if(whereField.nodeType == 'operator') {
             return isWhereCompareConditionMet(whereField, sObj, params);
         } else if(whereField.nodeType == 'and') {
@@ -498,12 +298,12 @@ public with sharing class MockDatabase {
         throw new QueryException('Invalid where condition');
     }
 
-    private Boolean checkWhereCondition(sObject sObj, Tokenizer.Node whereNode, Map<String, Object> params) {
+    private Boolean checkWhereCondition(sObject sObj, Lexer.Node whereNode, Map<String, Object> params) {
         if(whereNode == null) {
             return true;
         }
 
-        Tokenizer.Node whereField = whereNode.left;
+        Lexer.Node whereField = whereNode.left;
 
         return isWhereConditionMet(whereField, sObj, params);
     }
@@ -603,7 +403,7 @@ public with sharing class MockDatabase {
         return sObjectFromMap(sObjClone, objApiName);
     }
 
-    private sObject handleParentSubQuery(sObject sObj, String sObjApiName, Tokenizer.Node field, Map<String, Object> params) {
+    private sObject handleParentSubQuery(sObject sObj, String sObjApiName, Lexer.Node field, Map<String, Object> params) {
         String fieldName = field.id;
 
         List<String> fieldParts = fieldName.split('\\.');
@@ -612,11 +412,11 @@ public with sharing class MockDatabase {
         return buildObjWithRelations(sObj, fieldParts, finalField);
     }
 
-    private Map<String, Object> handleChildSubQuery(sObject obj, String objApiName, Tokenizer.Node field, Map<String, Object> params) {
-        Tokenizer.Node subquerySelectNode = field.right;
-        Tokenizer.Node subqueryFromNode = subquerySelectNode.right;
+    private Map<String, Object> handleChildSubQuery(sObject obj, String objApiName, Lexer.Node field, Map<String, Object> params) {
+        Lexer.Node subquerySelectNode = field.right;
+        Lexer.Node subqueryFromNode = subquerySelectNode.right;
 
-        Tokenizer.Node subqueryObjNode = subqueryFromNode.left;
+        Lexer.Node subqueryObjNode = subqueryFromNode.left;
         String subqueryChildRelationshipName = subqueryObjNode.id;
 
         Boolean isValidRelationship = false;
@@ -637,27 +437,27 @@ public with sharing class MockDatabase {
         }
 
         // clone the tree so we can modify it
-        Tokenizer.Node subqueryCloneSelectNode = Tokenizer.clone(subquerySelectNode);
-        Tokenizer.Node subqueryCloneFromNode = subqueryCloneSelectNode.right;
-        Tokenizer.Node subqueryCloneWhereNode = subqueryCloneFromNode.right;
+        Lexer.Node subqueryCloneSelectNode = Lexer.clone(subquerySelectNode);
+        Lexer.Node subqueryCloneFromNode = subqueryCloneSelectNode.right;
+        Lexer.Node subqueryCloneWhereNode = subqueryCloneFromNode.right;
 
         subqueryCloneFromNode.left.id = subqueryObjName.toLowerCase();
         if(subqueryCloneWhereNode == null) {
-            subqueryCloneWhereNode = new Tokenizer.NodeBuilder()
+            subqueryCloneWhereNode = new Lexer.NodeBuilder()
                 .setId('where')
                 .setNodeType('where')
                 .build();
             subqueryCloneFromNode.right = subqueryCloneWhereNode;
         }
 
-        Tokenizer.Node queryConditionNode = new Tokenizer.NodeBuilder()
+        Lexer.Node queryConditionNode = new Lexer.NodeBuilder()
             .setId('=')
             .setNodeType('operator')
-            .setLeft(new Tokenizer.NodeBuilder()
+            .setLeft(new Lexer.NodeBuilder()
                 .setId(subQueryFieldName.toLowerCase())
                 .setNodeType('field')
                 .build())
-            .setRight(new Tokenizer.NodeBuilder()
+            .setRight(new Lexer.NodeBuilder()
                 .setId(((String) obj.Id).toLowerCase())
                 .setNodeType('string')
                 .build())
@@ -666,7 +466,7 @@ public with sharing class MockDatabase {
         if(subqueryCloneWhereNode.left == null) {
             subqueryCloneWhereNode.left = queryConditionNode;
         } else {
-            subqueryCloneWhereNode.left = new Tokenizer.NodeBuilder()
+            subqueryCloneWhereNode.left = new Lexer.NodeBuilder()
                 .setId('and')
                 .setNodeType('and')
                 .setLeft(queryConditionNode)
@@ -684,12 +484,16 @@ public with sharing class MockDatabase {
         return subQueryResults;
     }
 
-    private sObject copyWithFields(sObject obj, Tokenizer.Node selectNode, Map<String, Object> params) {
-        Tokenizer.Node field = selectNode.left;
+    private sObject copyWithFields(sObject obj, Lexer.Node selectNode, Map<String, Object> params) {
+        Lexer.Node field = selectNode.left;
         sObject sObj = (sObject) Type.forName(obj.getSObjectType().getDescribe().getName()).newInstance();
         String objApiName = obj.getSObjectType().getDescribe().getName();
         sObj.put('Id', obj.Id);
         while(field != null) {
+            if(field.nodeType == 'aggregate function') {
+                field = field.left;
+                continue;
+            }
             Boolean isChildSubQuery = (field.nodeType == 'subquery');
             Boolean isParentSubQuery = (field.id.contains('.'));
 
@@ -727,8 +531,8 @@ public with sharing class MockDatabase {
         return sObj;
     }
 
-    private Boolean hasDuplicateFields(Tokenizer.Node selectNode) {
-        Tokenizer.Node curr = selectNode;
+    private Boolean hasDuplicateFields(Lexer.Node selectNode) {
+        Lexer.Node curr = selectNode;
         Set<String> fieldNames = new Set<String>();
         while(curr != null) {
             if(curr.nodeType == 'field') {
@@ -743,14 +547,14 @@ public with sharing class MockDatabase {
         return false;
     }
 
-    private Boolean hasDuplicateSubQueries(Tokenizer.Node selectNode) {
-        Tokenizer.Node curr = selectNode;
+    private Boolean hasDuplicateSubQueries(Lexer.Node selectNode) {
+        Lexer.Node curr = selectNode;
         Set<String> subQueryRelationshipNames = new Set<String>();
         while(curr != null) {
             if(curr.nodeType == 'subquery') {
-                Tokenizer.Node subQuerySelectNode = curr.right;
-                Tokenizer.Node subQueryFromNode = subQuerySelectNode.right;
-                Tokenizer.Node subQueryObjectNode = subQueryFromNode.left;
+                Lexer.Node subQuerySelectNode = curr.right;
+                Lexer.Node subQueryFromNode = subQuerySelectNode.right;
+                Lexer.Node subQueryObjectNode = subQueryFromNode.left;
                 String subQueryRelationshipName = subQueryObjectNode.id;
 
                 if(subQueryRelationshipNames.contains(subQueryRelationshipName)) {
@@ -763,12 +567,80 @@ public with sharing class MockDatabase {
         return false;
     }
 
-    private Object doQuery(Tokenizer.Node selectNode, Map<String, Object> params) {
-        Tokenizer.Node fromNode = selectNode.right;
-        Tokenizer.Node whereNode;
-        Tokenizer.Node groupByNode;
+    private Boolean isFieldNumeric(Schema.DisplayType fieldType) {
+        Boolean isCurrency = (fieldType == Schema.DisplayType.CURRENCY);
+        Boolean isDouble = (fieldType == Schema.DisplayType.DOUBLE);
+        Boolean isInteger = (fieldType == Schema.DisplayType.INTEGER);
+        Boolean isPercent = (fieldType == Schema.DisplayType.PERCENT);
+        
+        return (isCurrency || isDouble || isInteger || isPercent);
+    }
 
-        Tokenizer.Node curr = fromNode.right;
+    private Boolean isAggregateQuery(Lexer.Node selectNode) {
+        if(isSingularCount(selectNode)) {
+            return false;
+        }
+
+        Lexer.Node curr = selectNode;
+        while(curr != null) {
+            if(curr.nodeType == 'aggregate function') {
+                return true;
+            }
+            curr = curr.left;
+        }
+        return false;
+    }
+
+    private Map<String, Object> getComparables(sObject obj, String field) {
+        sObject comparableRecord = obj;
+        String comparableField = field;
+        if(!comparableField.contains('.')) {
+            comparableField = getFieldApiName(comparableRecord.getSObjectType(), comparableField);
+            return new Map<String, Object> {
+                'comparableRecord' => comparableRecord,
+                'comparableField' => comparableField,
+                'relationshipName' => comparableField
+            };
+        }
+
+        List<String> fieldParts = comparableField.split('\\.');
+        String finalField = fieldParts[fieldParts.size()-1];
+        fieldParts.remove(fieldParts.size()-1);
+        String parentField = fieldParts[0];
+        sObject parentRecord;
+        String relationshipName = '';
+        while(!fieldParts.isEmpty()) {
+            Map<String, Object> parentInfo = getParentObject(obj, parentField);
+
+            parentRecord = (sObject) parentInfo.get('parentRecord');
+            String parentObjApiName = (String) parentInfo.get('parentObjApiName');
+            relationshipName += (String) parentInfo.get('fieldRelationshipName') + '.';
+            
+            parentRecord = this.db.get(parentObjApiName).get(parentRecord.Id);
+            
+
+            fieldParts.remove(0);
+            if(!fieldParts.isEmpty()) {
+                parentField = fieldParts[0];
+            }
+        }
+        comparableRecord = parentRecord;
+        comparableField = getFieldApiName(comparableRecord.getSObjectType(), finalField);
+        relationshipName += comparableField;
+
+        return new Map<String, Object> {
+            'comparableRecord' => comparableRecord,
+            'comparableField' => comparableField,
+            'relationshipName' => relationshipName
+        };
+    }
+
+    private Object doQuery(Lexer.Node selectNode, Map<String, Object> params) {
+        Lexer.Node fromNode = selectNode.right;
+        Lexer.Node whereNode;
+        Lexer.Node groupByNode;
+
+        Lexer.Node curr = fromNode.right;
 
         if(curr != null && curr.nodeType == 'where') {
             whereNode = curr;
@@ -780,7 +652,7 @@ public with sharing class MockDatabase {
             curr = curr.right;
         }
 
-        Tokenizer.Node objNode = fromNode.left;
+        Lexer.Node objNode = fromNode.left;
         String objName = objNode.id;
         String objApiName = getSObjectApiName(objName);
 
@@ -800,18 +672,62 @@ public with sharing class MockDatabase {
         Object results;
         List<sObject> sObjects = new List<sObject>();
         Integer count = 0;
-        Boolean isAggregateQuery = (groupByNode != null);
+        Boolean isAggregateQuery = isAggregateQuery(selectNode);
         Boolean isCount = isSingularCount(selectNode);
 
         List<Map<String, Object>> aggregateResults = new List<Map<String, ObjecT>>();
         
         // get list of all fields to group by, if is aggregate query
         List<String> groupByFields = new List<String>();
+        List<String> selectFields = new List<String>();
         if(isAggregateQuery) {
-            Tokenizer.Node currGroupByNode = groupByNode.left;
-            while(currGroupByNode != null) {
-                groupByFields.add(currGroupByNode.id);
-                currGroupByNode = currGroupByNode.left;
+            if(groupByNode != null) {
+                Lexer.Node currGroupByNode = groupByNode.left;
+                while(currGroupByNode != null) {
+                    groupByFields.add(currGroupByNode.id);
+                    currGroupByNode = currGroupByNode.left;
+                }
+            }
+
+            Lexer.Node currSelectNode = selectNode.left;
+            Set<String> aliases = new Set<String>();
+            while(currSelectNode != null) {
+                // begin with error-handling for the aggregate query
+
+                if(currSelectNode.nodeType == 'field') {
+                    // check that selected fields are grouped or aggregated
+                    if(!groupByFields.contains(currSelectNode.id)) {
+                        throw new QueryException('Field must be grouped or aggregated: ' + currSelectNode.id);
+                    }
+
+                    // check for duplicate aliases
+                    Lexer.Node aliasNode = currSelectNode.right;
+                    String alias;
+                    if(aliasNode != null) {
+                        alias = aliasNode.id;
+                    } else if(currSelectNode.id.contains('.')){
+                        List<String> aliasParts = currSelectNode.id.split('\\.');
+                        alias = aliasParts[aliasParts.size()-1];
+                    } else {
+                        alias = currSelectNode.id;
+                    }
+
+                    Integer initAliasSize = aliases.size();
+                    aliases.add(alias);
+                    
+                    if(initAliasSize == aliases.size()) {
+                        throw new QueryException('Duplicate alias: ' + alias);
+                    }
+
+                    selectFields.add(currSelectNode.id);
+                } else if(currSelectNode.nodeType == 'aggregate function') {
+                    // check that aggregated fields are not grouped
+                    Lexer.Node fieldNode = currSelectNode.right;
+                    if(groupByFields.contains(fieldNode.id)) {
+                        throw new QueryException('Grouped field should not be aggregated: ' + fieldNode.id);
+                    }
+                }
+                currSelectNode = currSelectNode.left;
             }
         }
 
@@ -826,29 +742,167 @@ public with sharing class MockDatabase {
             }
 
             if(isAggregateQuery) {
-                Boolean isAccountedFor = false;
+                Map<String, Object> aggregateResult;
                 for(Map<String, Object> ar : aggregateResults) {
                     Boolean isSame = true;
                     for(String groupByField : groupByFields) {
-                        isSame = (isSame && (obj.get(groupByField) == ar.get(groupByField)));
+                        Map<String, Object> comparableInfo = getComparables(obj, groupByField);
+                        sObject comparableRecord = (sObject) comparableInfo.get('comparableRecord');
+                        String comparableField = (String) comparableInfo.get('comparableField');
+                        isSame = (isSame && (comparableRecord.get(comparableField) == ar.get(comparableField)));
                     }
                     if(isSame) {
-                        isAccountedFor = true;
+                        aggregateResult = ar;
                         break;
                     }
                 }
 
-                if(isAccountedFor) {
-                    continue;
+
+                if(aggregateResult == null) {
+                    aggregateResult = new Map<String, Object>();
+                    for(String groupByField : groupByFields) {
+                        Map<String, Object> comparableInfo = getComparables(obj, groupByField);
+                        sObject comparableRecord = (sObject) comparableInfo.get('comparableRecord');
+                        String comparableField = (String) comparableInfo.get('comparableField');
+
+                        String fieldApiName = getFieldApiName(comparableRecord.getSObjectType(), comparableField);
+                        aggregateResult.put(comparableField, comparableRecord.get(comparableField));
+                    }
+                    // pointer logic, we won't have to add this again
+                    aggregateResults.add(aggregateResult);
                 }
 
-                Map<String, Object> aggregateResult = new Map<String, Object>();
-                for(String groupByField : groupByFields) {
-                    aggregateResult.put(groupByField, obj.get(groupByField));
+                Lexer.Node currSelect = selectNode.left;
+                Integer exprNumber = 0;
+                while(currSelect != null) {
+                    Boolean isAggregateFunc = (currSelect.nodeType == 'aggregate function');
+                    Boolean isAggrSum = (isAggregateFunc && currSelect.id == 'sum');
+                    Boolean isAggrCount = (isAggregateFunc && currSelect.id == 'count');
+                    Boolean isAggrMax = (isAggregateFunc && currSelect.id == 'max');
+                    Boolean isAggrMin = (isAggregateFunc && currSelect.id == 'min');
+                    Boolean isAggrAvg = (isAggregateFunc && currSelect.id == 'avg');
+                    Boolean isAggrCountDistinct = (isAggregateFunc && currSelect.id == 'count_distinct');
+
+                    if(currSelect.nodeType == 'field') {
+                        currSelect = currSelect.left;
+                        continue;
+                    }
+
+
+                    Lexer.Node fieldNode = currSelect.right;
+                    Lexer.Node aliasNode = fieldNode.left;
+                    String fieldName = fieldNode.id;
+
+                    Map<String, Object> comparableInfo = getComparables(obj, fieldName);
+                    sObject comparableRecord = (sObject) comparableInfo.get('comparableRecord');
+                    String comparableField = (String) comparableInfo.get('comparableField');
+
+                    Map<String, Schema.SObjectField> fieldMap = comparableRecord.getSObjectType().getDescribe().fields.getMap();
+                    Schema.DisplayType fieldType = fieldMap
+                        .get(comparableField)
+                        .getDescribe()
+                        .getType();
+
+                    Schema.SObjectField field = fieldMap.get(comparableField);
+                    
+                    String alias = 'expr' + exprNumber;
+
+                    if(aliasNode != null) {
+                        alias = aliasNode.id;
+                    } else {
+                        exprNumber++;
+                    }
+
+                    if(isAggrCountDistinct) {
+                        Integer currValue = (Integer) aggregateResult.get(alias);
+                        if(currValue == null) {
+                            currValue = 0;
+                        }
+                        Set<Object> distinctValues = (Set<Object>) aggregateResult.get(alias + '__distinct');
+                        if(distinctValues == null) {
+                            distinctValues = new Set<Object>();
+                        }
+                        aggregateResult.put(alias + '__distinct', distinctValues);
+                        Object value = comparableRecord.get(comparableField);
+                        if(value != null) {
+                            distinctValues.add(value);
+                        }
+                        aggregateResult.put(alias, distinctValues.size());
+                    } else if(isAggrAvg) {
+                        if(!isFieldNumeric(fieldType)) {
+                            throw new QueryException('Invalid field type');
+                        }
+
+                        Decimal currValue = (Decimal) aggregateResult.get(alias);
+                        Decimal newValue = (Decimal) comparableRecord.get(comparableField);
+                        Decimal n = (Decimal) aggregateResult.get(alias + '__n');
+                        if(n == null) {
+                            n = 1;
+                        }
+
+                        if(currValue == null) {
+                            currValue = newValue;
+                        } else {
+                            currValue = currValue + (newValue - currValue) / n;
+                        }
+
+                        aggregateResult.put(alias, currValue);
+                        aggregateResult.put(alias + '__n', n + 1);
+                    } if(isAggrMin) {
+                        if(!isFieldNumeric(fieldType)) {
+                            throw new QueryException('Invalid field type');
+                        }
+
+                        Decimal currValue = (Decimal) aggregateResult.get(alias);
+                        Decimal newValue = (Decimal) comparableRecord.get(comparableField);
+
+                        if(currValue == null) {
+                            currValue = newValue;
+                        } else {
+                            currValue = Math.min(currValue, newValue);
+                        }
+
+                        aggregateResult.put(alias, currValue);
+                    } else if(isAggrMax) {
+                        if(!isFieldNumeric(fieldType)) {
+                            throw new QueryException('Invalid field type');
+                        }
+
+                        Decimal currValue = (Decimal) aggregateResult.get(alias);
+                        Decimal newValue = (Decimal) comparableRecord.get(comparableField);
+                        if(currValue == null) {
+                            currValue = newValue;
+                        } else {
+                            currValue = Math.max(currValue, newValue);
+                        }
+
+                        aggregateResult.put(alias, currValue);
+                    } else if(isAggrCount) {
+                        Integer currValue = (Integer) aggregateResult.get(alias);
+                        if(currValue == null) {
+                            currValue = 0;
+                        }
+                        aggregateResult.put(alias, currValue + 1);
+                    } else if(isAggrSum) {
+
+                        if(!isFieldNumeric(fieldType)) {
+                            throw new QueryException('Invalid field type');
+                        }
+
+                        Decimal currValue = (Decimal) aggregateResult.get(alias);
+                        Decimal newValue = (Decimal) comparableRecord.get(comparableField);
+                        Decimal sum;
+                        if(currValue == null) {
+                            sum = newValue;
+                        } else {
+                            sum = currValue + newValue;
+                        }
+
+                        aggregateResult.put(alias, sum);
+                    }
+                    currSelect = currSelect.left;
                 }
-                aggregateResults.add(aggregateResult);
-                // save the whole object for further processing
-                sObjects.add(obj);
+
             } else {
                 sObject sObj = copyWithFields(obj, selectNode, params);
                 sObjects.add(sObj);
@@ -858,9 +912,37 @@ public with sharing class MockDatabase {
         if(isCount) {
             results = count;
         } else if(isAggregateQuery) {
+            List<Aggregate> aggregateResultsList = new List<Aggregate>();
+            for(Map<String, Object> ar : aggregateResults) {
 
-            throw new QueryException('Aggregate queries are not supported');
-            // TODO: figure out how to do aggregates
+                // filter out grouped fields that are not selected in the select clause
+                for(String groupByField : groupByFields) {
+                    if(selectFields.contains(groupByField)) {
+                        continue;
+                    }
+
+                    for(String key : ar.keySet()) {
+                        if(key.toLowerCase() == groupByField) {
+                            ar.remove(key);
+                        }
+                    }
+                }
+
+                // remove any rolling sums for averages and distinct sets
+                for(String key : ar.keySet()) {
+                    Boolean isAvg = key.endsWith('__n');
+                    Boolean isDistinct = key.endsWith('__distinct');
+                    if(isAvg || isDistinct) {
+                        ar.remove(key);
+                    }
+                    
+                }
+
+
+                Aggregate arp = new Aggregate(ar);
+                aggregateResultsList.add(arp);
+            }
+            results = aggregateResultsList;
         } else {
             results = sObjects;
         }
@@ -869,14 +951,14 @@ public with sharing class MockDatabase {
     }
 
     // if all we're doing is counting, no other aggregate funcs
-    private Boolean isSingularCount(Tokenizer.Node selectNode) {
+    private Boolean isSingularCount(Lexer.Node selectNode) {
         return (selectNode.left.id == 'count' && selectNode.left.right == null && selectNode.left.left == null);
     } 
 
     // @description: This method is used to query the mock database by traversing the AST
     private Object doQuery(String query, Map<String, Object> params) {
-        Tokenizer parser = new Tokenizer();
-        Tokenizer.Node selectNode = parser.parse(query);
+        Lexer parser = new Lexer();
+        Lexer.Node selectNode = parser.parse(query);
         return doQuery(selectNode, params);
     }
 
@@ -957,7 +1039,6 @@ public with sharing class MockDatabase {
         for(String key : params.keySet()) {
             lowerCaseParams.put(key.toLowerCase(), params.get(key));
         }
-        System.debug('');
         return doQuery(query, lowerCaseParams);       
     }
 }
