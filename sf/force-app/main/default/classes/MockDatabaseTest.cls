@@ -3,6 +3,42 @@ public with sharing class MockDatabaseTest {
 
     /** DML Tests */
     @IsTest
+    public static void testDelete() {
+        Account a = new Account(Name = 'Test 1');
+        Account b = new Account(Name = 'Test 2');
+        Account c = new Account(Name = 'Test 3');
+        Account d = new Account(Name = 'Test 4');
+        MockDatabase mockDb = new MockDatabase();
+        List<Account> acctList = new List<Account>{a, b, c, d};
+        mockDb.doInsert(acctList);
+
+        mockDb.doDelete(acctList);
+        List<sObject> queriedAccts = (List<sObject>) mockDb.query('SELECT Id FROM Account');
+        Assert.areEqual(0, queriedAccts.size(), 'Incorrect number of accounts queried');
+    }
+
+    @IsTest
+    public static void testUpdateList() {
+        Account a = new Account(Name = 'Test 1');
+        Account b = new Account(Name = 'Test 2');
+        Account c = new Account(Name = 'Test 3');
+        Account d = new Account(Name = 'Test 4');
+        MockDatabase mockDb = new MockDatabase();
+        List<Account> acctList = new List<Account>{a, b, c, d};
+        mockDb.doInsert(acctList);
+
+        for(Account acct : acctList) {
+            acct.Name = 'Updated';
+        }
+        mockDb.doUpdate(acctList);
+
+        List<sObject> queriedAccts = (List<sObject>) mockDb.query('SELECT Id, Name FROM Account');
+        for(sObject acct : queriedAccts) {
+            Assert.areEqual('Updated', acct.get('Name'), 'Account was not updated');
+        }
+    }
+
+    @IsTest
     public static void testInsert() {
         Account a = new Account(Name = 'Test');
         MockDatabase mockDb = new MockDatabase();
@@ -965,5 +1001,95 @@ public with sharing class MockDatabaseTest {
         } finally {
             Assert.isTrue(isExceptionThrown, 'Expected exception to be thrown');
         }
+    }
+
+    @IsTest
+    public static void testChildSubQueryWithWhereClause() {
+        Account acct = new Account(Name = 'Test');
+        MockDatabase mockDb = new MockDatabase();
+        mockDb.doInsert(acct);
+
+        List<Contact> conList = new List<Contact>();
+        for(Integer i = 0; i < 5; i++) {
+            Contact con = new Contact(
+                FirstName = 'Steve',
+                LastName = 'Banner' + i,
+                AccountId = acct.Id
+            );
+            conList.add(con);
+        }
+        mockDb.doInsert(conList);
+
+        List<Account> queriedAccts = (List<Account>) mockDb.query('SELECT Id, Name, (SELECT FirstName, LastName FROM Contacts WHERE FirstName LIKE \'%Steve%\') FROM Account');
+        
+        Assert.areEqual(1, queriedAccts.size(), 'Incorrect number of accounts queried');
+        Assert.areEqual(5, queriedAccts[0].Contacts.size(), 'Incorrect number of contacts queried');
+
+        for(Contact con : queriedAccts[0].Contacts) {
+            Assert.isTrue(con.FirstName.contains('Steve'), 'Expected first name to contain \'Steve\'');
+        }
+    }
+
+    @IsTest
+    public static void testChildSubQueryWithWhereClause2() {
+        Account acct = new Account(Name = 'Test');
+        MockDatabase mockDb = new MockDatabase();
+        mockDb.doInsert(acct);
+
+        List<Contact> conList = new List<Contact>();
+        for(Integer i = 0; i < 5; i++) {
+            Contact con = new Contact(
+                FirstName = 'Steve',
+                LastName = 'Banner' + i,
+                AccountId = acct.Id
+            );
+            conList.add(con);
+        }
+        mockDb.doInsert(conList);
+
+        List<Account> queriedAccts = (List<Account>) mockDb.query('SELECT Id, Name, (SELECT FirstName, LastName FROM Contacts WHERE LastName IN (\'Banner1\', \'Banner2\', \'Banner3\')) FROM Account');
+        
+        Assert.areEqual(1, queriedAccts.size(), 'Incorrect number of accounts queried');
+        Assert.areEqual(3, queriedAccts[0].Contacts.size(), 'Incorrect number of contacts queried');
+        List<String> expectedLastNames = new List<String>{'Banner1', 'Banner2', 'Banner3'};
+        for(Integer i = 0; i < 3; i++) {
+            Contact con = queriedAccts[0].Contacts[i];
+            Assert.isTrue(
+                expectedLastNames.contains(con.LastName),
+                'Expected last name to be in list of expected last names'
+            );
+        }
+    }
+
+    @IsTest
+    public static void testNot() {
+        Account a = new Account(Name = 'Test');
+        Account b = new Account(Name = 'Test2');
+        Account c = new Account(Name = 'Test3');
+        Account d = new Account(Name = 'Not Test');
+        MockDatabase mockDb = new MockDatabase();
+        mockDb.doInsert(a);
+        mockDb.doInsert(b);
+        mockDb.doInsert(c);
+        mockDb.doInsert(d);
+
+        List<Account> queriedAccts = (List<Account>) mockDb.query('SELECT Id, Name FROM Account WHERE NOT Name = \'Test\'');
+        Assert.areEqual(3, queriedAccts.size(), 'Incorrect number of accounts queried');
+    }
+
+    @IsTest
+    public static void testConditionalSubExpr() {
+        Account a = new Account(Name = 'Test');
+        Account b = new Account(Name = 'Test2');
+        Account c = new Account(Name = 'Test3');
+        Account d = new Account(Name = 'Not Test');
+        MockDatabase mockDb = new MockDatabase();
+        mockDb.doInsert(a);
+        mockDb.doInsert(b);
+        mockDb.doInsert(c);
+        mockDb.doInsert(d);
+
+        List<Account> queriedAccts = (List<Account>) mockDb.query('SELECT Id, Name FROM Account WHERE Name = \'Test\' OR (Name = \'Test2\' AND Name = \'Test3\')');
+        Assert.areEqual(1, queriedAccts.size(), 'Incorrect number of accounts queried');
     }
 }
