@@ -688,13 +688,44 @@ public with sharing class MockDatabase {
                     currGroupByNode = currGroupByNode.left;
                 }
             }
+
             Tokenizer.Node currSelectNode = selectNode.left;
+            Set<String> aliases = new Set<String>();
             while(currSelectNode != null) {
+                // begin with error-handling for the aggregate query
+
                 if(currSelectNode.nodeType == 'field') {
+                    // check that selected fields are grouped or aggregated
                     if(!groupByFields.contains(currSelectNode.id)) {
                         throw new QueryException('Field must be grouped or aggregated: ' + currSelectNode.id);
                     }
+
+                    Tokenizer.Node aliasNode = currSelectNode.right;
+                    String alias;
+                    if(aliasNode != null) {
+                        alias = aliasNode.id;
+                    } else if(currSelectNode.id.contains('.')){
+                        List<String> aliasParts = currSelectNode.id.split('\\.');
+                        alias = aliasParts[aliasParts.size()-1];
+                    } else {
+                        alias = currSelectNode.id;
+                    }
+
+                    Integer initAliasSize = aliases.size();
+                    aliases.add(alias);
+                    System.debug(aliases);
+                    System.debug(aliases.size());
+                    if(initAliasSize == aliases.size()) {
+                        throw new QueryException('Duplicate alias: ' + alias);
+                    }
+
                     selectFields.add(currSelectNode.id);
+                } else if(currSelectNode.nodeType == 'aggregate function') {
+                    // check that aggregated fields are not grouped
+                    Tokenizer.Node fieldNode = currSelectNode.right;
+                    if(groupByFields.contains(fieldNode.id)) {
+                        throw new QueryException('Grouped field should not be aggregated: ' + fieldNode.id);
+                    }
                 }
                 currSelectNode = currSelectNode.left;
             }
@@ -718,8 +749,7 @@ public with sharing class MockDatabase {
                         Map<String, Object> comparableInfo = getComparables(obj, groupByField);
                         sObject comparableRecord = (sObject) comparableInfo.get('comparableRecord');
                         String comparableField = (String) comparableInfo.get('comparableField');
-                        String relationshipName = (String) comparableInfo.get('relationshipName');
-                        isSame = (isSame && (comparableRecord.get(comparableField) == ar.get(relationshipName)));
+                        isSame = (isSame && (comparableRecord.get(comparableField) == ar.get(comparableField)));
                     }
                     if(isSame) {
                         aggregateResult = ar;
@@ -734,10 +764,9 @@ public with sharing class MockDatabase {
                         Map<String, Object> comparableInfo = getComparables(obj, groupByField);
                         sObject comparableRecord = (sObject) comparableInfo.get('comparableRecord');
                         String comparableField = (String) comparableInfo.get('comparableField');
-                        String relationshipName = (String) comparableInfo.get('relationshipName');
 
                         String fieldApiName = getFieldApiName(comparableRecord.getSObjectType(), comparableField);
-                        aggregateResult.put(relationshipName, comparableRecord.get(comparableField));
+                        aggregateResult.put(comparableField, comparableRecord.get(comparableField));
                     }
                     // pointer logic, we won't have to add this again
                     aggregateResults.add(aggregateResult);

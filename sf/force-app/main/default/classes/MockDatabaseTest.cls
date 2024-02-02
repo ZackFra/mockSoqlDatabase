@@ -787,14 +787,14 @@ public with sharing class MockDatabaseTest {
     @IsTest 
     public static void testSumWithGroupBy() {
         Account a = new Account(Name = 'Test', NumberOfEmployees = 5);
-        Account b = new Account(Name = 'Test2', NumberOfEmployees = 10);
+        Account b = new Account(Name = 'Test', NumberOfEmployees = 10);
         Account c = new Account(Name = 'Test3', NumberOfEmployees = 5);
         Account d = new Account(Name = 'Not Test', NumberOfEmployees = 20);
         MockDatabase mockDb = new MockDatabase();
         List<Account> acctList = new List<Account>{a, b, c, d};
         mockDb.doInsert(acctList);
 
-        List<Aggregate> queriedAccts = (List<Aggregate>) mockDb.query('SELECT NumberOfEmployees, SUM(NumberOfEmployees) FROM Account GROUP BY NumberOfEmployees');
+        List<Aggregate> queriedAccts = (List<Aggregate>) mockDb.query('SELECT SUM(NumberOfEmployees) FROM Account GROUP BY Name');
         Assert.areEqual(3, queriedAccts.size(), 'Incorrect count');
     }
     
@@ -818,6 +818,100 @@ public with sharing class MockDatabaseTest {
             exceptionThrown = true;
         } finally {
             Assert.isTrue(exceptionThrown, 'Expected exception to be thrown');
+        }
+    }
+
+    @IsTest
+    public static void testMultipleAggregateFuncs() {
+        Account a = new Account(Name = 'Test', NumberOfEmployees = 5);
+        Account b = new Account(Name = 'Test', NumberOfEmployees = 5);
+        Account c = new Account(Name = 'Test', NumberOfEmployees = 5);
+        Account d = new Account(Name = 'Test', NumberOfEmployees = 5);
+
+        Account e = new Account(Name = 'Test2', NumberOfEmployees = 10);
+        Account f = new Account(Name = 'Test3', NumberOfEmployees = 5);
+        Account g = new Account(Name = 'Not Test', NumberOfEmployees = 20);
+        MockDatabase mockDb = new MockDatabase();
+        List<Account> acctList = new List<Account>{a, b, c, d, e, f, g};
+        mockDb.doInsert(acctList);
+
+        List<Aggregate> queriedAccts = (List<Aggregate>) mockDb.query('SELECT Name, SUM(NumberOfEmployees), AVG(NumberOfEmployees) FROM Account GROUP BY Name');
+        Assert.areEqual(4, queriedAccts.size(), 'Incorrect count');
+        for(Aggregate agg : queriedAccts) {
+            Decimal sum = (Decimal) agg.get('expr0');
+            Decimal avg = (Decimal) agg.get('expr1');
+            if(agg.get('Name') == 'Test') {
+                Assert.areEqual(20, sum, 'Incorrect sum');
+                Assert.areEqual(5, avg, 'Incorrect avg');
+            } else if(agg.get('Name') == 'Test2') {
+                Assert.areEqual(10, sum, 'Incorrect sum');
+                Assert.areEqual(10, avg, 'Incorrect avg');
+            } else if(agg.get('Name') == 'Test3') {
+                Assert.areEqual(5, sum, 'Incorrect sum');
+                Assert.areEqual(5, avg, 'Incorrect avg');
+            } else if(agg.get('Name') == 'Not Test') {
+                Assert.areEqual(20, sum, 'Incorrect sum');
+                Assert.areEqual(20, avg, 'Incorrect avg');
+            }
+        }
+    }
+
+    @IsTest
+    public static void testAggrGroupByFail() {
+        Account a = new Account(Name = 'Test', NumberOfEmployees = 5);
+        Account b = new Account(Name = 'Test', NumberOfEmployees = 5);
+        Account c = new Account(Name = 'Test', NumberOfEmployees = 5);
+        Account d = new Account(Name = 'Test', NumberOfEmployees = 5);
+
+        MockDatabase mockDb = new MockDatabase();
+        List<Account> acctList = new List<Account>{a, b, c, d};
+        mockDb.doInsert(acctList);
+
+        Boolean isExceptionThrown = false;
+        try {
+            List<Aggregate> queriedAccts = (List<Aggregate>) mockDb.query('SELECT Name, COUNT_DISTINCT(Name) FROM Account GROUP BY Name');
+        } catch(QueryException e) {
+            Assert.isTrue(
+                e.getMessage().contains('Grouped field should not be aggregated'),
+                'Expected exception message to contain \'Field must be grouped or aggregated\''
+            );
+            isExceptionThrown = true;
+        } finally {
+            Assert.isTrue(isExceptionThrown, 'Expected exception to be thrown');
+        }
+    }
+
+    @IsTest
+    public static void testEmptyQuery() {
+        MockDatabase mockDb = new MockDatabase();
+        List<sObject> queriedAccts = (List<sObject>) mockDb.query('SELECT Id FROM Account');
+        Assert.areEqual(0, queriedAccts.size(), 'Incorrect number of accounts queried');
+    }
+
+    @IsTest
+    public static void testGroupByParentAccountName() {
+        Account a = new Account(Name = 'Test 1');
+        Account b = new Account(Name = 'Test 2');
+        Account c = new Account(Name = 'Test 3');
+        Account d = new Account(Name = 'Test 4');
+        MockDatabase mockDb = new MockDatabase();
+        List<Account> acctList = new List<Account>{a, b, c, d};
+        mockDb.doInsert(acctList);
+
+        Contact con = new Contact(
+            FirstName = 'Steve',
+            LastName = 'Banner',
+            AccountId = a.Id
+        );
+        mockDb.doInsert(con);
+
+        try {
+            List<Aggregate> queriedAccts = (List<Aggregate>) mockDb.query('SELECT Account.Name, Name, COUNT(Id) FROM Contact GROUP BY Name, Account.Name');
+        } catch(QueryException e) {
+            Assert.isTrue(
+                e.getMessage().contains('Duplicate alias'),
+                'Expected exception message to contain \'Duplicate alias\''
+            );
         }
     }
 }
