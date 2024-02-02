@@ -1,4 +1,4 @@
-public with sharing class Tokenizer {
+public with sharing class Lexer {
     
     public class Node {
         private Node(String nodeType, string id, Node left, Node right) {
@@ -534,15 +534,15 @@ public with sharing class Tokenizer {
         Intermediary restOfExpr = parseConditionalExpr(query);
         query = restOfExpr.subquery;
 
-        Tokenizer.Node head = new NodeBuilder()
+        Node head = new NodeBuilder()
                 .setId(token)
                 .setNodeType(token)
                 .setLeft(leftIntermediary.head)
                 .setRight(restOfExpr.head)
                 .build();
 
-        Tokenizer.Node prev = head;
-        Tokenizer.Node curr = head.right;
+        Node prev = head;
+        Node curr = head.right;
         while(curr != null) {
             if(curr.nodeType == 'or') {
                 prev.right = curr.left;

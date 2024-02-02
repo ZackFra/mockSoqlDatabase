@@ -118,7 +118,7 @@ public with sharing class MockDatabase {
         return false;
     }
 
-    private Object getFieldNodeValue(Tokenizer.Node valueNode, sObject sObj, Map<String, Object> params) {
+    private Object getFieldNodeValue(Lexer.Node valueNode, sObject sObj, Map<String, Object> params) {
 
         Boolean isBindVar = (valueNode.nodeType == 'bind variable');
         Boolean isParamsNull = (params == null);
@@ -135,7 +135,7 @@ public with sharing class MockDatabase {
 
         if(valueNode.nodeType == 'value list') {
             List<Object> values = new List<Object>();
-            Tokenizer.Node valueListNode = valueNode.left;
+            Lexer.Node valueListNode = valueNode.left;
             while(valueListNode != null) {
                 values.add(getFieldNodeValue(valueListNode, sObj, params));
                 valueListNode = valueListNode.left;
@@ -144,11 +144,11 @@ public with sharing class MockDatabase {
         }
 
         if(valueNode.nodeType == 'subquery') {
-            Tokenizer.Node subquerySelectNode = valueNode.right;
-            Tokenizer.Node subqueryFieldNode = subquerySelectNode.left;
+            Lexer.Node subquerySelectNode = valueNode.right;
+            Lexer.Node subqueryFieldNode = subquerySelectNode.left;
             Integer fieldsList = 0;
 
-            Tokenizer.Node curr = subqueryFieldNode;
+            Lexer.Node curr = subqueryFieldNode;
             while(curr != null) {
                 fieldsList++;
                 curr = curr.left;
@@ -157,8 +157,8 @@ public with sharing class MockDatabase {
                 throw new QueryException('Subquery must select only one field');
             }
 
-            Tokenizer.Node subqueryFromNode = subquerySelectNode.right;
-            Tokenizer.Node subqueryObjNode = subqueryFromNode.left;
+            Lexer.Node subqueryFromNode = subquerySelectNode.right;
+            Lexer.Node subqueryObjNode = subqueryFromNode.left;
 
             String fieldName = subqueryFieldNode.id;
             String objName = subqueryObjNode.id;
@@ -221,9 +221,9 @@ public with sharing class MockDatabase {
         return valueNode.Id;
     }
 
-    private Boolean isWhereAndConditionMet(Tokenizer.Node andNode, sObject sObj, Map<String, Object> params) {
-        Tokenizer.Node leftNode = andNode.left;
-        Tokenizer.Node rightNode = andNode.right;
+    private Boolean isWhereAndConditionMet(Lexer.Node andNode, sObject sObj, Map<String, Object> params) {
+        Lexer.Node leftNode = andNode.left;
+        Lexer.Node rightNode = andNode.right;
 
         return (
             isWhereConditionMet(leftNode, sObj, params) &&
@@ -231,9 +231,9 @@ public with sharing class MockDatabase {
         );
     }
 
-    private Boolean isWhereOrConditonMet(Tokenizer.Node orNode, sObject sObj, Map<String, Object> params) {
-        Tokenizer.Node leftNode = orNode.left;
-        Tokenizer.Node rightNode = orNode.right;
+    private Boolean isWhereOrConditonMet(Lexer.Node orNode, sObject sObj, Map<String, Object> params) {
+        Lexer.Node leftNode = orNode.left;
+        Lexer.Node rightNode = orNode.right;
 
         return (
             isWhereConditionMet(leftNode, sObj, params) ||
@@ -242,9 +242,9 @@ public with sharing class MockDatabase {
     }
 
 
-    private Boolean isWhereCompareConditionMet(Tokenizer.Node operatorNode, sObject sObj, Map<String, Object> params) {
-        Tokenizer.Node fieldNode = operatorNode.left;
-        Tokenizer.Node valueNode = operatorNode.right;
+    private Boolean isWhereCompareConditionMet(Lexer.Node operatorNode, sObject sObj, Map<String, Object> params) {
+        Lexer.Node fieldNode = operatorNode.left;
+        Lexer.Node valueNode = operatorNode.right;
         
         Object fieldValue = getFieldNodeValue(valueNode, sObj, params);
         
@@ -278,11 +278,11 @@ public with sharing class MockDatabase {
         return handler.handle(sObjectFieldValue, fieldValue);
     }
 
-    private Boolean isConditionalSubExprMet(Tokenizer.Node subExprNode, sObject sObj, Map<String, Object> params) {
+    private Boolean isConditionalSubExprMet(Lexer.Node subExprNode, sObject sObj, Map<String, Object> params) {
         return isWhereConditionMet(subExprNode.left, sObj, params);
     }
 
-    private Boolean isWhereConditionMet(Tokenizer.Node whereField, sObject sObj, Map<String, Object> params) {
+    private Boolean isWhereConditionMet(Lexer.Node whereField, sObject sObj, Map<String, Object> params) {
         if(whereField.nodeType == 'operator') {
             return isWhereCompareConditionMet(whereField, sObj, params);
         } else if(whereField.nodeType == 'and') {
@@ -298,12 +298,12 @@ public with sharing class MockDatabase {
         throw new QueryException('Invalid where condition');
     }
 
-    private Boolean checkWhereCondition(sObject sObj, Tokenizer.Node whereNode, Map<String, Object> params) {
+    private Boolean checkWhereCondition(sObject sObj, Lexer.Node whereNode, Map<String, Object> params) {
         if(whereNode == null) {
             return true;
         }
 
-        Tokenizer.Node whereField = whereNode.left;
+        Lexer.Node whereField = whereNode.left;
 
         return isWhereConditionMet(whereField, sObj, params);
     }
@@ -403,7 +403,7 @@ public with sharing class MockDatabase {
         return sObjectFromMap(sObjClone, objApiName);
     }
 
-    private sObject handleParentSubQuery(sObject sObj, String sObjApiName, Tokenizer.Node field, Map<String, Object> params) {
+    private sObject handleParentSubQuery(sObject sObj, String sObjApiName, Lexer.Node field, Map<String, Object> params) {
         String fieldName = field.id;
 
         List<String> fieldParts = fieldName.split('\\.');
@@ -412,11 +412,11 @@ public with sharing class MockDatabase {
         return buildObjWithRelations(sObj, fieldParts, finalField);
     }
 
-    private Map<String, Object> handleChildSubQuery(sObject obj, String objApiName, Tokenizer.Node field, Map<String, Object> params) {
-        Tokenizer.Node subquerySelectNode = field.right;
-        Tokenizer.Node subqueryFromNode = subquerySelectNode.right;
+    private Map<String, Object> handleChildSubQuery(sObject obj, String objApiName, Lexer.Node field, Map<String, Object> params) {
+        Lexer.Node subquerySelectNode = field.right;
+        Lexer.Node subqueryFromNode = subquerySelectNode.right;
 
-        Tokenizer.Node subqueryObjNode = subqueryFromNode.left;
+        Lexer.Node subqueryObjNode = subqueryFromNode.left;
         String subqueryChildRelationshipName = subqueryObjNode.id;
 
         Boolean isValidRelationship = false;
@@ -437,27 +437,27 @@ public with sharing class MockDatabase {
         }
 
         // clone the tree so we can modify it
-        Tokenizer.Node subqueryCloneSelectNode = Tokenizer.clone(subquerySelectNode);
-        Tokenizer.Node subqueryCloneFromNode = subqueryCloneSelectNode.right;
-        Tokenizer.Node subqueryCloneWhereNode = subqueryCloneFromNode.right;
+        Lexer.Node subqueryCloneSelectNode = Lexer.clone(subquerySelectNode);
+        Lexer.Node subqueryCloneFromNode = subqueryCloneSelectNode.right;
+        Lexer.Node subqueryCloneWhereNode = subqueryCloneFromNode.right;
 
         subqueryCloneFromNode.left.id = subqueryObjName.toLowerCase();
         if(subqueryCloneWhereNode == null) {
-            subqueryCloneWhereNode = new Tokenizer.NodeBuilder()
+            subqueryCloneWhereNode = new Lexer.NodeBuilder()
                 .setId('where')
                 .setNodeType('where')
                 .build();
             subqueryCloneFromNode.right = subqueryCloneWhereNode;
         }
 
-        Tokenizer.Node queryConditionNode = new Tokenizer.NodeBuilder()
+        Lexer.Node queryConditionNode = new Lexer.NodeBuilder()
             .setId('=')
             .setNodeType('operator')
-            .setLeft(new Tokenizer.NodeBuilder()
+            .setLeft(new Lexer.NodeBuilder()
                 .setId(subQueryFieldName.toLowerCase())
                 .setNodeType('field')
                 .build())
-            .setRight(new Tokenizer.NodeBuilder()
+            .setRight(new Lexer.NodeBuilder()
                 .setId(((String) obj.Id).toLowerCase())
                 .setNodeType('string')
                 .build())
@@ -466,7 +466,7 @@ public with sharing class MockDatabase {
         if(subqueryCloneWhereNode.left == null) {
             subqueryCloneWhereNode.left = queryConditionNode;
         } else {
-            subqueryCloneWhereNode.left = new Tokenizer.NodeBuilder()
+            subqueryCloneWhereNode.left = new Lexer.NodeBuilder()
                 .setId('and')
                 .setNodeType('and')
                 .setLeft(queryConditionNode)
@@ -484,8 +484,8 @@ public with sharing class MockDatabase {
         return subQueryResults;
     }
 
-    private sObject copyWithFields(sObject obj, Tokenizer.Node selectNode, Map<String, Object> params) {
-        Tokenizer.Node field = selectNode.left;
+    private sObject copyWithFields(sObject obj, Lexer.Node selectNode, Map<String, Object> params) {
+        Lexer.Node field = selectNode.left;
         sObject sObj = (sObject) Type.forName(obj.getSObjectType().getDescribe().getName()).newInstance();
         String objApiName = obj.getSObjectType().getDescribe().getName();
         sObj.put('Id', obj.Id);
@@ -531,8 +531,8 @@ public with sharing class MockDatabase {
         return sObj;
     }
 
-    private Boolean hasDuplicateFields(Tokenizer.Node selectNode) {
-        Tokenizer.Node curr = selectNode;
+    private Boolean hasDuplicateFields(Lexer.Node selectNode) {
+        Lexer.Node curr = selectNode;
         Set<String> fieldNames = new Set<String>();
         while(curr != null) {
             if(curr.nodeType == 'field') {
@@ -547,14 +547,14 @@ public with sharing class MockDatabase {
         return false;
     }
 
-    private Boolean hasDuplicateSubQueries(Tokenizer.Node selectNode) {
-        Tokenizer.Node curr = selectNode;
+    private Boolean hasDuplicateSubQueries(Lexer.Node selectNode) {
+        Lexer.Node curr = selectNode;
         Set<String> subQueryRelationshipNames = new Set<String>();
         while(curr != null) {
             if(curr.nodeType == 'subquery') {
-                Tokenizer.Node subQuerySelectNode = curr.right;
-                Tokenizer.Node subQueryFromNode = subQuerySelectNode.right;
-                Tokenizer.Node subQueryObjectNode = subQueryFromNode.left;
+                Lexer.Node subQuerySelectNode = curr.right;
+                Lexer.Node subQueryFromNode = subQuerySelectNode.right;
+                Lexer.Node subQueryObjectNode = subQueryFromNode.left;
                 String subQueryRelationshipName = subQueryObjectNode.id;
 
                 if(subQueryRelationshipNames.contains(subQueryRelationshipName)) {
@@ -576,12 +576,12 @@ public with sharing class MockDatabase {
         return (isCurrency || isDouble || isInteger || isPercent);
     }
 
-    private Boolean isAggregateQuery(Tokenizer.Node selectNode) {
+    private Boolean isAggregateQuery(Lexer.Node selectNode) {
         if(isSingularCount(selectNode)) {
             return false;
         }
 
-        Tokenizer.Node curr = selectNode;
+        Lexer.Node curr = selectNode;
         while(curr != null) {
             if(curr.nodeType == 'aggregate function') {
                 return true;
@@ -635,12 +635,12 @@ public with sharing class MockDatabase {
         };
     }
 
-    private Object doQuery(Tokenizer.Node selectNode, Map<String, Object> params) {
-        Tokenizer.Node fromNode = selectNode.right;
-        Tokenizer.Node whereNode;
-        Tokenizer.Node groupByNode;
+    private Object doQuery(Lexer.Node selectNode, Map<String, Object> params) {
+        Lexer.Node fromNode = selectNode.right;
+        Lexer.Node whereNode;
+        Lexer.Node groupByNode;
 
-        Tokenizer.Node curr = fromNode.right;
+        Lexer.Node curr = fromNode.right;
 
         if(curr != null && curr.nodeType == 'where') {
             whereNode = curr;
@@ -652,7 +652,7 @@ public with sharing class MockDatabase {
             curr = curr.right;
         }
 
-        Tokenizer.Node objNode = fromNode.left;
+        Lexer.Node objNode = fromNode.left;
         String objName = objNode.id;
         String objApiName = getSObjectApiName(objName);
 
@@ -682,14 +682,14 @@ public with sharing class MockDatabase {
         List<String> selectFields = new List<String>();
         if(isAggregateQuery) {
             if(groupByNode != null) {
-                Tokenizer.Node currGroupByNode = groupByNode.left;
+                Lexer.Node currGroupByNode = groupByNode.left;
                 while(currGroupByNode != null) {
                     groupByFields.add(currGroupByNode.id);
                     currGroupByNode = currGroupByNode.left;
                 }
             }
 
-            Tokenizer.Node currSelectNode = selectNode.left;
+            Lexer.Node currSelectNode = selectNode.left;
             Set<String> aliases = new Set<String>();
             while(currSelectNode != null) {
                 // begin with error-handling for the aggregate query
@@ -701,7 +701,7 @@ public with sharing class MockDatabase {
                     }
 
                     // check for duplicate aliases
-                    Tokenizer.Node aliasNode = currSelectNode.right;
+                    Lexer.Node aliasNode = currSelectNode.right;
                     String alias;
                     if(aliasNode != null) {
                         alias = aliasNode.id;
@@ -722,7 +722,7 @@ public with sharing class MockDatabase {
                     selectFields.add(currSelectNode.id);
                 } else if(currSelectNode.nodeType == 'aggregate function') {
                     // check that aggregated fields are not grouped
-                    Tokenizer.Node fieldNode = currSelectNode.right;
+                    Lexer.Node fieldNode = currSelectNode.right;
                     if(groupByFields.contains(fieldNode.id)) {
                         throw new QueryException('Grouped field should not be aggregated: ' + fieldNode.id);
                     }
@@ -772,7 +772,7 @@ public with sharing class MockDatabase {
                     aggregateResults.add(aggregateResult);
                 }
 
-                Tokenizer.Node currSelect = selectNode.left;
+                Lexer.Node currSelect = selectNode.left;
                 Integer exprNumber = 0;
                 while(currSelect != null) {
                     Boolean isAggregateFunc = (currSelect.nodeType == 'aggregate function');
@@ -789,8 +789,8 @@ public with sharing class MockDatabase {
                     }
 
 
-                    Tokenizer.Node fieldNode = currSelect.right;
-                    Tokenizer.Node aliasNode = fieldNode.left;
+                    Lexer.Node fieldNode = currSelect.right;
+                    Lexer.Node aliasNode = fieldNode.left;
                     String fieldName = fieldNode.id;
 
                     Map<String, Object> comparableInfo = getComparables(obj, fieldName);
@@ -951,14 +951,14 @@ public with sharing class MockDatabase {
     }
 
     // if all we're doing is counting, no other aggregate funcs
-    private Boolean isSingularCount(Tokenizer.Node selectNode) {
+    private Boolean isSingularCount(Lexer.Node selectNode) {
         return (selectNode.left.id == 'count' && selectNode.left.right == null && selectNode.left.left == null);
     } 
 
     // @description: This method is used to query the mock database by traversing the AST
     private Object doQuery(String query, Map<String, Object> params) {
-        Tokenizer parser = new Tokenizer();
-        Tokenizer.Node selectNode = parser.parse(query);
+        Lexer parser = new Lexer();
+        Lexer.Node selectNode = parser.parse(query);
         return doQuery(selectNode, params);
     }
 
