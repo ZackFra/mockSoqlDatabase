@@ -914,4 +914,56 @@ public with sharing class MockDatabaseTest {
             );
         }
     }
+
+    @IsTest
+    public static void testAliases() {
+        Account a = new Account(Name = 'Test 1');
+        Account b = new Account(Name = 'Test 2');
+        Account c = new Account(Name = 'Test 3');
+        Account d = new Account(Name = 'Test 4');
+        MockDatabase mockDb = new MockDatabase();
+        List<Account> acctList = new List<Account>{a, b, c, d};
+        mockDb.doInsert(acctList);
+
+        Contact con = new Contact(
+            FirstName = 'Steve',
+            LastName = 'Banner',
+            AccountId = a.Id
+        );
+        mockDb.doInsert(con);
+
+        List<Aggregate> queriedAccts = (List<Aggregate>) mockDb.query('SELECT Account.Name acctName, Name, COUNT(Id) FROM Contact GROUP BY Name, Account.Name');
+        Assert.areEqual(1, queriedAccts.size(), 'Incorrect number of accounts queried');
+    }
+
+    @IsTest
+    public static void testDuplicateAliases() {
+        Account a = new Account(Name = 'Test 1');
+        Account b = new Account(Name = 'Test 2');
+        Account c = new Account(Name = 'Test 3');
+        Account d = new Account(Name = 'Test 4');
+        MockDatabase mockDb = new MockDatabase();
+        List<Account> acctList = new List<Account>{a, b, c, d};
+        mockDb.doInsert(acctList);
+
+        Contact con = new Contact(
+            FirstName = 'Steve',
+            LastName = 'Banner',
+            AccountId = a.Id
+        );
+        mockDb.doInsert(con);
+
+        Boolean isExceptionThrown = false;
+        try {
+            List<Aggregate> queriedAccts = (List<Aggregate>) mockDb.query('SELECT Account.Name acctName, Name acctName, COUNT(Id) FROM Contact GROUP BY Name, Account.Name');
+        } catch(QueryException e) {
+            Assert.isTrue(
+                e.getMessage().contains('Duplicate alias'),
+                'Expected exception message to contain \'Duplicate alias\''
+            );
+            isExceptionThrown = true;
+        } finally {
+            Assert.isTrue(isExceptionThrown, 'Expected exception to be thrown');
+        }
+    }
 }

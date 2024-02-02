@@ -198,7 +198,7 @@ public with sharing class Tokenizer {
     private Intermediary parseSelectExpr(String query) {
         query = ParserUtils.skipWhitespace(query);
         Intermediary selectExpr;
-        
+
         if(isAggregateFunction(query)) {
             selectExpr = parseAggregateFunc(query);
             query = selectExpr.subquery;
@@ -217,7 +217,7 @@ public with sharing class Tokenizer {
                 query
             );
         } else {
-            selectExpr = parseFieldList(query);
+            selectExpr = parseFieldListWithAliases(query);
             query = selectExpr.subquery;
         }
         
@@ -234,6 +234,59 @@ public with sharing class Tokenizer {
             selectExpr.subquery = restOfExpr.subquery;
         }
         return selectExpr;
+    }
+
+    // @description : Parses a list of fields, with optional aliases
+    // @return : Intermediary, the head of the list of fields
+    private Intermediary parseFieldListWithAliases(String query) {
+        query = ParserUtils.skipWhitespace(query);
+        Intermediary nextItem;
+        if(isAggregateFunction(query)) {
+            nextItem = parseAggregateFunc(query);
+            query = nextItem.subquery;
+        } else {
+            nextItem = parseField(query);
+            query = ParserUtils.skipWhitespace(nextItem.subquery);
+        }
+        
+        String nextChar = lookahead(query, 1);
+        String nextCharAfterThat = lookahead(ParserUtils.skipWhitespace(query.subString(1)), 1);
+        Boolean isAggrFuncNext = isAggregateFunction(ParserUtils.skipWhitespace(query.subString(1)));
+        
+        if(nextChar == ',' && nextCharAfterThat != '(' && !isAggrFuncNext) {
+            query = query.subString(1);
+            Intermediary restOfList = parseFieldListWithAliases(query);
+            nextItem.head.left = restOfList.head;
+            nextItem.subquery = restOfList.subquery;
+        }
+
+        Intermediary alias = null;
+        query = ParserUtils.skipWhitespace(nextItem.subquery);
+        if(lookahead(query, 5) != 'from ' && lookahead(query, 1) != ',') {
+            // NOTE: alias might still be null after parsing, that's ok
+            alias = parseAlias(query);
+        }
+        
+        if(alias != null) {
+            nextItem.head.right = alias.head;
+            query = alias.subquery;
+            nextItem.subquery = query;
+        }
+
+        query = ParserUtils.skipWhitespace(nextItem.subquery);
+        nextChar = lookahead(query, 1);
+        nextCharAfterThat = lookahead(ParserUtils.skipWhitespace(query.subString(1)), 1);
+        isAggrFuncNext = isAggregateFunction(ParserUtils.skipWhitespace(query.subString(1)));
+        
+        if(nextChar == ',' && nextCharAfterThat != '(' && !isAggrFuncNext) {
+            query = query.subString(1);
+            Intermediary restOfList = parseFieldListWithAliases(query);
+            nextItem.head.left = restOfList.head;
+            nextItem.subquery = restOfList.subquery;
+        }
+
+
+        return nextItem;        
     }
     
     private Intermediary parseFieldList(String query) {
@@ -294,13 +347,14 @@ public with sharing class Tokenizer {
         while(query.length() != 0 && 
               isNextTokenFieldOrObject(query) ||
               isSubField(query)) {
-                if(isSubField(query)) {
-                    fieldName += lookahead(query, 3);
-                    query = query.subString(3);
-                } else {
-                    fieldName += lookahead(query, 1);
-                    query = query.subString(1);
-                }
+
+            if(isSubField(query)) {
+                fieldName += lookahead(query, 3);
+                query = query.subString(3);
+            } else {
+                fieldName += lookahead(query, 1);
+                query = query.subString(1);
+            }
         }
         
         if(fieldName.isNumeric()) {
@@ -311,6 +365,7 @@ public with sharing class Tokenizer {
             .setId(fieldName)
             .setNodeType('field')
             .build();
+
         return new Intermediary(head, query);
     }
     

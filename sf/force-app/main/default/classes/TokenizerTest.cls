@@ -1,6 +1,69 @@
 @IsTest
 public with sharing class TokenizerTest {
 
+    /**
+     * Helper class to assert the properties of a node
+     */
+    private class AssertNode {
+        public String id;
+        public String nodeType;
+        public Boolean isLeftNull;
+        public Boolean isRightNull;
+        public Tokenizer.Node node;
+
+        public AssertNode(Tokenizer.Node node, String id, String nodeType, Boolean isLeftNull, Boolean isRightNull) {
+            this.node = node;
+            this.id = id;
+            this.nodeType = nodeType;
+            this.isLeftNull = isLeftNull;
+            this.isRightNull = isRightNull;
+        }
+
+        public void doAssert() {
+            Assert.areEqual(id, node.id, 'Expected id to be "' + id + '"');
+            Assert.areEqual(nodeType, node.nodeType, 'Expected nodeType to be "' + nodeType + '"');
+            Assert.areEqual(isLeftNull, node.left == null, 'Expected left to be ' + (isLeftNull ? 'null' : 'not null'));
+            Assert.areEqual(isRightNull, node.right == null, 'Expected right to be ' + (isRightNull ? 'null' : 'not null'));
+        }
+    }
+
+    public class AssertNodeBuilder {
+        Tokenizer.Node node;
+        String id;
+        String nodeType;
+        Boolean isLeftNull;
+        Boolean isRightNull;
+
+        AssertNodeBuilder setNode(Tokenizer.Node node) {
+            this.node = node;
+            return this;
+        }
+
+        AssertNodeBuilder setId(String id) {
+            this.id = id;
+            return this;
+        }
+
+        AssertNodeBuilder setNodeType(String nodeType) {
+            this.nodeType = nodeType;
+            return this;
+        }
+
+        AssertNodeBuilder setIsLeftNull(Boolean isLeftNull) {
+            this.isLeftNull = isLeftNull;
+            return this;
+        }
+
+        AssertNodeBuilder setIsRightNull(Boolean isRightNull) {
+            this.isRightNull = isRightNull;
+            return this;
+        }
+
+        AssertNode build() {
+            return new AssertNode(this.node, this.id, this.nodeType, this.isLeftNull, this.isRightNull);
+        }
+    }
+
     @IsTest
     public static void testToString() {
         Tokenizer t = new Tokenizer();
@@ -73,54 +136,158 @@ public with sharing class TokenizerTest {
     public static void testParseBoolean() {
         Tokenizer t = new Tokenizer();
         Tokenizer.Node head = t.parse('SELECT Id FROM Account WHERE IsDeleted = true');
-        assertNode(head, 'select', 'select', false, false);
+        AssertNode assertSelect = new AssertNodeBuilder()
+            .setNode(head)
+            .setId('select')
+            .setNodeType('select')
+            .setIsLeftNull(false)
+            .setIsRightNull(false)
+            .build();
+        assertSelect.doAssert();
 
         Tokenizer.Node idNode = head.left;
-        assertNode(idNode, 'id', 'field', true, true);
+        AssertNode assertId = new AssertNodeBuilder()
+            .setNode(idNode)
+            .setId('id')
+            .setNodeType('field')
+            .setIsLeftNull(true)
+            .setIsRightNull(true)
+            .build();
+        assertId.doAssert();
 
         Tokenizer.Node fromNode = head.right;
-        assertNode(fromNode, 'from', 'from', false, false);
+        AssertNode assertFrom = new AssertNodeBuilder()
+            .setNode(fromNode)
+            .setId('from')
+            .setNodeType('from')
+            .setIsLeftNull(false)
+            .setIsRightNull(false)
+            .build();
+        assertFrom.doAssert();
 
         Tokenizer.Node accountNode = fromNode.left;
-        assertNode(accountNode, 'account', 'object', true, true);
+        AssertNode assertAccount = new AssertNodeBuilder()
+            .setNode(accountNode)
+            .setId('account')
+            .setNodeType('object')
+            .setIsLeftNull(true)
+            .setIsRightNull(true)
+            .build();
+        assertAccount.doAssert();
 
         Tokenizer.Node whereNode = fromNode.right;
-        assertNode(whereNode, 'where', 'where', false, true);
+        AssertNode assertWhere = new AssertNodeBuilder()
+            .setNode(whereNode)
+            .setId('where')
+            .setNodeType('where')
+            .setIsLeftNull(false)
+            .setIsRightNull(true)
+            .build();
+        assertWhere.doAssert();
 
         Tokenizer.Node operatorNode = whereNode.left;
-        assertNode(operatorNode, '=', 'operator', false, false);
+        AssertNode assertOperator = new AssertNodeBuilder()
+            .setNode(operatorNode)
+            .setId('=')
+            .setNodeType('operator')
+            .setIsLeftNull(false)
+            .setIsRightNull(false)
+            .build();
+        assertOperator.doAssert();
 
         Tokenizer.Node isDeletedNode = operatorNode.left;
-        assertNode(isDeletedNode, 'isdeleted', 'field', true, true);
+        AssertNode assertIsDeleted = new AssertNodeBuilder()
+            .setNode(isDeletedNode)
+            .setId('isdeleted')
+            .setNodeType('field')
+            .setIsLeftNull(true)
+            .setIsRightNull(true)
+            .build();
+        assertIsDeleted.doAssert();
 
         Tokenizer.Node valueNode = operatorNode.right;
-        assertNode(valueNode, 'true', 'boolean', true, true);
+        AssertNode assertValue = new AssertNodeBuilder()
+            .setNode(valueNode)
+            .setId('true')
+            .setNodeType('boolean')
+            .setIsLeftNull(true)
+            .setIsRightNull(true)
+            .build();
+        assertValue.doAssert();
     }
 
     @IsTest
     public static void testOrderBy() {
         Tokenizer t = new Tokenizer();
         Tokenizer.Node head = t.parse('SELECT Id FROM Account ORDER BY Name, Id');
-
-        assertNode(head, 'select', 'select', false, false);
+        AssertNode assertSelect = new AssertNodeBuilder()
+            .setNode(head)
+            .setId('select')
+            .setNodeType('select')
+            .setIsLeftNull(false)
+            .setIsRightNull(false)
+            .build();
+        assertSelect.doAssert();
 
         Tokenizer.Node idNode = head.left;
-        assertNode(idNode, 'id', 'field', true, true);
+        AssertNode assertId = new AssertNodeBuilder()
+            .setNode(idNode)
+            .setId('id')
+            .setNodeType('field')
+            .setIsLeftNull(true)
+            .setIsRightNull(true)
+            .build();
+        assertId.doAssert();
 
         Tokenizer.Node fromNode = head.right;
-        assertNode(fromNode, 'from', 'from', false, false);
+        AssertNode assertFrom = new AssertNodeBuilder()
+            .setNode(fromNode)
+            .setId('from')
+            .setNodeType('from')
+            .setIsLeftNull(false)
+            .setIsRightNull(false)
+            .build();
+        assertFrom.doAssert();
 
         Tokenizer.Node accountNode = fromNode.left;
-        assertNode(accountNode, 'account', 'object', true, true);
+        AssertNode assertAccount = new AssertNodeBuilder()
+            .setNode(accountNode)
+            .setId('account')
+            .setNodeType('object')
+            .setIsLeftNull(true)
+            .setIsRightNull(true)
+            .build();
+        assertAccount.doAssert();
 
         Tokenizer.Node orderByNode = fromNode.right;
-        assertNode(orderByNode, 'order by', 'order by', false, true);
+        AssertNode assertOrderBy = new AssertNodeBuilder()
+            .setNode(orderByNode)
+            .setId('order by')
+            .setNodeType('order by')
+            .setIsLeftNull(false)
+            .setIsRightNull(true)
+            .build();
+        assertOrderBy.doAssert();
 
         Tokenizer.Node nameNode = orderByNode.left;
-        assertNode(nameNode, 'name', 'field', false, true);
+        AssertNode assertName = new AssertNodeBuilder()
+            .setNode(nameNode)
+            .setId('name')
+            .setNodeType('field')
+            .setIsLeftNull(false)
+            .setIsRightNull(true)
+            .build();
+        assertName.doAssert();
 
         Tokenizer.Node idNode2 = nameNode.left;
-        assertNode(idNode2, 'id', 'field', true, true);
+        AssertNode assertId2 = new AssertNodeBuilder()
+            .setNode(idNode2)
+            .setId('id')
+            .setNodeType('field')
+            .setIsLeftNull(true)
+            .setIsRightNull(true)
+            .build();
+        assertId2.doAssert();
     }
 
     @IsTest
@@ -128,80 +295,232 @@ public with sharing class TokenizerTest {
         Tokenizer t = new Tokenizer();
         Tokenizer.Node head = t.parse('SELECT Id FROM Account LIMIT 10');
 
-        assertNode(head, 'select', 'select', false, false);
+        AssertNode assertSelect = new AssertNodeBuilder()
+            .setNode(head)
+            .setId('select')
+            .setNodeType('select')
+            .setIsLeftNull(false)
+            .setIsRightNull(false)
+            .build();
+        assertSelect.doAssert();
 
         Tokenizer.Node idNode = head.left;
-        assertNode(idNode, 'id', 'field', true, true);
+        AssertNode assertId = new AssertNodeBuilder()
+            .setNode(idNode)
+            .setId('id')
+            .setNodeType('field')
+            .setIsLeftNull(true)
+            .setIsRightNull(true)
+            .build();
+        assertId.doAssert();
 
         Tokenizer.Node fromNode = head.right;
-        assertNode(fromNode, 'from', 'from', false, false);
+        AssertNode assertFrom = new AssertNodeBuilder()
+            .setNode(fromNode)
+            .setId('from')
+            .setNodeType('from')
+            .setIsLeftNull(false)
+            .setIsRightNull(false)
+            .build();
+        assertFrom.doAssert();
 
         Tokenizer.Node accountNode = fromNode.left;
-        assertNode(accountNode, 'account', 'object', true, true);
+        AssertNode assertAccount = new AssertNodeBuilder()
+            .setNode(accountNode)
+            .setId('account')
+            .setNodeType('object')
+            .setIsLeftNull(true)
+            .setIsRightNull(true)
+            .build();
+        assertAccount.doAssert();
 
         Tokenizer.Node limitNode = fromNode.right;
-        assertNode(limitNode, 'limit', 'limit', false, true);
+        AssertNode assertLimit = new AssertNodeBuilder()
+            .setNode(limitNode)
+            .setId('limit')
+            .setNodeType('limit')
+            .setIsLeftNull(false)
+            .setIsRightNull(true)
+            .build();
+        assertLimit.doAssert();
 
         Tokenizer.Node valueNode = limitNode.left;
-        assertNode(valueNode, '10', 'number', true, true);
+        AssertNode assertValue = new AssertNodeBuilder()
+            .setNode(valueNode)
+            .setId('10')
+            .setNodeType('number')
+            .setIsLeftNull(true)
+            .setIsRightNull(true)
+            .build();
+        assertValue.doAssert();
     }
 
     @IsTest
     public static void testForUpdate() {
         Tokenizer t = new Tokenizer();
         Tokenizer.Node head = t.parse('SELECT Id FROM Account FOR UPDATE');
-        assertNode(head, 'select', 'select', false, false);
+        AssertNode assertSelect = new AssertNodeBuilder()
+            .setNode(head)
+            .setId('select')
+            .setNodeType('select')
+            .setIsLeftNull(false)
+            .setIsRightNull(false)
+            .build();
+        assertSelect.doAssert();
 
         Tokenizer.Node idNode = head.left;
-        assertNode(idNode, 'id', 'field', true, true);
+        AssertNode assertId = new AssertNodeBuilder()
+            .setNode(idNode)
+            .setId('id')
+            .setNodeType('field')
+            .setIsLeftNull(true)
+            .setIsRightNull(true)
+            .build();
+        assertId.doAssert();
 
         Tokenizer.Node fromNode = head.right;
-        assertNode(fromNode, 'from', 'from', false, false);
+        AssertNode assertFrom = new AssertNodeBuilder()
+            .setNode(fromNode)
+            .setId('from')
+            .setNodeType('from')
+            .setIsLeftNull(false)
+            .setIsRightNull(false)
+            .build();
+        assertFrom.doAssert();
 
         Tokenizer.Node accountNode = fromNode.left;
-        assertNode(accountNode, 'account', 'object', true, true);
+        AssertNode assertAccount = new AssertNodeBuilder()
+            .setNode(accountNode)
+            .setId('account')
+            .setNodeType('object')
+            .setIsLeftNull(true)
+            .setIsRightNull(true)
+            .build();
+        assertAccount.doAssert();
 
         Tokenizer.Node forUpdateNode = fromNode.right;
-        assertNode(forUpdateNode, 'for update', 'for update', true, true);
+        AssertNode assertForUpdate = new AssertNodeBuilder()
+            .setNode(forUpdateNode)
+            .setId('for update')
+            .setNodeType('for update')
+            .setIsLeftNull(true)
+            .setIsRightNull(true)
+            .build();
+        assertForUpdate.doAssert();
     }
 
     @IsTest 
     public static void testHavingClause() {
         Tokenizer t = new Tokenizer();
         Tokenizer.Node head = t.parse('SELECT Id FROM Account GROUP BY Id HAVING COUNT(Id) > 0');
-
-        assertNode(head, 'select', 'select', false, false);
-
+        AssertNode assertSelect = new AssertNodeBuilder()
+            .setNode(head)
+            .setId('select')
+            .setNodeType('select')
+            .setIsLeftNull(false)
+            .setIsRightNull(false)
+            .build();
+        assertSelect.doAssert();
+    
         Tokenizer.Node idNode = head.left;
-        assertNode(idNode, 'id', 'field', true, true);
+        AssertNode assertId = new AssertNodeBuilder()
+            .setNode(idNode)
+            .setId('id')
+            .setNodeType('field')
+            .setIsLeftNull(true)
+            .setIsRightNull(true)
+            .build();
+        assertId.doAssert();
 
         Tokenizer.Node fromNode = head.right;
-        assertNode(fromNode, 'from', 'from', false, false);
+        AssertNode assertFrom = new AssertNodeBuilder()
+            .setNode(fromNode)
+            .setId('from')
+            .setNodeType('from')
+            .setIsLeftNull(false)
+            .setIsRightNull(false)
+            .build();
+        assertFrom.doAssert();
 
         Tokenizer.Node accountNode = fromNode.left;
-        assertNode(accountNode, 'account', 'object', true, true);
+        AssertNode assertAccount = new AssertNodeBuilder()
+            .setNode(accountNode)
+            .setId('account')
+            .setNodeType('object')
+            .setIsLeftNull(true)
+            .setIsRightNull(true)
+            .build();
+        assertAccount.doAssert();
 
         Tokenizer.Node groupByNode = fromNode.right;
-        assertNode(groupByNode, 'group by', 'group by', false, false);
+        AssertNode assertGroupBy = new AssertNodeBuilder()
+            .setNode(groupByNode)
+            .setId('group by')
+            .setNodeType('group by')
+            .setIsLeftNull(false)
+            .setIsRightNull(false)
+            .build();
+        assertGroupBy.doAssert();
 
         Tokenizer.Node idNode2 = groupByNode.left;
-        assertNode(idNode2, 'id', 'field', true, true);
+        AssertNode assertId2 = new AssertNodeBuilder()
+            .setNode(idNode2)
+            .setId('id')
+            .setNodeType('field')
+            .setIsLeftNull(true)
+            .setIsRightNull(true)
+            .build();
+        assertId2.doAssert();
 
         Tokenizer.Node havingNode = groupByNode.right;
-        assertNode(havingNode, 'having', 'having', false, true);
+        AssertNode assertHaving = new AssertNodeBuilder()
+            .setNode(havingNode)
+            .setId('having')
+            .setNodeType('having')
+            .setIsLeftNull(false)
+            .setIsRightNull(true)
+            .build();
+        assertHaving.doAssert();
 
         Tokenizer.Node operatorNode = havingNode.left;
-        assertNode(operatorNode, '>', 'operator', false, false);
+        AssertNode assertOperator = new AssertNodeBuilder()
+            .setNode(operatorNode)
+            .setId('>')
+            .setNodeType('operator')
+            .setIsLeftNull(false)
+            .setIsRightNull(false)
+            .build();
+        assertOperator.doAssert();
 
         Tokenizer.Node aggregateFunctionNode = operatorNode.left;
-        assertNode(aggregateFunctionNode, 'count', 'aggregate function', true, false);
+        AssertNode assertAggregateFunction = new AssertNodeBuilder()
+            .setNode(aggregateFunctionNode)
+            .setId('count')
+            .setNodeType('aggregate function')
+            .setIsLeftNull(true)
+            .setIsRightNull(false)
+            .build();
+        assertAggregateFunction.doAssert();
 
         Tokenizer.Node idNode3 = aggregateFunctionNode.right;
-        assertNode(idNode3, 'id', 'field', true, true);
+        AssertNode assertId3 = new AssertNodeBuilder()
+            .setNode(idNode3)
+            .setId('id')
+            .setNodeType('field')
+            .setIsLeftNull(true)
+            .setIsRightNull(true)
+            .build();
+        assertId3.doAssert();
 
         Tokenizer.Node valueNode = operatorNode.right;
-        assertNode(valueNode, '0', 'number', true, true);
-
+        AssertNode assertValue = new AssertNodeBuilder()
+            .setNode(valueNode)
+            .setId('0')
+            .setNodeType('number')
+            .setIsLeftNull(true)
+            .setIsRightNull(true)
+            .build();
+        assertValue.doAssert();
     }
 
     @IsTest
@@ -1345,28 +1664,85 @@ public with sharing class TokenizerTest {
     public static void testAlias() {
         Tokenizer t = new Tokenizer();
         Tokenizer.Node head = t.parse('SELECT COUNT(Id) cnt1 FROM Account GROUP BY Id');
-        assertNode(head, 'select', 'select', false, false);
+
+        AssertNode assertSelect = new AssertNodeBuilder()
+            .setNode(head)
+            .setId('select')
+            .setNodeType('select')
+            .setIsLeftNull(false)
+            .setIsRightNull(false)
+            .build();
+        assertSelect.doAssert();
 
         Tokenizer.Node countNode = head.left;
-        assertNode(countNode, 'count', 'aggregate function', true, false);
+        AssertNode assertCount = new AssertNodeBuilder()
+            .setNode(countNode)
+            .setId('count')
+            .setNodeType('aggregate function')
+            .setIsLeftNull(true)
+            .setIsRightNull(false)
+            .build();
+        assertCount.doAssert();
 
         Tokenizer.Node idNode = countNode.right;
-        assertNode(idNode, 'id', 'field', false, true);
+        AssertNode assertId = new AssertNodeBuilder()
+            .setNode(idNode)
+            .setId('id')
+            .setNodeType('field')
+            .setIsLeftNull(false)
+            .setIsRightNull(true)
+            .build();
+        assertId.doAssert();
 
         Tokenizer.Node aliasNode = idNode.left;
-        assertNode(aliasNode, 'cnt1', 'alias', true, true);
+        AssertNode assertAlias = new AssertNodeBuilder()
+            .setNode(aliasNode)
+            .setId('cnt1')
+            .setNodeType('alias')
+            .setIsLeftNull(true)
+            .setIsRightNull(true)
+            .build();
+        assertAlias.doAssert();
 
         Tokenizer.Node fromNode = head.right;
-        assertNode(fromNode, 'from', 'from', false, false);
+        AssertNode assertFrom = new AssertNodeBuilder()
+            .setNode(fromNode)
+            .setId('from')
+            .setNodeType('from')
+            .setIsLeftNull(false)
+            .setIsRightNull(false)
+            .build();
+        assertFrom.doAssert();
 
         Tokenizer.Node accountNode = fromNode.left;
-        assertNode(accountNode, 'account', 'object', true, true);
+        AssertNode assertAccount = new AssertNodeBuilder()
+            .setNode(accountNode)
+            .setId('account')
+            .setNodeType('object')
+            .setIsLeftNull(true)
+            .setIsRightNull(true)
+            .build();
+        assertAccount.doAssert();
 
         Tokenizer.Node groupByNode = fromNode.right;
-        assertNode(groupByNode, 'group by', 'group by', false, true);
+        AssertNode assertGroupBy = new AssertNodeBuilder()
+            .setNode(groupByNode)
+            .setId('group by')
+            .setNodeType('group by')
+            .setIsLeftNull(false)
+            .setIsRightNull(true)
+            .build();
+        assertGroupBy.doAssert();
 
         Tokenizer.Node idNode2 = groupByNode.left;
-        assertNode(idNode2, 'id', 'field', true, true);
+        AssertNode assertId2 = new AssertNodeBuilder()
+            .setNode(idNode2)
+            .setId('id')
+            .setNodeType('field')
+            .setIsLeftNull(true)
+            .setIsRightNull(true)
+            .build();
+        assertId2.doAssert();
     }
 
     @IsTest
@@ -1374,60 +1750,452 @@ public with sharing class TokenizerTest {
         Tokenizer t = new Tokenizer();
 
         Tokenizer.Node head = t.parse('SELECT Id FROM Contact WHERE FirstName IN (\'test\', \'test2\')');
-        assertNode(head, 'select', 'select', false, false);
+        AssertNode assertSelect = new AssertNodeBuilder()
+            .setNode(head)
+            .setId('select')
+            .setNodeType('select')
+            .setIsLeftNull(false)
+            .setIsRightNull(false)
+            .build();
+        assertSelect.doAssert();
 
         Tokenizer.Node idNode = head.left;
-        assertNode(idNode, 'id', 'field', true, true);
+        AssertNode assertId = new AssertNodeBuilder()
+            .setNode(idNode)
+            .setId('id')
+            .setNodeType('field')
+            .setIsLeftNull(true)
+            .setIsRightNull(true)
+            .build();
+        assertId.doAssert();
 
         Tokenizer.Node fromNode = head.right;
-        assertNode(fromNode, 'from', 'from', false, false);
+        AssertNode assertFrom = new AssertNodeBuilder()
+            .setNode(fromNode)
+            .setId('from')
+            .setNodeType('from')
+            .setIsLeftNull(false)
+            .setIsRightNull(false)
+            .build();
+        assertFrom.doAssert();
 
         Tokenizer.Node contactNode = fromNode.left;
-        assertNode(contactNode, 'contact', 'object', true, true);
+        AssertNode assertContact = new AssertNodeBuilder()
+            .setNode(contactNode)
+            .setId('contact')
+            .setNodeType('object')
+            .setIsLeftNull(true)
+            .setIsRightNull(true)
+            .build();
+        assertContact.doAssert();
 
         Tokenizer.Node whereNode = fromNode.right;
-        assertNode(whereNode, 'where', 'where', false, true);
+        AssertNode assertWhere = new AssertNodeBuilder()
+            .setNode(whereNode)
+            .setId('where')
+            .setNodeType('where')
+            .setIsLeftNull(false)
+            .setIsRightNull(true)
+            .build();
+        assertWhere.doAssert();
 
         Tokenizer.Node inNode = whereNode.left;
-        assertNode(inNode, 'in', 'operator', false, false);
+        AssertNode assertIn = new AssertNodeBuilder()
+            .setNode(inNode)
+            .setId('in')
+            .setNodeType('operator')
+            .setIsLeftNull(false)
+            .setIsRightNull(false)
+            .build();
+        assertIn.doAssert();
 
         Tokenizer.Node firstNameNode = inNode.left;
-        assertNode(firstNameNode, 'firstname', 'field', true, true);
+        AssertNode assertFirstName = new AssertNodeBuilder()
+            .setNode(firstNameNode)
+            .setId('firstname')
+            .setNodeType('field')
+            .setIsLeftNull(true)
+            .setIsRightNull(true)
+            .build();
+        assertFirstName.doAssert();
 
         Tokenizer.Node valueListNode = inNode.right;
-        assertNode(valueListNode, 'value list', 'value list', false, true);
+        AssertNode assertValueList = new AssertNodeBuilder()
+            .setNode(valueListNode)
+            .setId('value list')
+            .setNodeType('value list')
+            .setIsLeftNull(false)
+            .setIsRightNull(true)
+            .build();
+        assertValueList.doAssert();
 
         Tokenizer.Node valueNode = valueListNode.left;
-        assertNode(valueNode, 'test', 'string', false, true);
+        AssertNode assertValue = new AssertNodeBuilder()
+            .setNode(valueNode)
+            .setId('test')
+            .setNodeType('string')
+            .setIsLeftNull(false)
+            .setIsRightNull(true)
+            .build();
+        assertValue.doAssert();
 
         Tokenizer.Node valueListNode2 = valueNode.left;
-        assertNode(valueListNode2, 'value list', 'value list', false, true);
+        AssertNode assertValueList2 = new AssertNodeBuilder()
+            .setNode(valueListNode2)
+            .setId('value list')
+            .setNodeType('value list')
+            .setIsLeftNull(false)
+            .setIsRightNull(true)
+            .build();
+        assertValueList2.doAssert();
 
         Tokenizer.Node valueNode2 = valueListNode2.left;
-        assertNode(valueNode2, 'test2', 'string', true, true);
+        AssertNode assertValue2 = new AssertNodeBuilder()
+            .setNode(valueNode2)
+            .setId('test2')
+            .setNodeType('string')
+            .setIsLeftNull(true)
+            .setIsRightNull(true)
+            .build();
+        assertValue2.doAssert();
     }
 
     @IsTest
     public static void testSingularCount() {
         Tokenizer t = new Tokenizer();
         Tokenizer.Node head = t.parse('SELECT COUNT() FROM Account');
-        assertNode(head, 'select', 'select', false, false);
+        AssertNode assertSelect = new AssertNodeBuilder()
+            .setNode(head)
+            .setId('select')
+            .setNodeType('select')
+            .setIsLeftNull(false)
+            .setIsRightNull(false)
+            .build();
+        assertSelect.doAssert();
 
         Tokenizer.Node countNode = head.left;
-        assertNode(countNode, 'count', 'aggregate function', true, true);
+
+        AssertNode assertCount = new AssertNodeBuilder()
+            .setNode(countNode)
+            .setId('count')
+            .setNodeType('aggregate function')
+            .setIsLeftNull(true)
+            .setIsRightNull(true)
+            .build();
+        assertCount.doAssert();
 
         Tokenizer.Node fromNode = head.right;
-        assertNode(fromNode, 'from', 'from', false, true);
+
+        AssertNode assertFrom = new AssertNodeBuilder()
+            .setNode(fromNode)
+            .setId('from')
+            .setNodeType('from')
+            .setIsLeftNull(false)
+            .setIsRightNull(true)
+            .build();
+        assertFrom.doAssert();
 
         Tokenizer.Node accountNode = fromNode.left;
-        assertNode(accountNode, 'account', 'object', true, true);
+        AssertNode assertAccount = new AssertNodeBuilder()
+            .setNode(accountNode)
+            .setId('account')
+            .setNodeType('object')
+            .setIsLeftNull(true)
+            .setIsRightNull(true)
+            .build();
+        assertAccount.doAssert();
 
     }
 
-    private static void assertNode(Tokenizer.Node node, String id, String nodeType, Boolean isLeftNull, Boolean isRightNull) {
-        Assert.areEqual(id, node.id, 'Expected id to be "' + id + '"');
-        Assert.areEqual(nodeType, node.nodeType, 'Expected nodeType to be "' + nodeType + '"');
-        Assert.areEqual(isLeftNull, node.left == null, 'Expected left to be ' + (isLeftNull ? 'null' : 'not null'));
-        Assert.areEqual(isRightNull, node.right == null, 'Expected right to be ' + (isRightNull ? 'null' : 'not null'));
+    @IsTest
+    public static void testSimpleAlias() {
+        Tokenizer t = new Tokenizer();
+        Tokenizer.Node head = t.parse('SELECT Id id FROM Account');
+        AssertNode assertSelect = new AssertNodeBuilder()
+            .setNode(head)
+            .setId('select')
+            .setNodeType('select')
+            .setIsLeftNull(false)
+            .setIsRightNull(false)
+            .build();
+        assertSelect.doAssert();
+
+        Tokenizer.Node idNode = head.left;
+        AssertNode assertId = new AssertNodeBuilder()
+            .setNode(idNode)
+            .setId('id')
+            .setNodeType('field')
+            .setIsLeftNull(true)
+            .setIsRightNull(false)
+            .build();
+        assertId.doAssert();
+
+        Tokenizer.Node idAliasNode = idNode.right;
+        AssertNode assertIdAlias = new AssertNodeBuilder()
+            .setNode(idAliasNode)
+            .setId('id')
+            .setNodeType('alias')
+            .setIsLeftNull(true)
+            .setIsRightNull(true)
+            .build();
+        assertIdAlias.doAssert();
+
+        Tokenizer.Node fromNode = head.right;
+        AssertNode assertFrom = new AssertNodeBuilder()
+            .setNode(fromNode)
+            .setId('from')
+            .setNodeType('from')
+            .setIsLeftNull(false)
+            .setIsRightNull(true)
+            .build();
+        assertFrom.doAssert();
+
+        Tokenizer.Node accountNode = fromNode.left;
+        AssertNode assertAccount = new AssertNodeBuilder()
+            .setNode(accountNode)
+            .setId('account')
+            .setNodeType('object')
+            .setIsLeftNull(true)
+            .setIsRightNull(true)
+            .build();
+        assertAccount.doAssert();
+    }
+
+    @IsTest
+    public static void testAliases() {
+        Tokenizer t = new Tokenizer();
+        Tokenizer.Node head = t.parse('SELECT Account.Name acctName, Name, COUNT(Id) FROM Contact GROUP BY Name, Account.Name');
+        AssertNode assertSelect = new AssertNodeBuilder()
+            .setNode(head)
+            .setId('select')
+            .setNodeType('select')
+            .setIsLeftNull(false)
+            .setIsRightNull(false)
+            .build();
+        assertSelect.doAssert();
+
+        Tokenizer.Node accountNameNode = head.left;
+        AssertNode assertAccountName = new AssertNodeBuilder()
+            .setNode(accountNameNode)
+            .setId('account.name')
+            .setNodeType('field')
+            .setIsLeftNull(false)
+            .setIsRightNull(false)
+            .build();
+        assertAccountName.doAssert();
+
+        Tokenizer.Node acctNameNode = accountNameNode.right;
+        AssertNode assertAcctName = new AssertNodeBuilder()
+            .setNode(acctNameNode)
+            .setId('acctname')
+            .setNodeType('alias')
+            .setIsLeftNull(true)
+            .setIsRightNull(true)
+            .build();
+        assertAcctName.doAssert();
+
+        Tokenizer.Node nameNode = accountNameNode.left;
+        AssertNode assertName = new AssertNodeBuilder()
+            .setNode(nameNode)
+            .setId('name')
+            .setNodeType('field')
+            .setIsLeftNull(false)
+            .setIsRightNull(true)
+            .build();
+        assertName.doAssert();
+
+        Tokenizer.Node countNode = nameNode.left;
+        AssertNode assertCount = new AssertNodeBuilder()
+            .setNode(countNode)
+            .setId('count')
+            .setNodeType('aggregate function')
+            .setIsLeftNull(true)
+            .setIsRightNull(false)
+            .build();
+        assertCount.doAssert();
+
+        Tokenizer.Node idNode = countNode.right;
+        AssertNode assertId = new AssertNodeBuilder()
+            .setNode(idNode)
+            .setId('id')
+            .setNodeType('field')
+            .setIsLeftNull(true)
+            .setIsRightNull(true)
+            .build();
+        assertId.doAssert();
+
+        Tokenizer.Node fromNode = head.right;
+        AssertNode assertFrom = new AssertNodeBuilder()
+            .setNode(fromNode)
+            .setId('from')
+            .setNodeType('from')
+            .setIsLeftNull(false)
+            .setIsRightNull(false)
+            .build();
+        assertFrom.doAssert();
+
+        Tokenizer.Node contactNode = fromNode.left;
+        AssertNode assertContact = new AssertNodeBuilder()
+            .setNode(contactNode)
+            .setId('contact')
+            .setNodeType('object')
+            .setIsLeftNull(true)
+            .setIsRightNull(true)
+            .build();
+        assertContact.doAssert();
+
+        Tokenizer.Node groupByNode = fromNode.right;
+        AssertNode assertGroupBy = new AssertNodeBuilder()
+            .setNode(groupByNode)
+            .setId('group by')
+            .setNodeType('group by')
+            .setIsLeftNull(false)
+            .setIsRightNull(true)
+            .build();
+        assertGroupBy.doAssert();
+
+        Tokenizer.Node nameNode2 = groupByNode.left;
+        AssertNode assertName2 = new AssertNodeBuilder()
+            .setNode(nameNode2)
+            .setId('name')
+            .setNodeType('field')
+            .setIsLeftNull(false)
+            .setIsRightNull(true)
+            .build();
+        assertName2.doAssert();
+
+        Tokenizer.Node accountNameNode2 = nameNode2.left;
+        AssertNode assertAccountName2 = new AssertNodeBuilder()
+            .setNode(accountNameNode2)
+            .setId('account.name')
+            .setNodeType('field')
+            .setIsLeftNull(true)
+            .setIsRightNull(true)
+            .build();
+        assertAccountName2.doAssert();
+    }
+
+    @IsTest
+    public static void testSubQueryNoAlias() {
+        Tokenizer t = new Tokenizer();
+        Tokenizer.Node head = t.parse('SELECT Id, Name, (SELECT Id, FirstName, LastName FROM Contacts) FROM Account');
+        AssertNode assertSelect = new AssertNodeBuilder()
+            .setNode(head)
+            .setId('select')
+            .setNodeType('select')
+            .setIsLeftNull(false)
+            .setIsRightNull(false)
+            .build();
+        assertSelect.doAssert();
+
+        Tokenizer.Node idNode = head.left;
+        AssertNode assertId = new AssertNodeBuilder()
+            .setNode(idNode)
+            .setId('id')
+            .setNodeType('field')
+            .setIsLeftNull(false)
+            .setIsRightNull(true)
+            .build();
+        assertId.doAssert();
+
+        Tokenizer.Node nameNode = idNode.left;
+        AssertNode assertName = new AssertNodeBuilder()
+            .setNode(nameNode)
+            .setId('name')
+            .setNodeType('field')
+            .setIsLeftNull(false)
+            .setIsRightNull(true)
+            .build();
+        assertName.doAssert();
+
+        Tokenizer.Node subQueryNode = nameNode.left;
+        AssertNode assertSubQuery = new AssertNodeBuilder()
+            .setNode(subQueryNode)
+            .setId('subquery')
+            .setNodeType('subquery')
+            .setIsLeftNull(true)
+            .setIsRightNull(false)
+            .build();
+        assertSubQuery.doAssert();
+
+        Tokenizer.Node selectNode2 = subQueryNode.right;
+        AssertNode assertSelect2 = new AssertNodeBuilder()
+            .setNode(selectNode2)
+            .setId('select')
+            .setNodeType('select')
+            .setIsLeftNull(false)
+            .setIsRightNull(false)
+            .build();
+        assertSelect2.doAssert();
+
+        Tokenizer.Node idNode2 = selectNode2.left;
+        AssertNode assertId2 = new AssertNodeBuilder()
+            .setNode(idNode2)
+            .setId('id')
+            .setNodeType('field')
+            .setIsLeftNull(false)
+            .setIsRightNull(true)
+            .build();
+        assertId2.doAssert();
+
+        Tokenizer.Node firstNameNode = idNode2.left;
+        AssertNode assertFirstName = new AssertNodeBuilder()
+            .setNode(firstNameNode)
+            .setId('firstname')
+            .setNodeType('field')
+            .setIsLeftNull(false)
+            .setIsRightNull(true)
+            .build();
+        assertFirstName.doAssert();
+
+        Tokenizer.Node lastNameNode = firstNameNode.left;
+        AssertNode assertLastName = new AssertNodeBuilder()
+            .setNode(lastNameNode)
+            .setId('lastname')
+            .setNodeType('field')
+            .setIsLeftNull(true)
+            .setIsRightNull(true)
+            .build();
+        assertLastName.doAssert();
+
+        Tokenizer.Node fromNode = selectNode2.right;
+        AssertNode assertFrom = new AssertNodeBuilder()
+            .setNode(fromNode)
+            .setId('from')
+            .setNodeType('from')
+            .setIsLeftNull(false)
+            .setIsRightNull(true)
+            .build();
+        assertFrom.doAssert();
+
+        Tokenizer.Node contactsNode = fromNode.left;
+        AssertNode assertContacts = new AssertNodeBuilder()
+            .setNode(contactsNode)
+            .setId('contacts')
+            .setNodeType('object')
+            .setIsLeftNull(true)
+            .setIsRightNull(true)
+            .build();
+        assertContacts.doAssert();
+
+        Tokenizer.Node fromNode2 = head.right;
+        AssertNode assertFrom2 = new AssertNodeBuilder()
+            .setNode(fromNode2)
+            .setId('from')
+            .setNodeType('from')
+            .setIsLeftNull(false)
+            .setIsRightNull(true)
+            .build();
+        assertFrom2.doAssert();
+
+        Tokenizer.Node accountNode = fromNode2.left;
+        AssertNode assertAccount = new AssertNodeBuilder()
+            .setNode(accountNode)
+            .setId('account')
+            .setNodeType('object')
+            .setIsLeftNull(true)
+            .setIsRightNull(true)
+            .build();
+        assertAccount.doAssert();
     }
 }
