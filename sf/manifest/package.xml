@@ -3,7 +3,7 @@
 	<types>
 		<members>ParserUtils</members>
 		<members>Selector</members>
-		<members>StubProvider</members>
+		<members>MockProvider</members>
 		<members>MockDatabase</members>
 		<members>MockDatabaseTest</members>
 		<members>Lexer</members>
