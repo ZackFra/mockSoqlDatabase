@@ -3,6 +3,8 @@
 const fs = require('fs');
 
 const MAX_MESSAGES = 10;
+const MAX_SEVERITY = 1;
+const MIN_SEVERITY = 5;
 
 const errors = [];
 const warningFile = JSON.parse(fs.readFileSync('codescan.json', 'utf8'));
@@ -16,27 +18,22 @@ for(const warning of warningFile) {
     for(const violation of warning.violations) {
         let message = `::warning file=${warning.fileName},line=${violation.line},endLine=${violation.endLine},title=${violation.ruleName}::SEVERITY (${violation.severity}) ${violation.message}`
         message = message.replaceAll('\r','').replaceAll('\n','');
-        // prioritize higher severity since GitHub actions max out at 10 warnings
+
+        // group severity messages to prioritize higher severity messages
         errorMap[violation.severity].push(message);
         errors.push(message);
     };
 }
 
-let currSeverity = 1;
+let currSeverity = MAX_SEVERITY;
 let totalMessages = 0;
 
-let hasMessage = (errorMap[currSeverity].length > 0);
-let canPrintMoreMessages = (totalMessages <= MAX_MESSAGES);
-while(hasMessage && canPrintMoreMessages) {
+
+while(totalMessages++ < MAX_MESSAGES && currSeverity <= MIN_SEVERITY) {
     console.log(errorMap[currSeverity].shift());
 
-    totalMessages++;
-    if(totalMessages === 10) {
-        while(!!errorMap[currSeverity] && errorMap[currSeverity].length === 0) {
-            currSeverity++;
-        }
+    // find next severity level with messages
+    while(!!errorMap[currSeverity] && errorMap[currSeverity].length === 0) {
+        currSeverity++;
     }
-
-    hasMessage = (errorMap[currSeverity].length > 0) && (currSeverity <= 5);
-    canPrintMoreMessages = (totalMessages <= MAX_MESSAGES);
 }
