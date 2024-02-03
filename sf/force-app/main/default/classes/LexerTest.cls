@@ -69,7 +69,7 @@ public with sharing class LexerTest {
         Lexer t = new Lexer();
         Lexer.Node head = t.parse('SELECT Id FROM Account');
         String result = head.toString();
-        String expectedResult = '{ id: id, nodeType: field }, { id: select, nodeType: select }, { id: account, nodeType: object }, { id: from, nodeType: from}';
+        String expectedResult = '{ id: id, nodeType: field }, { id: select, nodeType: select }, { id: account, nodeType: object }, { id: from, nodeType: from }';
         Assert.areEqual(
             expectedResult,
             result, 
