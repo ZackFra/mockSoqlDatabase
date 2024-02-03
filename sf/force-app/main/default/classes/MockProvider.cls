@@ -1,5 +1,5 @@
 @IsTest
-public with sharing class StubProvider implements System.StubProvider {
+public with sharing class MockProvider implements StubProvider {
     
     Map<String, MockQueryHandler> queryHandlers;
     public StubProvider(Map<String, MockQueryHandler> queryHandlers) {
