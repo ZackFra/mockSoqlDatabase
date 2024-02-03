@@ -83,6 +83,27 @@ public with sharing class MockDatabaseUtils {
         }
     }
 
+    /**
+     * @description : Clones a node and all of its children, recursively
+     * @param head : Node, the head of the tree to clone
+     * @return : Node, the cloned tree
+     */
+    public static Lexer.Node cloneNode(Lexer.Node head) {
+        if(head == null) {
+            return null;
+        }
+        Lexer.NodeBuilder nb = new Lexer.NodeBuilder()
+            .setId(head.id)
+            .setNodeType(head.nodeType);
+        if(head.left != null) {
+            nb.setLeft(cloneNode(head.left));
+        }
+        if(head.right != null) {
+            nb.setRight(cloneNode(head.right));
+        }
+        return nb.build();
+    }
+
     private static Time parseTime(String timeString) {
         List<String> strTimeSplit = timeString.split(':');
         String strHour = strTimeSplit[0];

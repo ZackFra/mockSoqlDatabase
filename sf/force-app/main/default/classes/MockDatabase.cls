@@ -612,7 +612,7 @@ public with sharing class MockDatabase {
         }
 
         // clone the tree so we can modify it
-        Lexer.Node subqueryCloneSelectNode = Lexer.clone(subquerySelectNode);
+        Lexer.Node subqueryCloneSelectNode = MockDatabaseUtils.cloneNode(subquerySelectNode);
         Lexer.Node subqueryCloneFromNode = subqueryCloneSelectNode.right;
         Lexer.Node subqueryCloneWhereNode = subqueryCloneFromNode.right;
 
@@ -983,8 +983,6 @@ public with sharing class MockDatabase {
                         .get(comparableField)
                         .getDescribe()
                         .getType();
-
-                    Schema.SObjectField field = fieldMap.get(comparableField);
                     
                     String alias = 'expr' + exprNumber;
 

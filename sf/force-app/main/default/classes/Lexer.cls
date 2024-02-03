@@ -15,39 +15,17 @@ public with sharing class Lexer {
     }
 
     /**
-     * @description : Clones a node and all of its children,
-     *                only made protected because it's used in MockDatabase
-     * @param head : Node, the head of the tree to clone
-     * @return : Node, the cloned tree
-     */
-    protected static Node clone(Node head) {
-        if(head == null) {
-            return null;
-        }
-        NodeBuilder nb = new NodeBuilder()
-            .setId(head.id)
-            .setNodeType(head.nodeType);
-        if(head.left != null) {
-            nb.setLeft(clone(head.left));
-        }
-        if(head.right != null) {
-            nb.setRight(clone(head.right));
-        }
-        return nb.build();
-    }
-
-    /**
      * Helper classes for the lexer, meant to be used internally
      */
     
     /**
      * @description : Returns a string representation of the AST
      */
-    protected class Node {
-        protected String id;
-        protected String nodeType;
-        protected Node left;
-        protected Node right;
+    public class Node {
+        public String id;
+        public String nodeType;
+        public Node left;
+        public Node right;
 
         /**
          * @description : Constructor for a Node, not to be used directly
@@ -56,7 +34,7 @@ public with sharing class Lexer {
          * @param left : Node, the left child of the node
          * @param right : Node, the right child of the node
          */
-        private Node(String nodeType, string id, Node left, Node right) { // NOPMD
+        public Node(String nodeType, string id, Node left, Node right) { // NOPMD
             ParserUtils.nullCheck(nodeType, 'nodeType may not be null');
             ParserUtils.nullCheck(id, 'id may not be null');
             
@@ -85,7 +63,7 @@ public with sharing class Lexer {
     /**
      * @description : Builder class for the Node class, used to create a Node
      */
-    protected class NodeBuilder {
+    public class NodeBuilder {
         String id;
         String nodeType;
         Node left;
@@ -96,7 +74,7 @@ public with sharing class Lexer {
          * @param id : String, the id of the node
          * @return : NodeBuilder, the current instance of the NodeBuilder
          */
-        protected NodeBuilder setId(String id) {
+        public NodeBuilder setId(String id) {
             this.id = id;
             return this;
         }
@@ -106,7 +84,7 @@ public with sharing class Lexer {
          * @param nodeType : String, the type of the node
          * @return : NodeBuilder, the current instance of the NodeBuilder
          */
-        protected NodeBuilder setNodeType(String nodeType) {
+        public NodeBuilder setNodeType(String nodeType) {
             this.nodeType = nodeType;
             return this;
         }
@@ -116,7 +94,7 @@ public with sharing class Lexer {
          * @param left : Node, the left child of the node
          * @return : NodeBuilder, the current instance of the NodeBuilder
          */
-        protected NodeBuilder setLeft(Node left) {
+        public NodeBuilder setLeft(Node left) {
             this.left = left;
             return this;
         }
@@ -126,7 +104,7 @@ public with sharing class Lexer {
          * @param right : Node, the right child of the node
          * @return : NodeBuilder, the current instance of the NodeBuilder
          */
-        protected NodeBuilder setRight(Node right) {
+        public NodeBuilder setRight(Node right) {
             this.right = right;
             return this;
         }
@@ -135,7 +113,7 @@ public with sharing class Lexer {
          * @description : Builds the node
          * @return : Node, the built node
          */
-        protected Node build() {
+        public Node build() {
             return new Node(nodeType, id, left, right);
         }
     }
@@ -183,7 +161,7 @@ public with sharing class Lexer {
          * @param head : Node, the head of the parsed query
          * @param subquery : String, the remaining subquery
          */
-        protected Intermediary(Node head, String subquery) {
+        public Intermediary(Node head, String subquery) {
             this.head = head;
             this.subquery = subquery;
         }
