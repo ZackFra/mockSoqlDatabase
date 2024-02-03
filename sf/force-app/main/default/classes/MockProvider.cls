@@ -2,7 +2,7 @@
 public with sharing class MockProvider implements StubProvider {
     
     Map<String, MockQueryHandler> queryHandlers;
-    public StubProvider(Map<String, MockQueryHandler> queryHandlers) {
+    public MockProvider(Map<String, MockQueryHandler> queryHandlers) {
         this.queryHandlers = queryHandlers;
     }
     
