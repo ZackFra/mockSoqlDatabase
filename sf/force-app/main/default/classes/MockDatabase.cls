@@ -1099,7 +1099,6 @@ public with sharing class MockDatabase {
 
                 Boolean isHavingNode = (havingNode != null);
                 if(isHavingNode && !checkHavingCondition(ar, selectNode, havingNode.left, params)) {
-                    System.debug('checkHavingCondition failed');
                     aggregateResults.remove(i);
                     i--;
                     continue;
