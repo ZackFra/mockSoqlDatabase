@@ -6,6 +6,7 @@ on:
       - main
     paths:
       - 'sf/force-app/main/default/**'
+      - 'sf/scripts/js/**'
 
 jobs:
   run-test-classes:
