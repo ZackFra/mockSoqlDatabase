@@ -35,6 +35,6 @@ while(hasMessage && canPrintMoreMessages) {
         currSeverity++;
     }
 
-    hasMessage = (errorMap[currSeverity].length > 0);
+    hasMessage = (errorMap[currSeverity].length > 0) && (currSeverity <= 5);
     canPrintMoreMessages = (totalMessages <= MAX_MESSAGES);
 }
