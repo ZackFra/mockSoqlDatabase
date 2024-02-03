@@ -32,7 +32,9 @@ while(hasMessage && canPrintMoreMessages) {
 
     totalMessages++;
     if(totalMessages === 10) {
-        currSeverity++;
+        while(errorMap[currSeverity].length === 0) {
+            currSeverity++;
+        }
     }
 
     hasMessage = (errorMap[currSeverity].length > 0) && (currSeverity <= 5);
