@@ -1,4 +1,4 @@
-`::warning file={name},line={line},endLine={endLine},title={title}::{message}`
+// `::warning file={name},line={line},endLine={endLine},title={title}::{message}`
 
 const fs = require('fs');
 const errors = [];

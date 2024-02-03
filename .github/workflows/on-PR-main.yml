@@ -30,7 +30,7 @@ jobs:
         run: |
           cd sf
           sf scanner run --target . -f json -o codescan.json
-          node ../scripts/js/raise-warnings.js
+          node scripts/js/raise-warnings.js
       - name: Install sfdx-git-delta
         run: |
           echo y | sf plugins install sfdx-git-delta
