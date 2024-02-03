@@ -27,9 +27,10 @@ let currSeverity = MAX_SEVERITY;
 let totalMessages = 0;
 
 
-while(totalMessages++ < MAX_MESSAGES && currSeverity <= MIN_SEVERITY) {
+while(totalMessages < MAX_MESSAGES && currSeverity <= MIN_SEVERITY) {
     console.log(errorMap[currSeverity].shift());
-
+    totalMessages++;
+    
     // find next severity level with messages
     while(currSeverity <= MIN_SEVERITY && errorMap[currSeverity].length === 0) {
         currSeverity++;
