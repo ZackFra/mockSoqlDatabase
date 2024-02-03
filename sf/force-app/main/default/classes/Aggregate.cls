@@ -16,6 +16,10 @@ public with sharing class Aggregate {
         return this.ar.get(key);
     }
 
+    /**
+     * @description Returns the map as a string
+     * @return the map as a string
+     */
     public override String toString() {
         return this.ar.toString();
     }
