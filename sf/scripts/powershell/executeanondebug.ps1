@@ -1,1 +1,0 @@
-sf apex run --file $args[0] | findstr USER_DEBUG > .\scripts\apex\output.log

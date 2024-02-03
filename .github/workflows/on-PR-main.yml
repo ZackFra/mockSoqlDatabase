@@ -29,16 +29,8 @@ jobs:
       - name: Run Code Scanner
         run: |
           cd sf
-          sf scanner run --target . -f csv -o codescan.csv
-          skip_headers=1
-          cat codescan.csv | while IFS=, read -r problem severity file line column rule description url category engine
-          do
-            if((skip_headers-- > 0))
-            then
-              continue
-            fi
-            echo "::warning file=${file},line=${line},col=${column}::${description}"
-          done 
+          sf scanner run --target . -f json -o codescan.json
+          node ../scripts/js/raise-warnings.js
       - name: Install sfdx-git-delta
         run: |
           echo y | sf plugins install sfdx-git-delta
