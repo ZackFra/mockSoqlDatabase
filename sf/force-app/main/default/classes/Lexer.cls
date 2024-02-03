@@ -360,6 +360,57 @@ public with sharing class Lexer {
 
         return nextItem;        
     }
+
+    private Intermediary parseDirection(String query) {
+        query = ParserUtils.skipWhitespace(query);
+        String dir = '';
+        if(lookahead(query, 3) == 'asc') {
+            dir = 'asc';
+            query = consume(query, 'asc');
+        } else if(lookahead(query, 4) == 'desc') {
+            dir = 'desc';
+            query = consume(query, 'desc');
+        } else {
+            // may be the case that there's no direction specified
+            return null;
+        }
+        return new Intermediary(
+        	new NodeBuilder()
+            	.setId(dir)
+            	.setNodeType('direction')
+            	.build(),
+            query
+        );
+    }
+
+    private Intermediary parseOrderByFieldList(String query) {
+        query = ParserUtils.skipWhitespace(query);
+        Intermediary nextItem;
+
+        nextItem = parseField(query);
+        query = ParserUtils.skipWhitespace(nextItem.subquery);
+        
+        Intermediary dir = parseDirection(query);
+        if(dir != null) {
+            nextItem.head.right = dir.head;
+            nextItem.subquery = dir.subquery;
+            query = ParserUtils.skipWhitespace(dir.subquery);
+        }
+        if(query.length() == 0) {
+            return nextItem;
+        }
+        
+        String nextChar = lookahead(query, 1);
+        String nextCharAfterThat = lookahead(ParserUtils.skipWhitespace(query.subString(1)), 1);
+        
+        if(nextChar == ',' && nextCharAfterThat != '(') {
+            query = query.subString(1);
+            Intermediary restOfList = parseOrderByFieldList(query);
+            nextItem.head.left = restOfList.head;
+            nextItem.subquery = restOfList.subquery;
+        }
+        return nextItem;       
+    }
     
     private Intermediary parseFieldList(String query) {
         query = ParserUtils.skipWhitespace(query);
@@ -966,11 +1017,14 @@ public with sharing class Lexer {
         query = query.subString(5);
         query = ParserUtils.skipWhitespace(query);
         
-        if(query.subString(0, 2) != 'by') {
+        if(lookahead(query, 2) != 'by') {
             throw new ParsingException(query, 'BY');
         }
+
         query = query.subString(2);
-        Intermediary fieldList = parseFieldList(query);
+        query = ParserUtils.skipWhitespace(query);
+
+        Intermediary fieldList = parseOrderByFieldList(query);
         return new Intermediary(
         	new NodeBuilder()
             	.setId('order by')
