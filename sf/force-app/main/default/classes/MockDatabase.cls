@@ -1342,6 +1342,10 @@ public with sharing class MockDatabase {
 
     /** DML methods **/
 
+    /**
+     * @description: This method is used to insert an sObject into the mock database
+     * @param obj : the sObject to insert
+     */
     public void doInsert(sObject obj) {
         if(obj.Id != null) {
             throw new DmlException('Cannot insert an object with an Id');
@@ -1359,12 +1363,20 @@ public with sharing class MockDatabase {
         mockObjects.put(obj.Id, obj);
     }
 
+    /**
+     * @description: This method is used to insert a list of sObjects into the mock database
+     * @param objList : the list of sObjects to insert
+     */
     public void doInsert(List<sObject> objList) {
         for(sObject obj : objList) {
             doInsert(obj);
         }
     }
 
+    /**
+     * @description: This method is used to update an sObject in the mock database
+     * @param obj : the sObject to update
+     */
     public void doUpdate(sObject obj) {
         String objName = obj.getSObjectType().getDescribe().getName();
         Map<String, sObject> mockObjects = this.db.get(objName);
@@ -1378,12 +1390,20 @@ public with sharing class MockDatabase {
         mockObjects.put(obj.Id, obj);
     }
 
+    /**
+     * @description: This method is used to update a list of sObjects in the mock database
+     * @param objList : the list of sObjects to update
+     */
     public void doUpdate(List<sObject> objList) {
         for(sObject obj : objList) {
             doUpdate(obj);
         }
     }
 
+    /**
+     * @description: This method is used to delete an sObject from the mock database
+     * @param obj : the sObject to delete
+     */
     public void doDelete(sObject obj) {
         String objName = obj.getSObjectType().getDescribe().getName();
         Map<String, sObject> mockObjects = this.db.get(objName);
@@ -1397,6 +1417,10 @@ public with sharing class MockDatabase {
         mockObjects.remove(obj.Id);
     }
 
+    /**
+     * @description: This method is used to delete a list of sObjects from the mock database
+     * @param objList : the list of sObjects to delete
+     */
     public void doDelete(List<sObject> objList) {
         for(sObject obj : objList) {
             doDelete(obj);
@@ -1406,12 +1430,21 @@ public with sharing class MockDatabase {
 
     /** SOQL methods **/
 
-    // @description: This method is used to query the mock database by traversing the AST
+    /**
+     * @description: This method is used to query the mock database by traversing the AST
+     * @param query : the query string
+     * @return : the query results
+     */
     public Object query(String query) {
         return doQuery(query, null);
     }
 
-    // @description: This method is used to query the mock database by traversing the AST with bind variables
+    /**
+     * @description: This method is used to query the mock database by traversing the AST
+     * @param query : the query string
+     * @param params : the query parameters
+     * @return : the query results
+     */
     public Object queryWithBinds(String query, Map<String, Object> params) {
         Map<String, Object> lowerCaseParams = new Map<String, Object>();
         for(String key : params.keySet()) {
@@ -1420,8 +1453,13 @@ public with sharing class MockDatabase {
         return doQuery(query, lowerCaseParams);       
     }
 
-    // @description : meant to mimic Database.queryWithBinds, we don't actually need access level
-    //              : for our purposes, so we just call queryWithBinds
+    /**
+     * @description: This method is used to query the mock database by traversing the AST
+     * @param query : the query string
+     * @param params : the query parameters
+     * @param access : the access level
+     * @return : the query results
+     */
     public Object queryWithBinds(String query, Map<String, Object> params, AccessLevel access) {
         return queryWithBinds(query, params);
     }
