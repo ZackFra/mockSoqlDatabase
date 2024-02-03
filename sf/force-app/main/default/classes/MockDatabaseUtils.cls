@@ -1,22 +1,44 @@
 public with sharing class MockDatabaseUtils {
+
+
+    /** comparison handlers for WHERE and HAVING clauses */
     public interface OperatorHandler {
         Boolean handle(Object sObjectFieldValue, Object fieldValue);
     }
 
     public class EqualityHandler implements OperatorHandler {
         public Boolean handle(Object sObjectFieldValue, Object fieldValue) {
+            Boolean isSObjNull = (sObjectFieldValue == null);
+            Boolean isFieldNull = (fieldValue == null);
+            if(isSObjNull && isFieldNull) {
+                return true;
+            } else if(isSObjNull || isFieldNull) {
+                return false;
+            }
+
             return (String.valueOf(sObjectFieldValue).toLowerCase() == ((String)fieldValue).toLowerCase());
         }
     }
 
     public class InequalityHandler implements OperatorHandler {
         public Boolean handle(Object sObjectFieldValue, Object fieldValue) {
+            Boolean isSObjNull = (sObjectFieldValue == null);
+            Boolean isFieldNull = (fieldValue == null);
+            if(isSObjNull && isFieldNull) {
+                return false;
+            } else if(isSObjNull || isFieldNull) {
+                return true;
+            }
             return (String.valueOf(sObjectFieldValue).toLowerCase() != ((String)fieldValue).toLowerCase());
         }
     }
 
     public class LikeHandler implements OperatorHandler {
         public Boolean handle(Object sObjectFieldValue, Object fieldValue) {
+            if(sObjectFieldValue == null) {
+                return false;
+            }
+
             String regexPattern = String.valueOf(fieldValue)
                 .toLowerCase()
                 .replaceAll('%', '.*')
@@ -29,6 +51,10 @@ public with sharing class MockDatabaseUtils {
 
     public class InHandler implements OperatorHandler {
         public Boolean handle(Object sObjectFieldValue, Object fieldValue) {
+            if(sObjectFieldValue == null) {
+                return false;
+            }
+
             List<Object> values = (List<Object>) fieldValue;
             for(Integer i = 0; i < values.size(); i++) {
                 if(values[i] instanceof String) {
@@ -42,6 +68,10 @@ public with sharing class MockDatabaseUtils {
 
     public class NotInHandler implements OperatorHandler {
         public Boolean handle(Object sObjectFieldValue, Object fieldValue) {
+            if(sObjectFieldValue == null) {
+                return false;
+            }
+
             List<Object> values = (List<Object>) fieldValue;
             for(Integer i = 0; i < values.size(); i++) {
                 if(values[i] instanceof String) {
@@ -69,6 +99,10 @@ public with sharing class MockDatabaseUtils {
 
     public class GreaterThanHandler implements OperatorHandler {
         public Boolean handle(Object sObjectFieldValue, Object fieldValue) {
+            if(sObjectFieldValue == null) {
+                return false;
+            }
+
             if(sObjectFieldValue instanceOf Date) {
                 Date fieldDate = Date.parse((String) fieldValue);
                 Date sObjDate = (Date) sObjectFieldValue;
@@ -108,6 +142,10 @@ public with sharing class MockDatabaseUtils {
 
     public class LessThanHandler implements OperatorHandler {
         public Boolean handle(Object sObjectFieldValue, Object fieldValue) {
+            if(sObjectFieldValue == null) {
+                return false;
+            }
+
             if(sObjectFieldValue instanceOf Date) {
                 Date fieldDate = Date.valueOf((String) fieldValue);
                 Date sObjDate = (Date) sObjectFieldValue;
@@ -147,6 +185,10 @@ public with sharing class MockDatabaseUtils {
 
     public class GreaterThanOrEqualHandler implements OperatorHandler {
         public Boolean handle(Object sObjectFieldValue, Object fieldValue) {
+            if(sObjectFieldValue == null) {
+                return false;
+            }
+
             if(sObjectFieldValue instanceOf Date) {
                 Date fieldDate = Date.valueOf((String) fieldValue);
                 Date sObjDate = (Date) sObjectFieldValue;
@@ -186,6 +228,10 @@ public with sharing class MockDatabaseUtils {
 
     public class LessThanOrEqualHandler implements OperatorHandler {
         public Boolean handle(Object sObjectFieldValue, Object fieldValue) {
+            if(sObjectFieldValue == null) {
+                return false;
+            }
+
             if(sObjectFieldValue instanceOf Date) {
                 Date fieldDate = Date.valueOf((String) fieldValue);
                 Date sObjDate = (Date) sObjectFieldValue;

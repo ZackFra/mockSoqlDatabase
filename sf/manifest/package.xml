@@ -4,8 +4,11 @@
 		<members>ParserUtils</members>
 		<members>Selector</members>
 		<members>StubProvider</members>
-		<members>Tokenizer</members>
-		<members>TokenizerTest</members>
+		<members>MockDatabase</members>
+		<members>MockDatabaseTest</members>
+		<members>Lexer</members>
+		<members>LexerTest</members>
+		<members>MockDatabaseUtils</members>
 		<name>ApexClass</name>
 	</types>
 	<version>58.0</version>

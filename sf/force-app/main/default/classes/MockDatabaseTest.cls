@@ -1092,4 +1092,80 @@ public with sharing class MockDatabaseTest {
         List<Account> queriedAccts = (List<Account>) mockDb.query('SELECT Id, Name FROM Account WHERE Name = \'Test\' OR (Name = \'Test2\' AND Name = \'Test3\')');
         Assert.areEqual(1, queriedAccts.size(), 'Incorrect number of accounts queried');
     }
+
+    @IsTest
+    public static void testHavingClause() {
+        Account a = new Account(Name = 'Test1', NumberOfEmployees = 5);
+        Account b = new Account(Name = 'Test1', NumberOfEmployees = 10);
+        Account c = new Account(Name = 'Test2', NumberOfEmployees = 15);
+        Account d = new Account(Name = 'Test2', NumberOfEmployees = 20);
+        MockDatabase mockDb = new MockDatabase();
+        List<Account> acctList = new List<Account>{a, b, c, d};
+        mockDb.doInsert(acctList);
+
+        List<Aggregate> queriedAccts = (List<Aggregate>) mockDb.query('SELECT Name, SUM(NumberOfEmployees) FROM Account GROUP BY Name HAVING SUM(NumberOfEmployees) > 10');
+        Assert.areEqual(2, queriedAccts.size(), 'Incorrect count');
+    }
+
+    @IsTest
+    public static void testHavingClauseMixedConditions() {
+        Account a = new Account(Name = 'Test1', NumberOfEmployees = 5);
+        Account b = new Account(Name = 'Test1', NumberOfEmployees = 10);
+        Account c = new Account(Name = 'Test2', NumberOfEmployees = 15);
+        Account d = new Account(Name = 'Test2', NumberOfEmployees = 20);
+        MockDatabase mockDb = new MockDatabase();
+        List<Account> acctList = new List<Account>{a, b, c, d};
+        mockDb.doInsert(acctList);
+
+        List<Aggregate> queriedAccts = (List<Aggregate>) mockDb.query('SELECT Name, SUM(NumberOfEmployees) FROM Account GROUP BY Name HAVING Name = \'Test1\' AND SUM(NumberOfEmployees) > 10 AND Name = \'Test2\'');
+        Assert.areEqual(0, queriedAccts.size(), 'Incorrect count');
+    }
+
+    @IsTest 
+    public static void testHavingClauseWithMixedConditionsCorrectAnd() {
+        Account a = new Account(Name = 'Test1', NumberOfEmployees = 5);
+        Account b = new Account(Name = 'Test1', NumberOfEmployees = 10);
+        Account c = new Account(Name = 'Test2', NumberOfEmployees = 15);
+        Account d = new Account(Name = 'Test2', NumberOfEmployees = 20);
+        MockDatabase mockDb = new MockDatabase();
+        List<Account> acctList = new List<Account>{a, b, c, d};
+        mockDb.doInsert(acctList);
+
+        List<Aggregate> queriedAccts = (List<Aggregate>) mockDb.query('SELECT Name, SUM(NumberOfEmployees) FROM Account GROUP BY Name HAVING Name = \'Test2\' OR Name = \'Test1\' AND SUM(NumberOfEmployees) > 10');
+        Assert.areEqual(2, queriedAccts.size(), 'Incorrect count');       
+    }
+
+    @IsTest
+    public static void testHavingWithQueryWithBinds() {
+        Account a = new Account(Name = 'Test1', NumberOfEmployees = 5);
+        Account b = new Account(Name = 'Test1', NumberOfEmployees = 10);
+        Account c = new Account(Name = 'Test2', NumberOfEmployees = 15);
+        Account d = new Account(Name = 'Test2', NumberOfEmployees = 20);
+        MockDatabase mockDb = new MockDatabase();
+        List<Account> acctList = new List<Account>{a, b, c, d};
+        mockDb.doInsert(acctList);
+
+        Map<String, Object> binds = new Map<String, Object> {
+            'num' => 10
+        };
+
+        Test.startTest();
+        List<Aggregate> queriedAccts = (List<Aggregate>) mockDb.queryWithBinds('SELECT Name, SUM(NumberOfEmployees) FROM Account GROUP BY Name HAVING SUM(NumberOfEmployees) > :num', binds);
+        Test.stopTest();
+        Assert.areEqual(2, queriedAccts.size(), 'Incorrect count');
+    }
+
+    @IsTest
+    public static void testHavingCrazyConditions() {
+        Account a = new Account(Name = 'Test1', NumberOfEmployees = 5);
+        Account b = new Account(Name = 'Test1', NumberOfEmployees = 10);
+        Account c = new Account(Name = 'Test2', NumberOfEmployees = 15);
+        Account d = new Account(Name = 'Test2', NumberOfEmployees = 20);
+        MockDatabase mockDb = new MockDatabase();
+        List<Account> acctList = new List<Account>{a, b, c, d};
+        mockDb.doInsert(acctList);
+
+        List<Aggregate> queriedAccts = (List<Aggregate>) mockDb.query('SELECT Name, SUM(NumberOfEmployees) FROM Account GROUP BY Name HAVING Name = \'Test1\' AND SUM(NumberOfEmployees) > 10 OR Name = \'Test2\' AND SUM(NumberOfEmployees) > 10');
+        Assert.areEqual(2, queriedAccts.size(), 'Incorrect count');
+    }
 }

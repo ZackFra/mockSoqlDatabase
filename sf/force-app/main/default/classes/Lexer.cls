@@ -502,6 +502,137 @@ public with sharing class Lexer {
         return operatorIntermediary;
     }
 
+    private Intermediary parseHavingConditionalSubExpr(String query) {
+        query = consume(query, '(');
+        Intermediary subExpr = parseHavingConditionalExpr(query);
+        query = subExpr.subquery;
+        query = consume(query, ')');
+        return new Intermediary(
+            new NodeBuilder()
+                .setId('conditional subexpression')
+                .setNodeType('conditional subexpression')
+                .setLeft(subExpr.head)
+                .build(),
+            query
+        );
+    }
+
+    private Intermediary parseHavingNot(String query) {
+        query = consume(query, 'not');
+        query = consume(query, ' ');
+        query = ParserUtils.skipWhitespace(query);
+
+        Intermediary subExpr = parseHavingConditionalExpr(query);
+        query = subExpr.subquery;
+        return new Intermediary(
+            new NodeBuilder()
+                .setId('not')
+                .setNodeType('not')
+                .setLeft(subExpr.head)
+                .build(),
+            query
+        );
+    }
+
+    private Intermediary parseHavingConditionalOperationExpr(String query) {
+        if(lookahead(query, 3) == 'not') {
+            return parseHavingNot(query);
+        }
+        Intermediary nextItem;
+        if(isAggregateFunction(query)) {
+            nextItem = parseAggregateFunc(query);
+        } else {
+            nextItem = parseField(query);
+        }
+        query = nextItem.subquery;
+        query = ParserUtils.skipWhitespace(query);
+
+        Intermediary operatorIntermediary = parseOperator(query);
+        query = operatorIntermediary.subquery;
+        query = ParserUtils.skipWhitespace(query);
+        Boolean isIn = operatorIntermediary.head.id == 'in';
+        Boolean isNotIn = operatorIntermediary.head.id == 'not in';
+        if((isIn || isNotIn) && lookahead(query, 1) == '(') {
+            query = consume(query, '(');
+            Intermediary listOrQuery;
+            if(lookahead(query, 6) == 'select') {
+                throw new ParsingException(query, 'subquery');
+            } else {
+                listOrQuery = parseValueList(query);
+            }
+            query = listOrQuery.subquery;
+            query = ParserUtils.skipWhitespace(query);
+
+            query = consume(query, ')');
+
+            operatorIntermediary.head.right = listOrQuery.head;
+        } else {
+            Intermediary valueIntermediary = parseValue(query);
+            query = valueIntermediary.subquery;
+            operatorIntermediary.head.right = valueIntermediary.head;
+        }
+        operatorIntermediary.subquery = query;
+        operatorIntermediary.head.left = nextItem.head;
+
+        return operatorIntermediary;
+    }
+
+    private Intermediary parseHavingConditionalExpr(String query) {
+        query = ParserUtils.skipWhitespace(query);
+
+        Intermediary leftIntermediary;
+
+        // work out the left intermediary first, it's either a sub-expression or a field being compared to a value
+        if(lookahead(query, 1) == '(') {
+            leftIntermediary = parseHavingConditionalSubExpr(query);
+        } else {
+            leftIntermediary = parseHavingConditionalOperationExpr(query);
+        }
+        query = leftIntermediary.subquery;
+        query = ParserUtils.skipWhitespace(query);
+
+        // if the next token is an AND or OR, parse it
+        String token = null;
+        if(lookahead(query, 3) == 'and') {
+            token = 'and';
+        }
+
+        if(lookahead(query, 2) == 'or') {
+            token = 'or';
+        }
+
+        if(token == null) {
+            return leftIntermediary;
+        }
+
+        query = consume(query, token);
+        Intermediary restOfExpr = parseHavingConditionalExpr(query);
+        query = restOfExpr.subquery;
+
+        Node head = new NodeBuilder()
+                .setId(token)
+                .setNodeType(token)
+                .setLeft(leftIntermediary.head)
+                .setRight(restOfExpr.head)
+                .build();
+
+        Node prev = head;
+        Node curr = head.right;
+        while(curr != null) {
+            if(curr.nodeType == 'or') {
+                prev.right = curr.left;
+                curr.left = head;
+                head = curr;
+            }
+            curr = curr.right;
+        }
+
+        return new Intermediary(
+            head,
+            query
+        );
+    }
+
     private Intermediary parseConditionalExpr(String query) {
         query = ParserUtils.skipWhitespace(query);
 
@@ -626,7 +757,7 @@ public with sharing class Lexer {
             query = consume(query, '\'');
             baseValue.subquery = query;
             return baseValue;
-        } else if(query.length() >= 4 && (query.subString(0, 4) == 'true' || query.subString(0, 5) == 'false')) {
+        } else if(lookahead(query, 4) == 'true' || lookahead(query, 5) == 'false') {
         	return parseBoolean(query);
         } else if(lookahead(query, 1) == ':') {
             query = consume(query, ':');
@@ -826,27 +957,14 @@ public with sharing class Lexer {
 
         query = consume(query, 'having');
         query = ParserUtils.skipWhitespace(query);
-        Intermediary aggregateFunc = parseAggregateFunc(query);
-        query = aggregateFunc.subquery;
-        query = ParserUtils.skipWhitespace(query);
-        
-        Intermediary operator = parseOperator(query);
-        query = operator.subquery;
-        query = ParserUtils.skipWhitespace(query);
-        
-        Intermediary value = parseValue(query);
-        query = value.subquery;
-        query = ParserUtils.skipWhitespace(query);
-        
-        operator.head.left = aggregateFunc.head;
-    	operator.head.right = value.head;
-        
+        Intermediary conditionalExpr = parseHavingConditionalExpr(query);
+        query = conditionalExpr.subquery;
         
         return new Intermediary(
         	new NodeBuilder()
             	.setId('having')
             	.setNodeType('having')
-            	.setLeft(operator.head)
+            	.setLeft(conditionalExpr.head)
             	.build(),
             query
         );

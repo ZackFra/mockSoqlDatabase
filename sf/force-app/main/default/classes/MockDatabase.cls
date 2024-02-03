@@ -118,6 +118,181 @@ public with sharing class MockDatabase {
         return false;
     }
 
+    private Map<String, Object> getComparablesFromNodes(Lexer.Node fieldNode, Lexer.Node selectNode) {
+        String fieldName = fieldNode.id;
+        Lexer.Node fromNode = selectNode.right;
+        Lexer.Node objNode = fromNode.left;
+        String objName = objNode.id;
+
+        String objApiName = getSObjectApiName(objName);
+        Type t = type.forName(objApiName);
+        if(t == null) {
+            throw new QueryException('Invalid object name: ' + objName);
+        }
+        sObject sObj = (sObject) t.newInstance();
+        return getComparables(sObj, fieldName);
+    }
+
+    private Map<String, Object> getAggrNodeValue(Lexer.Node aggrNode, Lexer.Node selectNode) {
+
+        if(aggrNode.nodeType == 'field') {
+            Map<String, Object> aggrNodeValue = new Map<String, Object> {
+                'field' => aggrNode.id
+            };
+
+            if(aggrNode.right == null) {
+                Map<String, Object> comparables = getComparablesFromNodes(aggrNode, selectNode);
+                String comparableField = (String) comparables.get('comparableField');
+                aggrNodeValue.put('alias', comparableField);
+            } else {
+                String alias = aggrNode.right.id;
+                aggrNodeValue.put('alias', aggrNode.right.id);
+            }
+            return aggrNodeValue;
+        }
+
+
+        Integer exprNumber = 0;
+        String alias = 'expr' + exprNumber;
+        
+        Lexer.Node curr = selectNode;
+        while(curr != null) {
+            if(curr.nodeType != 'aggregate function') {
+                curr = curr.left;
+                continue;
+            }
+
+            if(curr.id != aggrNode.id) {
+                exprNumber++;
+                curr = curr.left;
+                continue;
+            }
+
+            Lexer.Node foundFieldNode = curr.right;
+            Lexer.Node aliasNode = foundFieldNode.left;
+
+            if(aliasNode == null) {
+                exprNumber++;
+                curr = curr.left;
+                continue;
+            }
+            
+            alias = aliasNode.id;
+            break;
+        }
+
+        // if we're here, we should have an alias
+        if(alias == null) {
+            throw new QueryException('Invalid alias');
+        }
+
+        Lexer.Node fieldNode = aggrNode.right;
+        return new Map<String, Object> {
+            'field' => fieldNode.id,
+            'alias' => alias
+        };
+    }
+
+    private Boolean isHavingCompareConditionMet(
+        Map<String, Object> aggr, 
+        Lexer.Node selectNode,
+        Lexer.Node operatorNode, 
+        Map<String, Object> params
+    ) {
+        Integer exprNumber = 0;
+        Lexer.Node aggrNode = operatorNode.left;
+        Lexer.Node curr = selectNode.left;
+        Map<String, Object> aggrNodeValue = getAggrNodeValue(aggrNode, selectNode);
+        String alias = (String) aggrNodeValue.get('alias');
+
+        Object value = aggr.get(alias);
+        Lexer.Node valueNode = operatorNode.right;
+        Object expectedValue;
+
+        if(valueNode.nodeType == 'bind variable') {
+            expectedValue = String.valueOf(params.get(valueNode.id));
+        } else {
+            expectedValue = valueNode.id;
+        }
+        
+        MockDatabaseUtils.OperatorHandlerFactory handlerFactory = new MockDatabaseUtils.OperatorHandlerFactory();
+        MockDatabaseUtils.OperatorHandler handler = handlerFactory.getHandler(operatorNode.id);
+        return handler.handle(value, expectedValue);
+    }
+
+    private Boolean isHavingOrConditionMet(
+        Map<String, Object> aggr, 
+        Lexer.Node selectNode, 
+        Lexer.Node havingNode, 
+        Map<String, Object> params
+    ) {
+        Lexer.Node leftNode = havingNode.left;
+        Lexer.Node rightNode = havingNode.right;
+
+        return (
+            isHavingConditionMet(aggr, selectNode, leftNode, params) ||
+            isHavingConditionMet(aggr, selectNode, rightNode, params)
+        );
+    }
+
+    private Boolean isHavingAndConditionMet(
+        Map<String, Object> aggr, 
+        Lexer.Node selectNode, 
+        Lexer.Node havingNode, 
+        Map<String, Object> params
+    ) {
+        Lexer.Node leftNode = havingNode.left;
+        Lexer.Node rightNode = havingNode.right;
+
+        return (
+            isHavingConditionMet(aggr, selectNode, leftNode, params) &&
+            isHavingConditionMet(aggr, selectNode, rightNode, params)
+        );
+    }
+
+    private Boolean isHavingConditionalSubExprMet(
+        Map<String, Object> aggr, 
+        Lexer.Node selectNode, 
+        Lexer.Node havingNode, 
+        Map<String, Object> params
+    ) {
+        return isHavingConditionMet(aggr, selectNode, havingNode.left, params);
+    }
+
+    private Boolean checkHavingCondition(
+        Map<String, Object> aggr, 
+        Lexer.Node selectNode,
+        Lexer.Node havingNode,
+        Map<String, Object> params
+    ) {
+        if(havingNode == null) {
+            return true;
+        }
+
+        return isHavingConditionMet(aggr, selectNode, havingNode, params);    
+    }
+
+    private Boolean isHavingConditionMet(
+        Map<String, Object> aggr, 
+        Lexer.Node selectNode, 
+        Lexer.Node havingNode, 
+        Map<String, Object> params
+    ) {
+        if(havingNode.nodeType == 'operator') {
+            return isHavingCompareConditionMet(aggr, selectNode, havingNode, params);
+        } else if(havingNode.nodeType == 'and') {
+            return isHavingAndConditionMet(aggr, selectNode, havingNode, params);
+        } else if(havingNode.nodeType == 'or') {
+            return isHavingOrConditionMet(aggr, selectNode, havingNode, params);
+        } else if(havingNode.nodeType == 'conditional subexpression') {
+            return isHavingConditionalSubExprMet(aggr, selectNode, havingNode, params);
+        } if(havingNode.nodeType == 'not') {
+            return !isHavingConditionMet(aggr, selectNode, havingNode.left, params);
+        } 
+
+        throw new QueryException('Invalid having condition');
+    }
+
     private Object getFieldNodeValue(Lexer.Node valueNode, sObject sObj, Map<String, Object> params) {
 
         Boolean isBindVar = (valueNode.nodeType == 'bind variable');
@@ -639,6 +814,7 @@ public with sharing class MockDatabase {
         Lexer.Node fromNode = selectNode.right;
         Lexer.Node whereNode;
         Lexer.Node groupByNode;
+        Lexer.Node havingNode;
 
         Lexer.Node curr = fromNode.right;
 
@@ -649,6 +825,11 @@ public with sharing class MockDatabase {
 
         if(curr != null && curr.nodeType == 'group by') {
             groupByNode = curr;
+            curr = curr.right;
+        }
+
+        if(curr != null && groupByNode != null && curr.nodeType == 'having') {
+            havingNode = curr;
             curr = curr.right;
         }
 
@@ -913,7 +1094,16 @@ public with sharing class MockDatabase {
             results = count;
         } else if(isAggregateQuery) {
             List<Aggregate> aggregateResultsList = new List<Aggregate>();
-            for(Map<String, Object> ar : aggregateResults) {
+            for(Integer i = 0; i < aggregateResults.size(); i++) {
+                Map<String, Object> ar = aggregateResults[i];
+
+                Boolean isHavingNode = (havingNode != null);
+                if(isHavingNode && !checkHavingCondition(ar, selectNode, havingNode.left, params)) {
+                    System.debug('checkHavingCondition failed');
+                    aggregateResults.remove(i);
+                    i--;
+                    continue;
+                }
 
                 // filter out grouped fields that are not selected in the select clause
                 for(String groupByField : groupByFields) {
@@ -1040,5 +1230,11 @@ public with sharing class MockDatabase {
             lowerCaseParams.put(key.toLowerCase(), params.get(key));
         }
         return doQuery(query, lowerCaseParams);       
+    }
+
+    // @description : meant to mimic Database.queryWithBinds, we don't actually need access level
+    //              : for our purposes, so we just call queryWithBinds
+    public Object queryWithBinds(String query, Map<String, Object> params, AccessLevel access) {
+        return queryWithBinds(query, params);
     }
 }

@@ -2198,4 +2198,406 @@ public with sharing class LexerTest {
             .build();
         assertAccount.doAssert();
     }
+
+    @IsTest
+    public static void testHavingClauseWithMultipleConditions() {
+        Lexer t = new Lexer();
+        Lexer.Node head = t.parse('SELECT Name, COUNT(Id) FROM Account GROUP BY Name HAVING COUNT(Id) > 1 AND COUNT(Id) < 10');
+        AssertNode assertSelect = new AssertNodeBuilder()
+            .setNode(head)
+            .setId('select')
+            .setNodeType('select')
+            .setIsLeftNull(false)
+            .setIsRightNull(false)
+            .build();
+        assertSelect.doAssert();
+
+        Lexer.Node nameNode = head.left;
+        AssertNode assertName = new AssertNodeBuilder()
+            .setNode(nameNode)
+            .setId('name')
+            .setNodeType('field')
+            .setIsLeftNull(false)
+            .setIsRightNull(true)
+            .build();
+        assertName.doAssert();
+
+        Lexer.Node countNode = nameNode.left;
+        AssertNode assertCount = new AssertNodeBuilder()
+            .setNode(countNode)
+            .setId('count')
+            .setNodeType('aggregate function')
+            .setIsLeftNull(true)
+            .setIsRightNull(false)
+            .build();
+        assertCount.doAssert();
+
+        Lexer.Node idNode = countNode.right;
+        AssertNode assertId = new AssertNodeBuilder()
+            .setNode(idNode)
+            .setId('id')
+            .setNodeType('field')
+            .setIsLeftNull(true)
+            .setIsRightNull(true)
+            .build();
+        assertId.doAssert();
+
+        Lexer.Node fromNode = head.right;
+        AssertNode assertFrom = new AssertNodeBuilder()
+            .setNode(fromNode)
+            .setId('from')
+            .setNodeType('from')
+            .setIsLeftNull(false)
+            .setIsRightNull(false)
+            .build();
+        assertFrom.doAssert();
+
+        Lexer.Node accountNode = fromNode.left;
+        AssertNode assertAccount = new AssertNodeBuilder()
+            .setNode(accountNode)
+            .setId('account')
+            .setNodeType('object')
+            .setIsLeftNull(true)
+            .setIsRightNull(true)
+            .build();
+        assertAccount.doAssert();
+
+        Lexer.Node groupByNode = fromNode.right;
+        AssertNode assertGroupBy = new AssertNodeBuilder()
+            .setNode(groupByNode)
+            .setId('group by')
+            .setNodeType('group by')
+            .setIsLeftNull(false)
+            .setIsRightNull(false)
+            .build();
+        assertGroupBy.doAssert();
+
+        Lexer.Node nameNode2 = groupByNode.left;
+        AssertNode assertName2 = new AssertNodeBuilder()
+            .setNode(nameNode2)
+            .setId('name')
+            .setNodeType('field')
+            .setIsLeftNull(true)
+            .setIsRightNull(true)
+            .build();
+        assertName2.doAssert();
+
+        Lexer.Node havingNode = groupByNode.right;
+        AssertNode assertHaving = new AssertNodeBuilder()
+            .setNode(havingNode)
+            .setId('having')
+            .setNodeType('having')
+            .setIsLeftNull(false)
+            .setIsRightNull(true)
+            .build();
+        assertHaving.doAssert();
+
+        Lexer.Node andNode = havingNode.left;
+        AssertNode assertAnd = new AssertNodeBuilder()
+            .setNode(andNode)
+            .setId('and')
+            .setNodeType('and')
+            .setIsLeftNull(false)
+            .setIsRightNull(false)
+            .build();
+        assertAnd.doAssert();
+
+        Lexer.Node operatorNode = andNode.left;
+        AssertNode assertOperator = new AssertNodeBuilder()
+            .setNode(operatorNode)
+            .setId('>')
+            .setNodeType('operator')
+            .setIsLeftNull(false)
+            .setIsRightNull(false)
+            .build();
+        assertOperator.doAssert();
+
+        Lexer.Node countNode2 = operatorNode.left;
+        AssertNode assertCount2 = new AssertNodeBuilder()
+            .setNode(countNode2)
+            .setId('count')
+            .setNodeType('aggregate function')
+            .setIsLeftNull(true)
+            .setIsRightNull(false)
+            .build();
+        assertCount2.doAssert();
+
+        Lexer.Node idNode2 = countNode2.right;
+        AssertNode assertId2 = new AssertNodeBuilder()
+            .setNode(idNode2)
+            .setId('id')
+            .setNodeType('field')
+            .setIsLeftNull(true)
+            .setIsRightNull(true)
+            .build();
+        assertId2.doAssert();
+
+        Lexer.Node valueNode = operatorNode.right;
+        AssertNode assertValue = new AssertNodeBuilder()
+            .setNode(valueNode)
+            .setId('1')
+            .setNodeType('number')
+            .setIsLeftNull(true)
+            .setIsRightNull(true)
+            .build();
+        assertValue.doAssert();
+
+        Lexer.Node operatorNode2 = andNode.right;
+        AssertNode assertOperator2 = new AssertNodeBuilder()
+            .setNode(operatorNode2)
+            .setId('<')
+            .setNodeType('operator')
+            .setIsLeftNull(false)
+            .setIsRightNull(false)
+            .build();
+        assertOperator2.doAssert();
+
+        Lexer.Node countNode3 = operatorNode2.left;
+        AssertNode assertCount3 = new AssertNodeBuilder()
+            .setNode(countNode3)
+            .setId('count')
+            .setNodeType('aggregate function')
+            .setIsLeftNull(true)
+            .setIsRightNull(false)
+            .build();
+        assertCount3.doAssert();
+
+        Lexer.Node idNode3 = countNode3.right;
+        AssertNode assertId3 = new AssertNodeBuilder()
+            .setNode(idNode3)
+            .setId('id')
+            .setNodeType('field')
+            .setIsLeftNull(true)
+            .setIsRightNull(true)
+            .build();
+        assertId3.doAssert();
+
+        Lexer.Node valueNode2 = operatorNode2.right;
+        AssertNode assertValue2 = new AssertNodeBuilder()
+            .setNode(valueNode2)
+            .setId('10')
+            .setNodeType('number')
+            .setIsLeftNull(true)
+            .setIsRightNull(true)
+            .build();
+        assertValue2.doAssert();
+    }
+
+    @IsTest
+    public static void testHavingClauseWhereAdjust() {
+        Lexer l = new Lexer();
+        
+        Test.startTest();
+        Lexer.Node head = l.parse('SELECT Name, SUM(NumberOfEmployees) FROM Account GROUP BY Name HAVING Name = \'Test2\' OR Name = \'Test1\' AND SUM(NumberOfEmployees) > 10');
+        Test.stopTest();
+
+        AssertNode assertSelect = new AssertNodeBuilder()
+            .setNode(head)
+            .setId('select')
+            .setNodeType('select')
+            .setIsLeftNull(false)
+            .setIsRightNull(false)
+            .build();
+        assertSelect.doAssert();
+
+        Lexer.Node nameNode = head.left;
+        AssertNode assertName = new AssertNodeBuilder()
+            .setNode(nameNode)
+            .setId('name')
+            .setNodeType('field')
+            .setIsLeftNull(false)
+            .setIsRightNull(true)
+            .build();
+        assertName.doAssert();
+
+        Lexer.Node sumNode = nameNode.left;
+        AssertNode assertSum = new AssertNodeBuilder()
+            .setNode(sumNode)
+            .setId('sum')
+            .setNodeType('aggregate function')
+            .setIsLeftNull(true)
+            .setIsRightNull(false)
+            .build();
+        assertSum.doAssert();
+
+        Lexer.Node numberOfEmployeesNode = sumNode.right;
+        AssertNode assertNumberOfEmployees = new AssertNodeBuilder()
+            .setNode(numberOfEmployeesNode)
+            .setId('numberofemployees')
+            .setNodeType('field')
+            .setIsLeftNull(true)
+            .setIsRightNull(true)
+            .build();
+        assertNumberOfEmployees.doAssert();
+
+        Lexer.Node fromNode = head.right;
+        AssertNode assertFrom = new AssertNodeBuilder()
+            .setNode(fromNode)
+            .setId('from')
+            .setNodeType('from')
+            .setIsLeftNull(false)
+            .setIsRightNull(false)
+            .build();
+        assertFrom.doAssert();
+
+        Lexer.Node accountNode = fromNode.left;
+        AssertNode assertAccount = new AssertNodeBuilder()
+            .setNode(accountNode)
+            .setId('account')
+            .setNodeType('object')
+            .setIsLeftNull(true)
+            .setIsRightNull(true)
+            .build();
+        assertAccount.doAssert();
+
+        Lexer.Node groupByNode = fromNode.right;
+        AssertNode assertGroupBy = new AssertNodeBuilder()
+            .setNode(groupByNode)
+            .setId('group by')
+            .setNodeType('group by')
+            .setIsLeftNull(false)
+            .setIsRightNull(false)
+            .build();
+        assertGroupBy.doAssert();
+
+        Lexer.Node nameNode2 = groupByNode.left;
+        AssertNode assertName2 = new AssertNodeBuilder()
+            .setNode(nameNode2)
+            .setId('name')
+            .setNodeType('field')
+            .setIsLeftNull(true)
+            .setIsRightNull(true)
+            .build();
+        assertName2.doAssert();
+
+        Lexer.Node havingNode = groupByNode.right;
+        AssertNode assertHaving = new AssertNodeBuilder()
+            .setNode(havingNode)
+            .setId('having')
+            .setNodeType('having')
+            .setIsLeftNull(false)
+            .setIsRightNull(true)
+            .build();
+        assertHaving.doAssert();
+
+        Lexer.Node orNode = havingNode.left;
+        AssertNode assertOr = new AssertNodeBuilder()
+            .setNode(orNode)
+            .setId('or')
+            .setNodeType('or')
+            .setIsLeftNull(false)
+            .setIsRightNull(false)
+            .build();
+        assertOr.doAssert();
+
+        Lexer.Node operatorNode = orNode.left;
+        AssertNode assertOperator = new AssertNodeBuilder()
+            .setNode(operatorNode)
+            .setId('=')
+            .setNodeType('operator')
+            .setIsLeftNull(false)
+            .setIsRightNull(false)
+            .build();
+        assertOperator.doAssert();
+
+        Lexer.Node nameNode3 = operatorNode.left;
+        AssertNode assertName3 = new AssertNodeBuilder()
+            .setNode(nameNode3)
+            .setId('name')
+            .setNodeType('field')
+            .setIsLeftNull(true)
+            .setIsRightNull(true)
+            .build();
+        assertName3.doAssert();
+
+        Lexer.Node valueNode = operatorNode.right;
+        AssertNode assertValue = new AssertNodeBuilder()
+            .setNode(valueNode)
+            .setId('test2')
+            .setNodeType('string')
+            .setIsLeftNull(true)
+            .setIsRightNull(true)
+            .build();
+        assertValue.doAssert();
+
+        Lexer.Node andNode = orNode.right;
+        AssertNode assertAnd = new AssertNodeBuilder()
+            .setNode(andNode)
+            .setId('and')
+            .setNodeType('and')
+            .setIsLeftNull(false)
+            .setIsRightNull(false)
+            .build();
+        assertAnd.doAssert();
+
+        Lexer.Node operatorNode2 = andNode.left;
+        AssertNode assertOperator2 = new AssertNodeBuilder()
+            .setNode(operatorNode2)
+            .setId('=')
+            .setNodeType('operator')
+            .setIsLeftNull(false)
+            .setIsRightNull(false)
+            .build();
+        assertOperator2.doAssert();
+
+        Lexer.Node nameNode4 = operatorNode2.left;
+        AssertNode assertName4 = new AssertNodeBuilder()
+            .setNode(nameNode4)
+            .setId('name')
+            .setNodeType('field')
+            .setIsLeftNull(true)
+            .setIsRightNull(true)
+            .build();
+        assertName4.doAssert();
+
+        Lexer.Node valueNode2 = operatorNode2.right;
+        AssertNode assertValue2 = new AssertNodeBuilder()
+            .setNode(valueNode2)
+            .setId('test1')
+            .setNodeType('string')
+            .setIsLeftNull(true)
+            .setIsRightNull(true)
+            .build();
+        assertValue2.doAssert();
+
+        Lexer.Node operatorNode3 = andNode.right;
+        AssertNode assertOperator3 = new AssertNodeBuilder()
+            .setNode(operatorNode3)
+            .setId('>')
+            .setNodeType('operator')
+            .setIsLeftNull(false)
+            .setIsRightNull(false)
+            .build();
+        assertOperator3.doAssert();
+
+        Lexer.Node sumNode2 = operatorNode3.left;
+        AssertNode assertSum2 = new AssertNodeBuilder()
+            .setNode(sumNode2)
+            .setId('sum')
+            .setNodeType('aggregate function')
+            .setIsLeftNull(true)
+            .setIsRightNull(false)
+            .build();
+        assertSum2.doAssert();
+
+        Lexer.Node numberOfEmployeesNode2 = sumNode2.right;
+        AssertNode assertNumberOfEmployees2 = new AssertNodeBuilder()
+            .setNode(numberOfEmployeesNode2)
+            .setId('numberofemployees')
+            .setNodeType('field')
+            .setIsLeftNull(true)
+            .setIsRightNull(true)
+            .build();
+        assertNumberOfEmployees2.doAssert();
+
+        Lexer.Node valueNode3 = operatorNode3.right;
+        AssertNode assertValue3 = new AssertNodeBuilder()
+            .setNode(valueNode3)
+            .setId('10')
+            .setNodeType('number')
+            .setIsLeftNull(true)
+            .setIsRightNull(true)
+            .build();
+        assertValue3.doAssert();
+    }
 }

@@ -1,5 +1,12 @@
 @IsTest
 public with sharing class StubProvider implements System.StubProvider {
+    static Integer s_num = 1;
+    public static String getFakeId(Schema.SObjectType sot)
+    {
+        String result = String.valueOf(s_num++);
+        String fakeId = sot.getDescribe().getKeyPrefix().rightPad(15, '0');
+        return fakeId;
+    }
     
     Map<String, MockQueryHandler> queryHandlers;
     public StubProvider(Map<String, MockQueryHandler> queryHandlers) {
