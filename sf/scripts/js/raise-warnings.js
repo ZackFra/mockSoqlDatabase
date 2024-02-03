@@ -11,11 +11,11 @@ for(const warning of codeScanFile) {
         let message = `::warning file=${warning.fileName},line=${violation.line},endLine=${violation.endLine},title=${violation.ruleName}::${violation.category.toUpperCase()} WARNING, SEVERITY (${violation.severity}) ${violation.message} in ${warning.fileName} at line ${violation.line} - ${violation.ruleName} - ${violation.url}`;
         message = message.replaceAll('\r','').replaceAll('\n','');
 
-        // group severity messages to prioritize higher severity messages
         errors.push({ severity: violation.severity, message });
     };
 }
 
+// sort errors by severity, we want the high severity errors to be at the top
 errors.sort((a, b) => a.severity - b.severity);
 
 for(const error of errors) {
