@@ -44,4 +44,13 @@ jobs:
       - name: Run Code Scanner
         run: |
           cd sf
-          echo "::warning $(sf scanner run --target .)" 
+          sf scanner run --target . -f csv -o codescan.csv
+          skip_headers = 1
+          cat codescan.csv | while IFS=, read -r problem severity file line column rule description url category engine
+          do
+            if((skip_headers-- > 0))
+            then
+              continue
+            fi
+            echo "::warning file=${file},line=${line},col=${column}::${description}"
+          done 
