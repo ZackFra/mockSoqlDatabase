@@ -1,61 +1,26 @@
+/**
+ * @description The lexer breaks down a SOQL query into an AST, to be fed into the parser (MockDatabase)
+ */
 public with sharing class Lexer {
-    
-    public class Node {
-        private Node(String nodeType, string id, Node left, Node right) {
-            ParserUtils.nullCheck(nodeType, 'nodeType may not be null');
-            ParserUtils.nullCheck(id, 'id may not be null');
-            
-            this.id = id;
-            this.nodeType = nodeType;
-            this.left = left;
-            this.right = right;
-        }
-        
-        public override String toString() {
-            String strVal = '{ id: ' + this.id + ', nodeType: ' + this.nodeType + '},';
-            if(this.left != null) {
-                strVal = this.left.toString() + strVal;
-            }
-            if(this.right != null) {
-                strVal += this.right.toString();
-            }
-            return strVal;
-        }
-        
-        public String id;
-        public String nodeType;
-        public Node left;
-        public Node right;
-    }
-    
-    public class NodeBuilder {
-        String id;
-        String nodeType;
-        Node left;
-        Node right;
-        
-        public NodeBuilder setId(String id) {
-            this.id = id;
-            return this;
-        }
-        public NodeBuilder setNodeType(String nodeType) {
-            this.nodeType = nodeType;
-            return this;
-        }
-        public NodeBuilder setLeft(Node left) {
-            this.left = left;
-            return this;
-        }
-        public NodeBuilder setRight(Node right) {
-            this.right = right;
-            return this;
-        }
-        public Node build() {
-            return new Node(nodeType, id, left, right);
-        }
+
+    /**
+     * @description : Parses a trimmed SOQL query into an AST
+     * @param query : String, the query to parse
+     * @return : Node, the head of the AST
+     */
+    public Node parse(String query) {
+        query = query.trim();
+        Intermediary fullQuery = parseQuery(query);
+        return fullQuery.head;
     }
 
-    public static Node clone(Node head) {
+    /**
+     * @description : Clones a node and all of its children,
+     *                only made protected because it's used in MockDatabase
+     * @param head : Node, the head of the tree to clone
+     * @return : Node, the cloned tree
+     */
+    protected static Node clone(Node head) {
         if(head == null) {
             return null;
         }
@@ -70,8 +35,122 @@ public with sharing class Lexer {
         }
         return nb.build();
     }
+
+    /**
+     * Helper classes for the lexer, meant to be used internally
+     */
     
-    // @description : Consumes a token from the query, throwing an error if the token is not present
+    /**
+     * @description : Returns a string representation of the AST
+     */
+    protected class Node {
+        protected String id;
+        protected String nodeType;
+        protected Node left;
+        protected Node right;
+
+        /**
+         * @description : Constructor for a Node, not to be used directly
+         * @param nodeType : String, the type of the node
+         * @param id : String, the id of the node
+         * @param left : Node, the left child of the node
+         * @param right : Node, the right child of the node
+         */
+        private Node(String nodeType, string id, Node left, Node right) { // NOPMD
+            ParserUtils.nullCheck(nodeType, 'nodeType may not be null');
+            ParserUtils.nullCheck(id, 'id may not be null');
+            
+            this.id = id;
+            this.nodeType = nodeType;
+            this.left = left;
+            this.right = right;
+        }
+        
+        /**
+         * @description : Returns a string representation of the node by traversing the tree in pre-order
+         * @return : String, the string representation of the node
+         */
+        public override String toString() {
+            String strVal = '{ id: ' + this.id + ', nodeType: ' + this.nodeType + ' }';
+            if(this.left != null) {
+                strVal = this.left.toString() + ' , ' + strVal;
+            }
+            if(this.right != null) {
+                strVal += ' , ' + this.right.toString();
+            }
+            return strVal;
+        }
+    }
+    
+    /**
+     * @description : Builder class for the Node class, used to create a Node
+     */
+    protected class NodeBuilder {
+        String id;
+        String nodeType;
+        Node left;
+        Node right;
+        
+        /**
+         * @description : Sets the id of the node
+         * @param id : String, the id of the node
+         * @return : NodeBuilder, the current instance of the NodeBuilder
+         */
+        protected NodeBuilder setId(String id) {
+            this.id = id;
+            return this;
+        }
+
+        /**
+         * @description : Sets the type of the node
+         * @param nodeType : String, the type of the node
+         * @return : NodeBuilder, the current instance of the NodeBuilder
+         */
+        protected NodeBuilder setNodeType(String nodeType) {
+            this.nodeType = nodeType;
+            return this;
+        }
+
+        /**
+         * @description : Sets the left child of the node
+         * @param left : Node, the left child of the node
+         * @return : NodeBuilder, the current instance of the NodeBuilder
+         */
+        protected NodeBuilder setLeft(Node left) {
+            this.left = left;
+            return this;
+        }
+
+        /**
+         * @description : Sets the right child of the node
+         * @param right : Node, the right child of the node
+         * @return : NodeBuilder, the current instance of the NodeBuilder
+         */
+        protected NodeBuilder setRight(Node right) {
+            this.right = right;
+            return this;
+        }
+
+        /**
+         * @description : Builds the node
+         * @return : Node, the built node
+         */
+        protected Node build() {
+            return new Node(nodeType, id, left, right);
+        }
+    }
+
+    /**
+     * Private methods for the lexer, meant to be used internally
+     */
+    
+    /**
+     * @description : Consumes the first token in the query if it matches the token
+     * @param query : String, the query to consume
+     * @param token : String, the token to consume
+     * @return : String, the query with the token consumed
+     * @throws ParsingException : if the token is not the first token in the query
+     */
     private String consume(String query, String token) {
         if(query.length() < token.length() || query.subString(0, token.length()) != token) {
             throw new ParsingException(query, token);
@@ -79,7 +158,12 @@ public with sharing class Lexer {
         return query.subString(token.length());
     }
 
-    // @description : Look ahead at the next numChars characters in the query
+    /** 
+     * @description : Look ahead at the next numChars characters in the query
+     * @param query : String, the query to look ahead in
+     * @param numChars : Integer, the number of characters to look ahead
+     * @return : String, the next numChars characters in the query
+     */
     private String lookahead(String query, Integer numChars) {
         if(query.length() < numChars) { 
             return query;
@@ -87,17 +171,33 @@ public with sharing class Lexer {
         return query.subString(0, numChars);
     }
     
+    /**
+     * @description : Class to hold the head of a parsed query and the remaining subquery
+     */
     private class Intermediary {
-        public Node head;
-        String subquery;
-        public Intermediary(Node head, String subquery) {
+        protected Node head;
+        protected String subquery;
+
+        /**
+         * @description : Constructor for an Intermediary
+         * @param head : Node, the head of the parsed query
+         * @param subquery : String, the remaining subquery
+         */
+        protected Intermediary(Node head, String subquery) {
             this.head = head;
             this.subquery = subquery;
         }
     }
     
-    // @description: Custom error thrown when a query cannot be parsed
+    /** 
+     * @description: Custom error thrown when a query cannot be parsed
+     */
     private class ParsingException extends Exception {
+        /**
+         * @description : Constructor for a ParsingException
+         * @param message : String, the message to display
+         * @param expected : String, the expected token
+         */
         public ParsingException(String message, String expected) {
             if(expected == null) {
                 this.setMessage('Unkown parsing exception, "' + message + '" could not be parsed.');
@@ -105,12 +205,6 @@ public with sharing class Lexer {
                 this.setMessage('Parsing exception, expected "' + expected + '", instead saw "' + message + '".');
             }
         }
-    }
-    
-    public Node parse(String query) {
-        query = query.trim();
-        Intermediary fullQuery = parseQuery(query);
-        return fullQuery.head;
     }
     
     private Intermediary parseQuery(String query) {

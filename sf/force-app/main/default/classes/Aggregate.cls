@@ -3,6 +3,11 @@
  */
 public with sharing class Aggregate {
     private Map<String, Object> ar;
+
+    /**
+     * @description Constructor
+     * @param ar - the map to be used
+     */
     public Aggregate(Map<String, Object> ar) {
         this.ar = ar;
     }
