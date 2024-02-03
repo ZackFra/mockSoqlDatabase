@@ -27,7 +27,6 @@ public with sharing class MockDatabase {
 
     private String getFieldApiName(Schema.SObjectType sObjType, String fieldName) {
         Schema.DescribeSObjectResult fieldDsor = sObjType.getDescribe();
-        String fieldApiName = null;
         for(Schema.SObjectField field : fieldDsor.fields.getMap().values()) {
             if(field.getDescribe().getName().toLowerCase() == fieldName) {
                 return field.getDescribe().getName();
@@ -146,7 +145,7 @@ public with sharing class MockDatabase {
                 aggrNodeValue.put('alias', comparableField);
             } else {
                 String alias = aggrNode.right.id;
-                aggrNodeValue.put('alias', aggrNode.right.id);
+                aggrNodeValue.put('alias', alias);
             }
             return aggrNodeValue;
         }
@@ -201,7 +200,6 @@ public with sharing class MockDatabase {
     ) {
         Integer exprNumber = 0;
         Lexer.Node aggrNode = operatorNode.left;
-        Lexer.Node curr = selectNode.left;
         Map<String, Object> aggrNodeValue = getAggrNodeValue(aggrNode, selectNode);
         String alias = (String) aggrNodeValue.get('alias');
 
@@ -376,7 +374,6 @@ public with sharing class MockDatabase {
                 throw new QueryException('Invalid field name: ' + fieldName);
             }
             
-            Schema.DisplayType parentFieldType = parentField.getDescribe().getType();
             String childObjFieldName = childObjField.getDescribe().getName();
             String childObjApiName = childObj.getSObjectType().getDescribe().getName();
             Boolean isSameType = idsReferenceSameSObject(objApiName, fieldName, childObjApiName, childObjfieldName);
@@ -500,7 +497,6 @@ public with sharing class MockDatabase {
 
         String sObjApiName = sObj.getSObjectType().getDescribe().getName();
         SObjectType t = ((SObject)Type.forName(sObjApiName).newInstance()).getSObjectType();
-        String relatedApiName = t.getDescribe().getName();
         for (SObjectField f : t.getDescribe().fields.getMap().values()) {
             if (f.getDescribe().getType() == DisplayType.Reference && f.getDescribe().getRelationshipName().toLowerCase() == fieldName) {
                 List<Schema.sObjectType> objTypeList = f.getDescribe().getReferenceTo();
@@ -946,7 +942,6 @@ public with sharing class MockDatabase {
                         sObject comparableRecord = (sObject) comparableInfo.get('comparableRecord');
                         String comparableField = (String) comparableInfo.get('comparableField');
 
-                        String fieldApiName = getFieldApiName(comparableRecord.getSObjectType(), comparableField);
                         aggregateResult.put(comparableField, comparableRecord.get(comparableField));
                     }
                     // pointer logic, we won't have to add this again

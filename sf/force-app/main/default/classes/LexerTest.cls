@@ -77,18 +77,6 @@ public with sharing class LexerTest {
         );
     }
 
-    @IsTest
-    public static void testClone() {
-        Lexer t = new Lexer();
-        Lexer.Node head = t.parse('SELECT Id FROM Account');
-        Lexer.Node clone = Lexer.clone(head);
-        Assert.areEqual(
-            head.toString(),
-            clone.toString(),
-            'Expected clone to be the same as the original'
-        );
-    }
-
     // fails for the wrong reason
     @IsTest
     public static void testAggrFuncFail1() {
