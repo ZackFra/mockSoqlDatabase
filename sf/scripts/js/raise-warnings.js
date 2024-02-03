@@ -28,7 +28,7 @@ let totalMessages = 0;
 let hasMessage = (errorMap[currSeverity].length > 0);
 let canPrintMoreMessages = (totalMessages <= MAX_MESSAGES);
 while(hasMessage && canPrintMoreMessages) {
-    console.log(errorMap[i].shift());
+    console.log(errorMap[currSeverity].shift());
 
     totalMessages++;
     if(totalMessages === 10) {
