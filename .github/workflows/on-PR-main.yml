@@ -26,6 +26,19 @@ jobs:
       - name: Install Code Scanner
         run: |
           sf plugins install @salesforce/sfdx-scanner
+      - name: Run Code Scanner
+        run: |
+          cd sf
+          sf scanner run --target . -f csv -o codescan.csv
+          $skip_headers = 1
+          cat codescan.csv | while IFS=, read -r problem severity file line column rule description url category engine
+          do
+            if((skip_headers-- > 0))
+            then
+              continue
+            fi
+            echo "::warning file=${file},line=${line},col=${column}::${description}"
+          done 
       - name: Install sfdx-git-delta
         run: |
           echo y | sf plugins install sfdx-git-delta
@@ -37,19 +50,6 @@ jobs:
           cd sf
           echo "${{ secrets.SERVER_KEY }}" > server.key
           sf org login jwt --client-id=${{ secrets.CLIENT_ID }} --username=${{ secrets.SF_USERNAME }} --jwt-key-file=server.key --set-default-dev-hub --alias=DevHub
-      - name: Run Code Scanner
-        run: |
-          cd sf
-          sf scanner run --target . -f csv -o codescan.csv
-          (skip_headers = 1)
-          cat codescan.csv | while IFS=, read -r problem severity file line column rule description url category engine
-          do
-            if((skip_headers-- > 0))
-            then
-              continue
-            fi
-            echo "::warning file=${file},line=${line},col=${column}::${description}"
-          done 
       - name: Run Tests
         run: |
           cd sf
