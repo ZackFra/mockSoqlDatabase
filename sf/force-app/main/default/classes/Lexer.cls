@@ -51,10 +51,10 @@ public with sharing class Lexer {
         public override String toString() {
             String strVal = '{ id: ' + this.id + ', nodeType: ' + this.nodeType + ' }';
             if(this.left != null) {
-                strVal = this.left.toString() + ' , ' + strVal;
+                strVal = this.left.toString() + ', ' + strVal;
             }
             if(this.right != null) {
-                strVal += ' , ' + this.right.toString();
+                strVal += ', ' + this.right.toString();
             }
             return strVal;
         }
