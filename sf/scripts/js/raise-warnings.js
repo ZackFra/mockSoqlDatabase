@@ -12,12 +12,12 @@ for(const warning of codeScanFile) {
         message = message.replaceAll('\r','').replaceAll('\n','');
 
         // group severity messages to prioritize higher severity messages
-        errors.push(message);
+        errors.push({ severity: violation.severity, message });
     };
 }
 
 errors.sort((a, b) => a.severity - b.severity);
 
 for(const error of errors) {
-    console.log(error);
+    console.log(error.message);
 }
