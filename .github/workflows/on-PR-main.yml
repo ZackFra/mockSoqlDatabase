@@ -30,7 +30,7 @@ jobs:
         run: |
           cd sf
           sf scanner run --target . -f csv -o codescan.csv
-          $skip_headers = 1
+          skip_headers=1
           cat codescan.csv | while IFS=, read -r problem severity file line column rule description url category engine
           do
             if((skip_headers-- > 0))
