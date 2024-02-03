@@ -23,6 +23,9 @@ jobs:
         run: |
           npm i -g @salesforce/cli
           sf --version
+      - name: Install Code Scanner
+        run: |
+          sf plugins install @salesforce/sfdx-scanner
       - name: Install sfdx-git-delta
         run: |
           echo y | sf plugins install sfdx-git-delta
@@ -37,4 +40,8 @@ jobs:
       - name: Run Tests
         run: |
           cd sf
-          sf project deploy validate --manifest=package/package.xml -o DevHub -w 10
+          sf project deploy validate --manifest=package/package.xml -o DevHub -w 120
+      - name: Run Code Scanner
+        run: |
+          cd sf
+          echo "::warning $(sf scanner run --target .)" 
