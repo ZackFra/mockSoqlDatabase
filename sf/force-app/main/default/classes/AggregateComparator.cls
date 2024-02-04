@@ -79,7 +79,6 @@ public with sharing class AggregateComparator implements Comparator<Map<String, 
 
             Map<String, String> fieldData = this.fields.get(field);
             
-            String fieldApiName = (String) fieldData.get('fieldApiName');
             String order = (String) fieldData.get('order');
             String nullDir = (String) fieldData.get('nullDir');
 
