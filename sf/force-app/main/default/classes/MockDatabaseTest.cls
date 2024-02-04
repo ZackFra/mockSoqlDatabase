@@ -981,7 +981,7 @@ public with sharing class MockDatabaseTest {
 
         Test.startTest();
         List<Aggregate> queriedAccts = (List<Aggregate>) mockDb.query('SELECT Name, SUM(NumberOfEmployees), AVG(NumberOfEmployees) FROM Account GROUP BY Name');
-        Test.startTest();
+        Test.stopTest();
 
         Assert.areEqual(4, queriedAccts.size(), 'Incorrect count');
         for(Aggregate agg : queriedAccts) {
