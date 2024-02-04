@@ -1492,4 +1492,123 @@ public with sharing class MockDatabaseTest {
         Assert.areEqual('Test3', queriedAccts[2].get('Name'), 'Incorrect order');
         Assert.areEqual('Test4', queriedAccts[3].get('Name'), 'Incorrect order');
     }
+
+    @IsTest
+    public static void testOrderByMutipleOrders() {
+        Account a = new Account(Name = 'Test1', NumberOfEmployees = 5, AnnualRevenue = 1000);
+        Account b = new Account(Name = 'Test1', NumberOfEmployees = 10, AnnualRevenue = 1000);
+        Account c = new Account(Name = 'Test2', NumberOfEmployees = 5, AnnualRevenue = 2000);
+        Account d = new Account(Name = 'Test2', NumberOfEmployees = 20, AnnualRevenue = 3000);
+        Account e = new Account(Name = 'Test2', NumberOfEmployees = 5, AnnualRevenue = 4000);
+        Account f = new Account(Name = 'Test3', NumberOfEmployees = 10, AnnualRevenue = 5000);
+        Account g = new Account(Name = 'Test3', NumberOfEmployees = 15, AnnualRevenue = 3000);
+        Account h = new Account(Name = 'Test3', NumberOfEmployees = 10, AnnualRevenue = 3000);
+        Account i = new Account(Name = 'Test3', NumberOfEmployees = 5, AnnualRevenue = 5000);
+        Account j = new Account(Name = 'Test4', NumberOfEmployees = 10, AnnualRevenue = 10000);
+        Account k = new Account(Name = 'Test4', NumberOfEmployees = 10, AnnualRevenue = 2000);
+        Account l = new Account(Name = 'Test4', NumberOfEmployees = 5, AnnualRevenue = 4000);
+        Account m = new Account(Name = 'Test4', NumberOfEmployees = 5, AnnualRevenue = 3000);
+        MockDatabase mockDb = new MockDatabase();
+        List<Account> acctList = new List<Account>{a, b, c, d, e, f, g, h, i, j, k, l, m};
+        mockDb.doInsert(acctList);
+
+        Contact con0 = new Contact(
+            FirstName = 'Steve',
+            LastName = 'Banner',
+            AccountId = a.Id
+        );
+
+        Contact con1 = new Contact(
+            FirstName = 'Steve',
+            LastName = 'Banner',
+            AccountId = c.Id
+        );
+
+        Contact con2 = new Contact(
+            FirstName = 'Steve',
+            LastName = 'Banner',
+            AccountId = f.Id
+        );
+
+        Contact con3 = new Contact(
+            FirstName = 'Steve',
+            LastName = 'Banner',
+            AccountId = j.Id
+        );
+        List<Contact> conList = new List<Contact>{con0, con1, con2, con3};
+        mockDb.doInsert(conList);
+
+        List<Aggregate> queriedAccts = (List<Aggregate>) mockDb.query('SELECT Account.Name, COUNT(Id) FROM Contact GROUP BY Account.Name ORDER BY Account.Name, COUNT(Id)');
+
+        Assert.areEqual(4, queriedAccts.size(), 'Incorrect number of accounts queried');
+        Assert.areEqual('Test1', queriedAccts[0].get('Name'), 'Incorrect order');
+        Assert.areEqual('Test2', queriedAccts[1].get('Name'), 'Incorrect order');
+        Assert.areEqual('Test3', queriedAccts[2].get('Name'), 'Incorrect order');
+        Assert.areEqual('Test4', queriedAccts[3].get('Name'), 'Incorrect order');
+    }
+
+    @IsTest
+    public static void testOrderByMutipleOrdersDESC() {
+        Account a = new Account(Name = 'Test1', NumberOfEmployees = 5, AnnualRevenue = 1000);
+        Account b = new Account(Name = 'Test1', NumberOfEmployees = 10, AnnualRevenue = 1000);
+        Account c = new Account(Name = 'Test2', NumberOfEmployees = 5, AnnualRevenue = 2000);
+        Account d = new Account(Name = 'Test2', NumberOfEmployees = 20, AnnualRevenue = 3000);
+        Account e = new Account(Name = 'Test2', NumberOfEmployees = 5, AnnualRevenue = 4000);
+        Account f = new Account(Name = 'Test3', NumberOfEmployees = 10, AnnualRevenue = 5000);
+        Account g = new Account(Name = 'Test3', NumberOfEmployees = 15, AnnualRevenue = 3000);
+        Account h = new Account(Name = 'Test3', NumberOfEmployees = 10, AnnualRevenue = 3000);
+        Account i = new Account(Name = 'Test3', NumberOfEmployees = 5, AnnualRevenue = 5000);
+        Account j = new Account(Name = 'Test4', NumberOfEmployees = 10, AnnualRevenue = 10000);
+        Account k = new Account(Name = 'Test4', NumberOfEmployees = 10, AnnualRevenue = 2000);
+        Account l = new Account(Name = 'Test4', NumberOfEmployees = 5, AnnualRevenue = 4000);
+        Account m = new Account(Name = 'Test4', NumberOfEmployees = 5, AnnualRevenue = 3000);
+        MockDatabase mockDb = new MockDatabase();
+        List<Account> acctList = new List<Account>{a, b, c, d, e, f, g, h, i, j, k, l, m};
+        mockDb.doInsert(acctList);
+
+        Contact con0 = new Contact(
+            FirstName = 'Steve',
+            LastName = 'Banner',
+            AccountId = a.Id
+        );
+
+        Contact con1 = new Contact(
+            FirstName = 'Steve',
+            LastName = 'Banner',
+            AccountId = c.Id
+        );
+
+        Contact con2 = new Contact(
+            FirstName = 'Steve',
+            LastName = 'Banner',
+            AccountId = f.Id
+        );
+
+        Contact con3 = new Contact(
+            FirstName = 'Steve',
+            LastName = 'Banner',
+            AccountId = j.Id
+        );
+
+        Contact con4 = new Contact(
+            FirstName = 'Steve',
+            LastName = 'Banner',
+            AccountId = k.Id
+        );
+        List<Contact> conList = new List<Contact>{con0, con1, con2, con3, con4};
+        mockDb.doInsert(conList);
+
+        List<Aggregate> queriedAccts = (List<Aggregate>) mockDb.query('SELECT Account.Name, COUNT(Id) FROM Contact GROUP BY Account.Name ORDER BY Account.Name DESC, COUNT(Id) DESC');
+
+        Assert.areEqual(4, queriedAccts.size(), 'Incorrect number of accounts queried');
+        Assert.areEqual('Test4', queriedAccts[0].get('Name'), 'Incorrect order');
+        Assert.areEqual('Test3', queriedAccts[1].get('Name'), 'Incorrect order');
+        Assert.areEqual('Test2', queriedAccts[2].get('Name'), 'Incorrect order');
+        Assert.areEqual('Test1', queriedAccts[3].get('Name'), 'Incorrect order');
+
+        Assert.areEqual(2, queriedAccts[0].get('expr0'), 'Incorrect order');
+        Assert.areEqual(1, queriedAccts[1].get('expr0'), 'Incorrect order');
+        Assert.areEqual(1, queriedAccts[2].get('expr0'), 'Incorrect order');
+        Assert.areEqual(1, queriedAccts[3].get('expr0'), 'Incorrect order');
+    }
 }

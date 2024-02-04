@@ -387,7 +387,11 @@ public with sharing class Lexer {
         query = ParserUtils.skipWhitespace(query);
         Intermediary nextItem;
 
-        nextItem = parseField(query);
+        if(isAggregateFunction(query)) {
+            nextItem = parseAggregateFunc(query);
+        } else {
+            nextItem = parseField(query);
+        }
         query = ParserUtils.skipWhitespace(nextItem.subquery);
         
         Intermediary dir = parseDirection(query);

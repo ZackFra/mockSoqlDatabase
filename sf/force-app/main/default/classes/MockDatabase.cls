@@ -1255,6 +1255,56 @@ public with sharing class MockDatabase {
 
         return results;
     }
+    
+    private Map<String, String> getAlias(Lexer.Node selectNode, Lexer.Node fieldNode) {
+        String expr = 'expr';
+        Integer exprNumber = 0;
+
+        Lexer.Node curr = selectNode.left;
+        while(curr != null) {
+            Boolean isField = (curr.nodeType == 'field');
+            Boolean isSameId = (curr.id == fieldNode.id);
+            
+            Boolean isAggregateFunc = (curr.nodeType == 'aggregate function');
+            Boolean isSameAggrField = (isAggregateFunc && curr.right.id == fieldNode?.right?.id);
+
+            if(isField && isSameId) {
+                Lexer.Node aliasNode = curr.right;
+                if(aliasNode != null) {
+                    return new Map<String, String> {
+                        'fieldApiName' => aliasNode.id,
+                        'relationshipName' => null
+                    };
+                } else {
+                    Map<String, Object> comparables = getComparableDataFromNodes(fieldNode, selectNode);
+                    String relationshipName = (String) comparables.get('relationshipName');
+                    String fieldApiName = (String) comparables.get('comparableField');
+                    return new Map<String, String> {
+                        'fieldApiName' => fieldApiName,
+                        'relationshipName' => relationshipName
+                    };
+                }
+            } else if(isAggregateFunc && isSameAggrField && isSameId) {
+                Lexer.Node aggrFieldNode = curr.right;
+                Lexer.Node aliasNode = aggrFieldNode.left;
+                if(aliasNode != null) {
+                    return new Map<String, String> {
+                        'fieldApiName' => aliasNode.id,
+                        'relationshipName' => null
+                    };
+                } else {
+                    return new Map<String, String> {
+                        'fieldApiName' => expr + exprNumber,
+                        'relationshipName' => null
+                    };
+                }
+            } else if(isAggregateFunc) {
+                exprNumber++;
+            }
+            curr = curr.left;
+        }
+        throw new QueryException('No alias found');
+    }
 
     private List<Map<String, Object>> sortByOrderBy(List<Map<String, Object>> aggregates, Lexer.Node selectNode, Lexer.Node orderByNode) {
         // clone the list so we don't modify the original
@@ -1265,13 +1315,16 @@ public with sharing class MockDatabase {
         }
         Lexer.Node orderByField = orderByNode.left;
         
-
         Map<String, Map<String, String>> fields = new Map<String, Map<String, String>>();
         while(orderByField != null) {
-            String fieldName = orderByField.id;
-            Map<String, Object> comparables = getComparableDataFromNodes(orderByField, selectNode);
-            String relationshipName = (String) comparables.get('relationshipName');
-            String fieldApiName = (String) comparables.get('comparableField');
+            String relationshipName;
+            String fieldApiName;
+
+            Map<String, String> aliasData = getAlias(selectNode, orderByField);
+            fieldApiName = aliasData.get('fieldApiName');
+            relationshipName = aliasData.get('relationshipName');
+            
+
             String order = 'asc';
             if(orderByField.right != null) {
                 order = orderByField.right.id;

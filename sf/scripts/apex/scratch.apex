@@ -1,2 +1,6 @@
-Object a = (Object) 10;
-Object b = (Object) 20;
+System.debug([
+    SELECT Account.Name, COUNT(Id) idCount
+    FROM Contact  
+    GROUP BY Account.Name
+    ORDER BY Account.Name, COUNT(Id)
+]);
