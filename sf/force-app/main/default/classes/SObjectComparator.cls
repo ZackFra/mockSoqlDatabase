@@ -57,6 +57,14 @@ public with sharing class SObjectComparator implements Comparator<SObject> {
         return null;
     }
 
+    private Integer adjustForOrder(Integer result, String order) {
+        if(order == 'desc') {
+            return result * -1;
+        } else {
+            return result;
+        }
+    }
+
     /**
      * @description Compare two SObjects based on the fields provided in the constructor
      * @param a The first SObject
@@ -85,11 +93,9 @@ public with sharing class SObjectComparator implements Comparator<SObject> {
                     continue;
                 }
 
-                if(order == 'desc') {
-                    result = (comparator.compareTo(bFieldValue) * -1);
-                } else {
-                    result = (comparator.compareTo(bFieldValue));
-                }
+                result = comparator.compareTo(bFieldValue);
+                result = adjustForOrder(result, order);
+
                 if(result != 0) {
                     return result;
                 }
