@@ -1279,6 +1279,12 @@ public with sharing class MockDatabase {
         return aggr;
     }
 
+    /**
+     * @description Remove the fields that are not in the select clause
+     * @param aggregateResults : the aggregate result list
+     * @param selectNode : the select node
+     * @return : the cleaned up aggregate result list
+     */
     private List<Aggregate> handleAggregateQueryPostProcessing(
         List<Map<String, Object>> aggregateResults, 
         Lexer.Node selectNode,
@@ -1296,18 +1302,32 @@ public with sharing class MockDatabase {
         List<Aggregate> aggregateResultsList = new List<Aggregate>();
         for(Integer i = 0; i < aggregateResults.size(); i++) {
             Map<String, Object> ar = aggregateResults[i];
-            
-            if(!checkHavingCondition(ar, selectNode, havingNode, params)) {
-                aggregateResults.remove(i);
-                i--;
-                continue;
-            }
 
             ar = cleanUpAggregateResult(ar, groupByFields, selectFields);
             Aggregate arp = new Aggregate(ar);
             aggregateResultsList.add(arp);
         }
         return aggregateResultsList;
+    }
+
+    private List<Map<String, Object>> handleHavingNode(
+        List<Map<String, Object>> aggregateResults, 
+        Lexer.Node selectNode, 
+        Map<String, Object> params
+    ) {
+        Map<String, Lexer.Node> topLevelNodes = getTopLevelNodes(selectNode);
+        Lexer.Node havingNode = topLevelNodes.get('havingNode');
+        if(havingNode == null) {
+            return aggregateResults;
+        }
+
+        List<Map<String, Object>> results = new List<Map<String, Object>>();
+        for(Map<String, Object> ar : aggregateResults) {
+            if(checkHavingCondition(ar, selectNode, havingNode, params)) {
+                results.add(ar);
+            }
+        }
+        return results;
     }
     
     private Map<String, String> getAlias(Lexer.Node selectNode, Lexer.Node fieldNode) {
@@ -1678,9 +1698,9 @@ public with sharing class MockDatabase {
         if(isAggregateQuery) {
             aggregateResults = (List<Map<String, Object>>) handleOrderByNode('aggregate', aggregateResults, selectNode, orderByNode);
             aggregateResults = (List<Map<String, Object>>) handleLimitNode('aggregate', limitNode, aggregateResults);
-            
-            // HAVING clause is handled in the post-processing here,
-            // we alse remove internal fields from the aggregate results ('__n', '__distinct')
+            aggregateResults = (List<Map<String, Object>>) handleHavingNode(aggregateResults, selectNode, params);
+
+            // Remove internal fields from the aggregate results ('__n', '__distinct')
             List<Aggregate> aggregateResultsList = handleAggregateQueryPostProcessing(
                 aggregateResults, 
                 selectNode,
