@@ -38,20 +38,20 @@ public with sharing class SObjectComparator implements Comparator<SObject> {
      * @return Integer
      */
     private Integer checkForNull(Object a, Object b, String nullDir) {
-        if(a == null && b == null) {
+        Boolean isANull = (a == null);
+        Boolean isBNull = (b == null);
+        Boolean isNullDirFirst = (nullDir == 'first');
+
+        if(isANull && isBNull && isNullDirFirst) {
             return 0;
-        } else if(a == null && b != null) {
-            if(nullDir == 'first') {
-                return -1;
-            } else {
-                return 1;
-            }
-        } else if(a != null && b == null) {
-            if(nullDir == 'first') {
-                return 1;
-            } else {
-                return -1;
-            }
+        } else if(isANull && !isBNull && !isNullDirFirst) {
+            return -1;
+        } else if(isANull && !isBNull && isNullDirFirst) {
+            return 1;
+        } else if(!isANull && isBNull && isNullDirFirst) {
+            return 1;
+        } else if(!isANull && isBNull && !isNullDirFirst) {
+            return -1;
         }
 
         return null;
