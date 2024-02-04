@@ -1,7 +1,40 @@
+/**
+ * @description The lexer breaks down a SOQL query into an AST, to be fed into the parser (MockDatabase)
+ */
 public with sharing class Lexer {
+
+    /**
+     * @description : Parses a trimmed SOQL query into an AST
+     * @param query : String, the query to parse
+     * @return : Node, the head of the AST
+     */
+    public Node parse(String query) {
+        query = query.trim();
+        Intermediary fullQuery = parseQuery(query);
+        return fullQuery.head;
+    }
+
+    /**
+     * Helper classes for the lexer, meant to be used internally
+     */
     
+    /**
+     * @description : Returns a string representation of the AST
+     */
     public class Node {
-        private Node(String nodeType, string id, Node left, Node right) {
+        public String id;
+        public String nodeType;
+        public Node left;
+        public Node right;
+
+        /**
+         * @description : Constructor for a Node, not to be used directly
+         * @param nodeType : String, the type of the node
+         * @param id : String, the id of the node
+         * @param left : Node, the left child of the node
+         * @param right : Node, the right child of the node
+         */
+        public Node(String nodeType, string id, Node left, Node right) { // NOPMD
             ParserUtils.nullCheck(nodeType, 'nodeType may not be null');
             ParserUtils.nullCheck(id, 'id may not be null');
             
@@ -11,67 +44,91 @@ public with sharing class Lexer {
             this.right = right;
         }
         
+        /**
+         * @description : Returns a string representation of the node by traversing the tree in pre-order
+         * @return : String, the string representation of the node
+         */
         public override String toString() {
-            String strVal = '{ id: ' + this.id + ', nodeType: ' + this.nodeType + '},';
+            String strVal = '{ id: ' + this.id + ', nodeType: ' + this.nodeType + ' }';
             if(this.left != null) {
-                strVal = this.left.toString() + strVal;
+                strVal = this.left.toString() + ', ' + strVal;
             }
             if(this.right != null) {
-                strVal += this.right.toString();
+                strVal += ', ' + this.right.toString();
             }
             return strVal;
         }
-        
-        public String id;
-        public String nodeType;
-        public Node left;
-        public Node right;
     }
     
+    /**
+     * @description : Builder class for the Node class, used to create a Node
+     */
     public class NodeBuilder {
         String id;
         String nodeType;
         Node left;
         Node right;
         
+        /**
+         * @description : Sets the id of the node
+         * @param id : String, the id of the node
+         * @return : NodeBuilder, the current instance of the NodeBuilder
+         */
         public NodeBuilder setId(String id) {
             this.id = id;
             return this;
         }
+
+        /**
+         * @description : Sets the type of the node
+         * @param nodeType : String, the type of the node
+         * @return : NodeBuilder, the current instance of the NodeBuilder
+         */
         public NodeBuilder setNodeType(String nodeType) {
             this.nodeType = nodeType;
             return this;
         }
+
+        /**
+         * @description : Sets the left child of the node
+         * @param left : Node, the left child of the node
+         * @return : NodeBuilder, the current instance of the NodeBuilder
+         */
         public NodeBuilder setLeft(Node left) {
             this.left = left;
             return this;
         }
+
+        /**
+         * @description : Sets the right child of the node
+         * @param right : Node, the right child of the node
+         * @return : NodeBuilder, the current instance of the NodeBuilder
+         */
         public NodeBuilder setRight(Node right) {
             this.right = right;
             return this;
         }
+
+        /**
+         * @description : Builds the node
+         * @return : Node, the built node
+         */
         public Node build() {
             return new Node(nodeType, id, left, right);
         }
     }
 
-    public static Node clone(Node head) {
-        if(head == null) {
-            return null;
-        }
-        NodeBuilder nb = new NodeBuilder()
-            .setId(head.id)
-            .setNodeType(head.nodeType);
-        if(head.left != null) {
-            nb.setLeft(clone(head.left));
-        }
-        if(head.right != null) {
-            nb.setRight(clone(head.right));
-        }
-        return nb.build();
-    }
+    /**
+     * Private methods for the lexer, meant to be used internally
+     */
     
-    // @description : Consumes a token from the query, throwing an error if the token is not present
+    /**
+     * @description : Consumes the first token in the query if it matches the token
+     * @param query : String, the query to consume
+     * @param token : String, the token to consume
+     * @return : String, the query with the token consumed
+     * @throws ParsingException : if the token is not the first token in the query
+     */
     private String consume(String query, String token) {
         if(query.length() < token.length() || query.subString(0, token.length()) != token) {
             throw new ParsingException(query, token);
@@ -79,7 +136,12 @@ public with sharing class Lexer {
         return query.subString(token.length());
     }
 
-    // @description : Look ahead at the next numChars characters in the query
+    /** 
+     * @description : Look ahead at the next numChars characters in the query
+     * @param query : String, the query to look ahead in
+     * @param numChars : Integer, the number of characters to look ahead
+     * @return : String, the next numChars characters in the query
+     */
     private String lookahead(String query, Integer numChars) {
         if(query.length() < numChars) { 
             return query;
@@ -87,17 +149,33 @@ public with sharing class Lexer {
         return query.subString(0, numChars);
     }
     
+    /**
+     * @description : Class to hold the head of a parsed query and the remaining subquery
+     */
     private class Intermediary {
-        public Node head;
-        String subquery;
+        protected Node head;
+        protected String subquery;
+
+        /**
+         * @description : Constructor for an Intermediary
+         * @param head : Node, the head of the parsed query
+         * @param subquery : String, the remaining subquery
+         */
         public Intermediary(Node head, String subquery) {
             this.head = head;
             this.subquery = subquery;
         }
     }
     
-    // @description: Custom error thrown when a query cannot be parsed
+    /** 
+     * @description: Custom error thrown when a query cannot be parsed
+     */
     private class ParsingException extends Exception {
+        /**
+         * @description : Constructor for a ParsingException
+         * @param message : String, the message to display
+         * @param expected : String, the expected token
+         */
         public ParsingException(String message, String expected) {
             if(expected == null) {
                 this.setMessage('Unkown parsing exception, "' + message + '" could not be parsed.');
@@ -105,12 +183,6 @@ public with sharing class Lexer {
                 this.setMessage('Parsing exception, expected "' + expected + '", instead saw "' + message + '".');
             }
         }
-    }
-    
-    public Node parse(String query) {
-        query = query.trim();
-        Intermediary fullQuery = parseQuery(query);
-        return fullQuery.head;
     }
     
     private Intermediary parseQuery(String query) {
@@ -287,6 +359,101 @@ public with sharing class Lexer {
 
 
         return nextItem;        
+    }
+
+    private Intermediary parseDirection(String query) {
+        query = ParserUtils.skipWhitespace(query);
+        String dir = '';
+        if(lookahead(query, 3) == 'asc') {
+            dir = 'asc';
+            query = consume(query, 'asc');
+        } else if(lookahead(query, 4) == 'desc') {
+            dir = 'desc';
+            query = consume(query, 'desc');
+        } else {
+            // may be the case that there's no direction specified
+            return null;
+        }
+        return new Intermediary(
+        	new NodeBuilder()
+            	.setId(dir)
+            	.setNodeType('direction')
+            	.build(),
+            query
+        );
+    }
+
+    private Intermediary parseNulls(String query) {
+        query = ParserUtils.skipWhitespace(query);
+        if(lookahead(query, 5) != 'nulls') {
+            return null;
+        }
+        query = consume(query, 'nulls');
+        query = ParserUtils.skipWhitespace(query);
+        String dir;
+        if(lookahead(query, 5) == 'first') {
+            dir = 'nulls first';
+            query = consume(query, 'first');
+        } else if(lookahead(query, 4) == 'last') {
+            dir = 'nulls last';
+            query = consume(query, 'last');
+        } else {
+            throw new ParsingException(query, 'first or last');
+        }
+
+        return new Intermediary(
+            new NodeBuilder()
+                .setId(dir)
+                .setNodeType('nulls direction')
+                .build(),
+            query
+        );
+    }
+
+    private Intermediary parseOrderByFieldList(String query) {
+        query = ParserUtils.skipWhitespace(query);
+        Intermediary nextItem;
+
+        if(isAggregateFunction(query)) {
+            nextItem = parseAggregateFunc(query);
+        } else {
+            nextItem = parseField(query);
+        }
+        query = ParserUtils.skipWhitespace(nextItem.subquery);
+        
+        Intermediary dir = parseDirection(query);
+        if(dir != null) {
+            nextItem.head.right = dir.head;
+            nextItem.subquery = dir.subquery;
+            query = ParserUtils.skipWhitespace(dir.subquery);
+        }
+        
+        Intermediary nullsDir = parseNulls(query);
+        if(nullsDir != null) {
+            if(dir != null) {
+                dir.head.right = nullsDir.head;
+            } else {
+                nextItem.head.right = nullsDir.head;
+            }
+            nextItem.subquery = nullsDir.subquery;
+            query = nullsDir.subquery;
+        }
+        query = ParserUtils.skipWhitespace(nextItem.subquery);
+
+        if(query.length() == 0) {
+            return nextItem;
+        }
+        
+        String nextChar = lookahead(query, 1);
+        String nextCharAfterThat = lookahead(ParserUtils.skipWhitespace(query.subString(1)), 1);
+        
+        if(nextChar == ',' && nextCharAfterThat != '(') {
+            query = query.subString(1);
+            Intermediary restOfList = parseOrderByFieldList(query);
+            nextItem.head.left = restOfList.head;
+            nextItem.subquery = restOfList.subquery;
+        }
+        return nextItem;       
     }
     
     private Intermediary parseFieldList(String query) {
@@ -894,11 +1061,14 @@ public with sharing class Lexer {
         query = query.subString(5);
         query = ParserUtils.skipWhitespace(query);
         
-        if(query.subString(0, 2) != 'by') {
+        if(lookahead(query, 2) != 'by') {
             throw new ParsingException(query, 'BY');
         }
+
         query = query.subString(2);
-        Intermediary fieldList = parseFieldList(query);
+        query = ParserUtils.skipWhitespace(query);
+
+        Intermediary fieldList = parseOrderByFieldList(query);
         return new Intermediary(
         	new NodeBuilder()
             	.setId('order by')

@@ -1,0 +1,98 @@
+public with sharing class AggregateComparator implements Comparator<Map<String, Object>>{
+    private Map<String, Map<String, String>> fields;
+
+    /**
+     * @description Constructor
+     * @param fields A map of field names and whether they're ASC or DESC
+     */
+    public AggregateComparator(Map<String, Map<String, String>> fields) {
+        this.fields = fields;
+    }
+
+    private Object getFieldValue(Map<String, Object> sObj, Map<String, String> fieldData) {
+        String relationshipName = fieldData.get('relationshipName');
+        String fieldApiName = fieldData.get('fieldApiName');
+
+        Object fieldValue;
+        if(relationshipName != null) {
+            List<String> fieldParts = fieldApiName.split('\\.');
+            for(String part : fieldParts) {
+                fieldValue = sObj.get(part);
+            }
+        } else {
+            fieldValue = sObj.get(fieldApiName);
+        }
+
+        return fieldValue;
+    }
+
+    /**
+     * @description Check for null values and return the appropriate result, 
+     *              returns null if both are not null
+     * @param a The first value
+     * @param b The second value
+     * @param nullDir The direction to sort null values
+     * @return Integer
+     */
+    private Integer checkForNull(Object a, Object b, String nullDir) {
+        if(a == null && b == null) {
+            return 0;
+        } else if(a == null && b != null) {
+            if(nullDir == 'first') {
+                return -1;
+            } else {
+                return 1;
+            }
+        } else if(a != null && b == null) {
+            if(nullDir == 'first') {
+                return 1;
+            } else {
+                return -1;
+            }
+        }
+
+        return null;
+    }
+
+    /**
+     * @description Compare two SObjects based on the fields provided in the constructor
+     * @param a The first SObject
+     * @param b The second SObject
+     * @return Integer
+     */
+    public Integer compare(Map<String, Object> a, Map<String, Object> b) {
+        for (String field : this.fields.keySet()) {
+
+            Map<String, String> fieldData = this.fields.get(field);
+            
+            String fieldApiName = (String) fieldData.get('fieldApiName');
+            String order = (String) fieldData.get('order');
+            String nullDir = (String) fieldData.get('nullDir');
+
+            Object aFieldValue = getFieldValue(a, fieldData);
+            Object bFieldValue = getFieldValue(b, fieldData);
+
+            if (aFieldValue != bFieldValue) {
+                ObjectComparator comparator = new ObjectComparator(aFieldValue);
+                
+                Integer result = checkForNull(aFieldValue, bFieldValue, nullDir);
+                if(result != null && result != 0) {
+                    return result;
+                } else if(result == 0) { // If both are null,
+                    continue;
+                }
+                
+
+                if(order == 'desc') {
+                    result = (comparator.compareTo(bFieldValue) * -1);
+                } else {
+                    result = (comparator.compareTo(bFieldValue));
+                }
+                if(result != 0) {
+                    return result;
+                }
+            }
+        }
+        return 0;
+    }
+}
