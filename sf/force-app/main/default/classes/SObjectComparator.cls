@@ -41,17 +41,19 @@ public with sharing class SObjectComparator implements Comparator<SObject> {
         Boolean isANull = (a == null);
         Boolean isBNull = (b == null);
         Boolean isNullDirFirst = (nullDir == 'first');
+        
+        Integer nullFirstAdjustment = 1;
+        if(!isNullDirFirst) {
+            nullFirstAdjustment = -1;
+        }
 
-        if(isANull && isBNull && isNullDirFirst) {
+        Integer result = null;
+        if(isANull && isBNull) {
             return 0;
-        } else if(isANull && !isBNull && !isNullDirFirst) {
-            return -1;
-        } else if(isANull && !isBNull && isNullDirFirst) {
-            return 1;
-        } else if(!isANull && isBNull && isNullDirFirst) {
-            return 1;
-        } else if(!isANull && isBNull && !isNullDirFirst) {
-            return -1;
+        } else if(isANull && !isBNull) {
+            return -1 * nullFirstAdjustment;
+        } else if(!isANull && isBNull) {
+            return 1 * nullFirstAdjustment;
         }
 
         return null;
