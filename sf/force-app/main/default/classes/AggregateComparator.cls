@@ -88,13 +88,13 @@ public with sharing class AggregateComparator implements Comparator<Map<String, 
                 ObjectComparator comparator = new ObjectComparator(aFieldValue);
                 
                 Integer result = checkForNull(aFieldValue, bFieldValue, nullDir);
-                
                 if(result != null && result != 0) {
                     return result;
                 } else if(result == 0) { // If both are null,
                     continue;
                 }
                 
+                result = comparator.compareTo(bFieldValue);
                 result = adjustForOrder(result, order);
 
                 if(result != 0) {
