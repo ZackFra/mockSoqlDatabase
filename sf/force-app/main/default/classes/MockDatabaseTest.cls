@@ -1785,4 +1785,16 @@ public with sharing class MockDatabaseTest {
         Assert.areEqual(3, queriedAccts[1].get('expr0'), 'Incorrect order');
         Assert.areEqual(4, queriedAccts[2].get('expr0'), 'Incorrect order');
     }
+
+    @IsTest
+    public static void testOnlyQueriedFieldsReturned() {
+        Account a = new Account(Name = 'Test1', NumberOfEmployees = 5, AnnualRevenue = 1000);
+        MockDatabase mockDb = new MockDatabase();
+        mockDb.doInsert(new List<Account>{a});
+        List<Account> queriedAccts = (List<Account>) mockDb.query('SELECT Name FROM Account');
+        Assert.areEqual(1, queriedAccts.size(), 'Incorrect number of accounts queried');
+        Assert.areEqual('Test1', queriedAccts[0].Name, 'Name should have been queried');
+        Assert.isNull(queriedAccts[0].NumberOfEmployees, 'NumberOfEmployees should not have been queried');
+        Assert.isNull(queriedAccts[0].AnnualRevenue, 'AnnualRevenue should not have been queried');
+    }
 }

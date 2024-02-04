@@ -1657,9 +1657,6 @@ public with sharing class MockDatabase {
             throw new QueryException('Duplicate field selected');
         }
 
-        Object results;
-        List<sObject> sObjects = new List<sObject>();
-        Integer count = 0;
         Boolean isAggregateQuery = isAggregateQuery(selectNode);
         Boolean isCount = isSingularCount(selectNode);
 
@@ -1667,7 +1664,12 @@ public with sharing class MockDatabase {
             throw new QueryException('COUNT() and ORDER BY may not be used together');
         }
 
+        Object results;
+        
+        // results will either be a count, a list of sObjects, or a list of aggregates
+        Integer count = 0;
         List<Map<String, Object>> aggregateResults = new List<Map<String, Object>>();
+        List<sObject> sObjects = new List<sObject>();
         
         // process the query, whether it's a count, aggregate, or regular query
         for(sObject obj : mockObjects.values()) {

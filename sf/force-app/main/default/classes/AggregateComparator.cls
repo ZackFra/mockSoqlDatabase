@@ -48,7 +48,6 @@ public with sharing class AggregateComparator implements Comparator<Map<String, 
             nullFirstAdjustment = -1;
         }
 
-        Integer result = null;
         if(isANull && isBNull) {
             return 0;
         } else if(isANull && !isBNull) {
