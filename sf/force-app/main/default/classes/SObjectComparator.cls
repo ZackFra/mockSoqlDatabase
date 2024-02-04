@@ -67,8 +67,6 @@ public with sharing class SObjectComparator implements Comparator<SObject> {
         for (String field : fields.keySet()) {
             Map<String, String> fieldData = fields.get(field);
 
-            String relationshipName = fieldData.get('relationshipName');
-            String fieldApiName = fieldData.get('fieldApiName');
             String order = fieldData.get('order');
             String nullDir = fieldData.get('nullDir');
 

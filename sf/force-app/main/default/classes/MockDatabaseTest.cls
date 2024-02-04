@@ -1692,4 +1692,97 @@ public with sharing class MockDatabaseTest {
         Assert.areEqual('Test5', queriedAccts[14].Name, 'Incorrect order');
 
     }
+
+    @IsTest
+    public static void testLimitSObject() {
+        Account a = new Account(Name = 'Test1', NumberOfEmployees = 5, AnnualRevenue = 1000);
+        Account b = new Account(Name = 'Test1', NumberOfEmployees = 10, AnnualRevenue = 1000);
+        Account c = new Account(Name = 'Test2', NumberOfEmployees = 5, AnnualRevenue = 2000);
+        Account d = new Account(Name = 'Test2', NumberOfEmployees = 20, AnnualRevenue = 3000);
+        Account e = new Account(Name = 'Test2', NumberOfEmployees = 5, AnnualRevenue = 4000);
+        Account f = new Account(Name = 'Test3', NumberOfEmployees = 10, AnnualRevenue = 5000);
+        Account g = new Account(Name = 'Test3', NumberOfEmployees = 15, AnnualRevenue = 3000);
+        Account h = new Account(Name = 'Test3', NumberOfEmployees = 10, AnnualRevenue = 3000);
+        Account i = new Account(Name = 'Test3', NumberOfEmployees = 5, AnnualRevenue = 5000);
+        Account j = new Account(Name = 'Test4', NumberOfEmployees = 10, AnnualRevenue = 10000);
+        Account k = new Account(Name = 'Test4', NumberOfEmployees = 10, AnnualRevenue = 2000);
+        Account l = new Account(Name = 'Test4', NumberOfEmployees = 5, AnnualRevenue = 4000);
+        Account m = new Account(Name = 'Test4', NumberOfEmployees = 5, AnnualRevenue = 3000);
+        Account n = new Account(Name = 'Test5', NumberOfEmployees = 5, AnnualRevenue = null);
+        Account o = new Account(Name = 'Test5', NumberOfEmployees = 5, AnnualRevenue = 1000);
+        MockDatabase mockDb = new MockDatabase();
+        List<Account> acctList = new List<Account>{a, b, c, d, e, f, g, h, i, j, k, l, m, n, o};
+        mockDb.doInsert(acctList);
+
+        List<Account> queriedAccts = (List<Account>) mockDb.query('SELECT Id, Name, NumberOfEmployees, AnnualRevenue FROM Account ORDER BY AnnualRevenue NULLS LAST, Name NULLS FIRST LIMIT 5');
+        Assert.areEqual(5, queriedAccts.size(), 'Incorrect number of accounts queried');
+        Assert.areEqual(1000, queriedAccts[0].AnnualRevenue, 'Incorrect order');
+        Assert.areEqual(1000, queriedAccts[1].AnnualRevenue, 'Incorrect order');
+        Assert.areEqual(1000, queriedAccts[2].AnnualRevenue, 'Incorrect order');
+        Assert.areEqual(2000, queriedAccts[3].AnnualRevenue, 'Incorrect order');
+        Assert.areEqual(2000, queriedAccts[4].AnnualRevenue, 'Incorrect order');
+
+        Assert.areEqual('Test1', queriedAccts[0].Name, 'Incorrect order');
+        Assert.areEqual('Test1', queriedAccts[1].Name, 'Incorrect order');
+        Assert.areEqual('Test5', queriedAccts[2].Name, 'Incorrect order');
+        Assert.areEqual('Test2', queriedAccts[3].Name, 'Incorrect order');
+        Assert.areEqual('Test4', queriedAccts[4].Name, 'Incorrect order');   
+    }
+
+    @IsTest
+    public static void testLimitCount() {
+        Account a = new Account(Name = 'Test1', NumberOfEmployees = 5, AnnualRevenue = 1000);
+        Account b = new Account(Name = 'Test1', NumberOfEmployees = 10, AnnualRevenue = 1000);
+        Account c = new Account(Name = 'Test2', NumberOfEmployees = 5, AnnualRevenue = 2000);
+        Account d = new Account(Name = 'Test2', NumberOfEmployees = 20, AnnualRevenue = 3000);
+        Account e = new Account(Name = 'Test2', NumberOfEmployees = 5, AnnualRevenue = 4000);
+        Account f = new Account(Name = 'Test3', NumberOfEmployees = 10, AnnualRevenue = 5000);
+        Account g = new Account(Name = 'Test3', NumberOfEmployees = 15, AnnualRevenue = 3000);
+        Account h = new Account(Name = 'Test3', NumberOfEmployees = 10, AnnualRevenue = 3000);
+        Account i = new Account(Name = 'Test3', NumberOfEmployees = 5, AnnualRevenue = 5000);
+        Account j = new Account(Name = 'Test4', NumberOfEmployees = 10, AnnualRevenue = 10000);
+        Account k = new Account(Name = 'Test4', NumberOfEmployees = 10, AnnualRevenue = 2000);
+        Account l = new Account(Name = 'Test4', NumberOfEmployees = 5, AnnualRevenue = 4000);
+        Account m = new Account(Name = 'Test4', NumberOfEmployees = 5, AnnualRevenue = 3000);
+        Account n = new Account(Name = 'Test5', NumberOfEmployees = 5, AnnualRevenue = null);
+        Account o = new Account(Name = 'Test5', NumberOfEmployees = 5, AnnualRevenue = 1000);
+        MockDatabase mockDb = new MockDatabase();
+        List<Account> acctList = new List<Account>{a, b, c, d, e, f, g, h, i, j, k, l, m, n, o};
+        mockDb.doInsert(acctList);
+
+        Integer acctCount = (Integer) mockDb.query('SELECT COUNT() FROM Account LIMIT 5');
+        Assert.areEqual(5, acctCount, 'Incorrect number of accounts queried');
+    }
+
+    @IsTest
+    public static void testLimitAggregate() {
+        Account a = new Account(Name = 'Test1', NumberOfEmployees = 5, AnnualRevenue = 1000);
+        Account b = new Account(Name = 'Test1', NumberOfEmployees = 10, AnnualRevenue = 1000);
+        Account c = new Account(Name = 'Test2', NumberOfEmployees = 5, AnnualRevenue = 2000);
+        Account d = new Account(Name = 'Test2', NumberOfEmployees = 20, AnnualRevenue = 3000);
+        Account e = new Account(Name = 'Test2', NumberOfEmployees = 5, AnnualRevenue = 4000);
+        Account f = new Account(Name = 'Test3', NumberOfEmployees = 10, AnnualRevenue = 5000);
+        Account g = new Account(Name = 'Test3', NumberOfEmployees = 15, AnnualRevenue = 3000);
+        Account h = new Account(Name = 'Test3', NumberOfEmployees = 10, AnnualRevenue = 3000);
+        Account i = new Account(Name = 'Test3', NumberOfEmployees = 5, AnnualRevenue = 5000);
+        Account j = new Account(Name = 'Test4', NumberOfEmployees = 10, AnnualRevenue = 10000);
+        Account k = new Account(Name = 'Test4', NumberOfEmployees = 10, AnnualRevenue = 2000);
+        Account l = new Account(Name = 'Test4', NumberOfEmployees = 5, AnnualRevenue = 4000);
+        Account m = new Account(Name = 'Test4', NumberOfEmployees = 5, AnnualRevenue = 3000);
+        Account n = new Account(Name = 'Test5', NumberOfEmployees = 5, AnnualRevenue = null);
+        Account o = new Account(Name = 'Test5', NumberOfEmployees = 5, AnnualRevenue = 1000);
+        MockDatabase mockDb = new MockDatabase();
+        List<Account> acctList = new List<Account>{a, b, c, d, e, f, g, h, i, j, k, l, m, n, o};
+        mockDb.doInsert(acctList);
+
+        List<Aggregate> queriedAccts = (List<Aggregate>) mockDb.query('SELECT Name, COUNT(Id) FROM Account GROUP BY Name ORDER BY Name LIMIT 3');
+        Assert.areEqual(3, queriedAccts.size(), 'Incorrect number of accounts queried');
+        Assert.areEqual('Test1', queriedAccts[0].get('Name'), 'Incorrect order');
+        Assert.areEqual('Test2', queriedAccts[1].get('Name'), 'Incorrect order');
+        Assert.areEqual('Test3', queriedAccts[2].get('Name'), 'Incorrect order');
+
+        Assert.areEqual(2, queriedAccts[0].get('expr0'), 'Incorrect order');
+        Assert.areEqual(3, queriedAccts[1].get('expr0'), 'Incorrect order');
+        Assert.areEqual(4, queriedAccts[2].get('expr0'), 'Incorrect order');
+    }
 }
