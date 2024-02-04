@@ -1,3 +1,7 @@
+/**
+ * @description A class to compare two pre-Aggregate based on a set of fields
+ *              (a pre-Aggregate is a Map<String, Object> where the keys are the field names and the values are the field values)
+ */
 public with sharing class AggregateComparator implements Comparator<Map<String, Object>>{
     private Map<String, Map<String, String>> fields;
 
@@ -54,6 +58,14 @@ public with sharing class AggregateComparator implements Comparator<Map<String, 
         return null;
     }
 
+    private Integer adjustForOrder(Integer result, String order) {
+        if(order == 'desc') {
+            return result * -1;
+        } else {
+            return result;
+        }
+    }
+
     /**
      * @description Compare two SObjects based on the fields provided in the constructor
      * @param a The first SObject
@@ -76,18 +88,15 @@ public with sharing class AggregateComparator implements Comparator<Map<String, 
                 ObjectComparator comparator = new ObjectComparator(aFieldValue);
                 
                 Integer result = checkForNull(aFieldValue, bFieldValue, nullDir);
+                
                 if(result != null && result != 0) {
                     return result;
                 } else if(result == 0) { // If both are null,
                     continue;
                 }
                 
+                result = adjustForOrder(result, order);
 
-                if(order == 'desc') {
-                    result = (comparator.compareTo(bFieldValue) * -1);
-                } else {
-                    result = (comparator.compareTo(bFieldValue));
-                }
                 if(result != 0) {
                     return result;
                 }

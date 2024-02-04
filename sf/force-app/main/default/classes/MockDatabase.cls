@@ -1309,94 +1309,6 @@ public with sharing class MockDatabase {
         }
         return aggregateResultsList;
     }
-
-    private Object doQuery(Lexer.Node selectNode, Map<String, Object> params) {
-        Map<String, Lexer.Node> topLevelNodes = getTopLevelNodes(selectNode);
-        Lexer.Node fromNode = topLevelNodes.get('fromNode');
-        Lexer.Node whereNode = topLevelNodes.get('whereNode');
-        Lexer.Node groupByNode = topLevelNodes.get('groupByNode');
-        Lexer.Node havingNode = topLevelNodes.get('havingNode');
-        Lexer.Node orderByNode = topLevelNodes.get('orderByNode');
-        Lexer.Node limitNode = topLevelNodes.get('limitNode');
-
-        Lexer.Node objNode = fromNode.left;
-        String objName = objNode.id;
-        String objApiName = getSObjectApiName(objName);
-
-        Map<String, sObject> mockObjects = this.db.get(objApiName);
-        if (mockObjects == null) {
-            return new List<sObject>();
-        }
-
-        if(hasDuplicateSubQueries(selectNode)) {
-            throw new QueryException('Cannot follow the same aggregate relationship twice');
-        }
-
-        if(hasDuplicateFields(selectNode)) {
-            throw new QueryException('Duplicate field selected');
-        }
-
-        Object results;
-        List<sObject> sObjects = new List<sObject>();
-        Integer count = 0;
-        Boolean isAggregateQuery = isAggregateQuery(selectNode);
-        Boolean isCount = isSingularCount(selectNode);
-
-        if(isCount && orderByNode != null) {
-            throw new QueryException('COUNT() and ORDER BY may not be used together');
-        }
-
-        List<Map<String, Object>> aggregateResults = new List<Map<String, ObjecT>>();
-        
-        for(sObject obj : mockObjects.values()) {
-            if(!checkWhereCondition(obj, whereNode, params)) {
-                continue;
-            }
-
-            if(isCount && !isAggregateQuery) {
-                count++;
-                continue;
-            }
-
-            // handle fields
-            if(!isAggregateQuery) {
-                sObjects.add(copyWithFields(obj, selectNode, params));
-                continue;
-            }
-
-            Map<String, Object> aggrResultValues = handleAggregateQuery(
-                selectNode, 
-                obj, 
-                aggregateResults
-            );
-            aggregateResults = (List<Map<String, Object>>) aggrResultValues.get('aggregateResults');
-        }
-
-        if(isAggregateQuery) {
-            aggregateResults = (List<Map<String, Object>>) handleOrderByNode('aggregate', aggregateResults, selectNode, orderByNode);
-            aggregateResults = (List<Map<String, Object>>) handleLimitNode('aggregate', limitNode, aggregateResults);
-        } else if(isCount) {
-            count = (Integer) handleLimitNode('count', limitNode, count);
-        } else {
-            sObjects = (List<SObject>) handleOrderByNode('sObject', sObjects, selectNode, orderByNode);
-            sObjects = (List<SObject>) handleLimitNode('sObject', limitNode, sObjects);
-        }
-
-        if(isCount) {
-            results = count;
-        } else if(isAggregateQuery) {
-            List<Aggregate> aggregateResultsList = handleAggregateQueryPostProcessing(
-                aggregateResults, 
-                selectNode,
-                params
-            );
-            results = aggregateResultsList;
-        } else {
-            results = sObjects;
-        }
-
-        return results;
-    }
     
     private Map<String, String> getAlias(Lexer.Node selectNode, Lexer.Node fieldNode) {
         String expr = 'expr';
@@ -1562,13 +1474,6 @@ public with sharing class MockDatabase {
         return (selectNode.left.id == 'count' && selectNode.left.right == null && selectNode.left.left == null);
     } 
 
-    // @description: This method is used to query the mock database by traversing the AST
-    private Object doQuery(String query, Map<String, Object> params) {
-        Lexer parser = new Lexer();
-        Lexer.Node selectNode = parser.parse(query);
-        return doQuery(selectNode, params);
-    }
-
     /** DML methods **/
 
     /**
@@ -1697,5 +1602,100 @@ public with sharing class MockDatabase {
      */
     public Object queryWithBinds(String query, Map<String, Object> params, AccessLevel access) {
         return queryWithBinds(query, params);
+    }
+
+    // @description: This method is used to query the mock database by traversing the AST
+    private Object doQuery(String query, Map<String, Object> params) {
+        Lexer parser = new Lexer();
+        Lexer.Node selectNode = parser.parse(query);
+        return doQuery(selectNode, params);
+    }
+
+    private Object doQuery(Lexer.Node selectNode, Map<String, Object> params) {
+        Map<String, Lexer.Node> topLevelNodes = getTopLevelNodes(selectNode);
+        Lexer.Node fromNode = topLevelNodes.get('fromNode');
+        Lexer.Node whereNode = topLevelNodes.get('whereNode');
+        Lexer.Node groupByNode = topLevelNodes.get('groupByNode');
+        Lexer.Node havingNode = topLevelNodes.get('havingNode');
+        Lexer.Node orderByNode = topLevelNodes.get('orderByNode');
+        Lexer.Node limitNode = topLevelNodes.get('limitNode');
+
+        Lexer.Node objNode = fromNode.left;
+        String objName = objNode.id;
+        String objApiName = getSObjectApiName(objName);
+
+        Map<String, sObject> mockObjects = this.db.get(objApiName);
+        if (mockObjects == null) {
+            return new List<sObject>();
+        }
+
+        if(hasDuplicateSubQueries(selectNode)) {
+            throw new QueryException('Cannot follow the same aggregate relationship twice');
+        }
+
+        if(hasDuplicateFields(selectNode)) {
+            throw new QueryException('Duplicate field selected');
+        }
+
+        Object results;
+        List<sObject> sObjects = new List<sObject>();
+        Integer count = 0;
+        Boolean isAggregateQuery = isAggregateQuery(selectNode);
+        Boolean isCount = isSingularCount(selectNode);
+
+        if(isCount && orderByNode != null) {
+            throw new QueryException('COUNT() and ORDER BY may not be used together');
+        }
+
+        List<Map<String, Object>> aggregateResults = new List<Map<String, Object>>();
+        
+        for(sObject obj : mockObjects.values()) {
+            if(!checkWhereCondition(obj, whereNode, params)) {
+                continue;
+            }
+
+            if(isCount && !isAggregateQuery) {
+                count++;
+                continue;
+            }
+
+            // handle fields
+            if(!isAggregateQuery) {
+                sObjects.add(copyWithFields(obj, selectNode, params));
+                continue;
+            }
+
+            Map<String, Object> aggrResultValues = handleAggregateQuery(
+                selectNode, 
+                obj, 
+                aggregateResults
+            );
+            aggregateResults = (List<Map<String, Object>>) aggrResultValues.get('aggregateResults');
+        }
+
+        if(isAggregateQuery) {
+            aggregateResults = (List<Map<String, Object>>) handleOrderByNode('aggregate', aggregateResults, selectNode, orderByNode);
+            aggregateResults = (List<Map<String, Object>>) handleLimitNode('aggregate', limitNode, aggregateResults);
+        } else if(isCount) {
+            count = (Integer) handleLimitNode('count', limitNode, count);
+        } else {
+            sObjects = (List<SObject>) handleOrderByNode('sObject', sObjects, selectNode, orderByNode);
+            sObjects = (List<SObject>) handleLimitNode('sObject', limitNode, sObjects);
+        }
+
+        if(isCount) {
+            results = count;
+        } else if(isAggregateQuery) {
+            List<Aggregate> aggregateResultsList = handleAggregateQueryPostProcessing(
+                aggregateResults, 
+                selectNode,
+                params
+            );
+            results = aggregateResultsList;
+        } else {
+            results = sObjects;
+        }
+
+        return results;
     }
 }
