@@ -1665,7 +1665,7 @@ public with sharing class MockDatabase {
         }
 
         Object results;
-        
+
         // results will either be a count, a list of sObjects, or a list of aggregates
         Integer count = 0;
         List<Map<String, Object>> aggregateResults = new List<Map<String, Object>>();
