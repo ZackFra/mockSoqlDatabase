@@ -1649,6 +1649,7 @@ public with sharing class MockDatabase {
 
         List<Map<String, Object>> aggregateResults = new List<Map<String, Object>>();
         
+        // process the query, whether it's a count, aggregate, or regular query
         for(sObject obj : mockObjects.values()) {
             if(!checkWhereCondition(obj, whereNode, params)) {
                 continue;
@@ -1673,26 +1674,25 @@ public with sharing class MockDatabase {
             aggregateResults = (List<Map<String, Object>>) aggrResultValues.get('aggregateResults');
         }
 
+        // handle the ORDER BY and LIMIT logic here
         if(isAggregateQuery) {
             aggregateResults = (List<Map<String, Object>>) handleOrderByNode('aggregate', aggregateResults, selectNode, orderByNode);
             aggregateResults = (List<Map<String, Object>>) handleLimitNode('aggregate', limitNode, aggregateResults);
-        } else if(isCount) {
-            count = (Integer) handleLimitNode('count', limitNode, count);
-        } else {
-            sObjects = (List<SObject>) handleOrderByNode('sObject', sObjects, selectNode, orderByNode);
-            sObjects = (List<SObject>) handleLimitNode('sObject', limitNode, sObjects);
-        }
-
-        if(isCount) {
-            results = count;
-        } else if(isAggregateQuery) {
+            
+            // HAVING clause is handled in the post-processing here,
+            // we alse remove internal fields from the aggregate results ('__n', '__distinct')
             List<Aggregate> aggregateResultsList = handleAggregateQueryPostProcessing(
                 aggregateResults, 
                 selectNode,
                 params
             );
             results = aggregateResultsList;
+        } else if(isCount) {
+            count = (Integer) handleLimitNode('count', limitNode, count);
+            results = count;
         } else {
+            sObjects = (List<SObject>) handleOrderByNode('sObject', sObjects, selectNode, orderByNode);
+            sObjects = (List<SObject>) handleLimitNode('sObject', limitNode, sObjects);
             results = sObjects;
         }
 
