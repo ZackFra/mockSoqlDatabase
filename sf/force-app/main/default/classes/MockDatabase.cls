@@ -1324,15 +1324,25 @@ public with sharing class MockDatabase {
             fieldApiName = aliasData.get('fieldApiName');
             relationshipName = aliasData.get('relationshipName');
             
-
+            String nullDir = 'first';
             String order = 'asc';
-            if(orderByField.right != null) {
+            Lexer.Node curr = orderByField.right;
+            if(curr != null && curr.nodeType == 'direction') {
                 order = orderByField.right.id;
+                curr = curr.right;
             }
+            if(curr != null && curr.nodeType == 'nulls direction') {
+                if(curr.id == 'nulls last') {
+                    nullDir = 'last';
+                }
+            }
+
+
             Map<String, String> fieldData = new Map<String, String> {
                 'fieldApiName' => fieldApiName,
                 'relationshipName' => relationshipName,
-                'order' => order
+                'order' => order,
+                'nullDir' => nullDir
             };
             fields.put(fieldApiName, fieldData);
             orderByField = orderByField.left;
@@ -1365,13 +1375,23 @@ public with sharing class MockDatabase {
             String fieldApiName = (String) comparables.get('comparableField');
 
             String order = 'asc';
-            if(orderByField.right != null) {
+            String nullDir = 'first';
+            Lexer.Node curr = orderByField.right;
+            if(curr != null && curr.nodeType == 'direction') {
                 order = orderByField.right.id;
+                curr = curr.right;
+            }
+
+            if(curr != null && curr.nodeType == 'nulls direction') {
+                if(curr.id == 'nulls last') {
+                    nullDir = 'last';
+                }
             }
             Map<String, String> fieldData = new Map<String, String> {
                 'fieldApiName' => fieldApiName,
                 'relationshipName' => relationshipName,
-                'order' => order
+                'order' => order,
+                'nullDir' => nullDir
             };
             fields.put(fieldName, fieldData);
             orderByField = orderByField.left;
@@ -1431,6 +1451,10 @@ public with sharing class MockDatabase {
      * @param obj : the sObject to update
      */
     public void doUpdate(sObject obj) {
+        if(obj == null) {
+            throw new DmlException('Argument cannot be null');
+        }
+
         String objName = obj.getSObjectType().getDescribe().getName();
         Map<String, sObject> mockObjects = this.db.get(objName);
 
@@ -1440,7 +1464,9 @@ public with sharing class MockDatabase {
             throw new DmlException('Object does not exist');
         }
 
-        mockObjects.put(obj.Id, obj);
+        for(String key : obj.getPopulatedFieldsAsMap().keySet()) {
+            mockObjects.get(obj.Id).put(key, obj.get(key));
+        }
     }
 
     /**

@@ -30,6 +30,34 @@ public with sharing class SObjectComparator implements Comparator<SObject> {
     }
 
     /**
+     * @description Check for null values and return the appropriate result, 
+     *              returns null if both are not null
+     * @param a The first value
+     * @param b The second value
+     * @param nullDir The direction to sort null values
+     * @return Integer
+     */
+    private Integer checkForNull(Object a, Object b, String nullDir) {
+        if(a == null && b == null) {
+            return 0;
+        } else if(a == null && b != null) {
+            if(nullDir == 'first') {
+                return -1;
+            } else {
+                return 1;
+            }
+        } else if(a != null && b == null) {
+            if(nullDir == 'first') {
+                return 1;
+            } else {
+                return -1;
+            }
+        }
+
+        return null;
+    }
+
+    /**
      * @description Compare two SObjects based on the fields provided in the constructor
      * @param a The first SObject
      * @param b The second SObject
@@ -42,6 +70,7 @@ public with sharing class SObjectComparator implements Comparator<SObject> {
             String relationshipName = fieldData.get('relationshipName');
             String fieldApiName = fieldData.get('fieldApiName');
             String order = fieldData.get('order');
+            String nullDir = fieldData.get('nullDir');
 
             Object aFieldValue = getFieldValue(a, fieldData);
             Object bFieldValue = getFieldValue(b, fieldData);
@@ -50,6 +79,14 @@ public with sharing class SObjectComparator implements Comparator<SObject> {
             if (aFieldValue != bFieldValue) {
                 ObjectComparator comparator = new ObjectComparator(aFieldValue);
                 Integer result;
+
+                Integer nullResult = checkForNull(aFieldValue, bFieldValue, nullDir);
+                if(nullResult != null && nullResult != 0) {
+                    return nullResult;
+                } else if(nullResult == 0) {
+                    continue;
+                }
+
                 if(order == 'desc') {
                     result = (comparator.compareTo(bFieldValue) * -1);
                 } else {

@@ -383,6 +383,33 @@ public with sharing class Lexer {
         );
     }
 
+    private Intermediary parseNulls(String query) {
+        query = ParserUtils.skipWhitespace(query);
+        if(lookahead(query, 5) != 'nulls') {
+            return null;
+        }
+        query = consume(query, 'nulls');
+        query = ParserUtils.skipWhitespace(query);
+        String dir;
+        if(lookahead(query, 5) == 'first') {
+            dir = 'nulls first';
+            query = consume(query, 'first');
+        } else if(lookahead(query, 4) == 'last') {
+            dir = 'nulls last';
+            query = consume(query, 'last');
+        } else {
+            throw new ParsingException(query, 'first or last');
+        }
+
+        return new Intermediary(
+            new NodeBuilder()
+                .setId(dir)
+                .setNodeType('nulls direction')
+                .build(),
+            query
+        );
+    }
+
     private Intermediary parseOrderByFieldList(String query) {
         query = ParserUtils.skipWhitespace(query);
         Intermediary nextItem;
@@ -400,6 +427,19 @@ public with sharing class Lexer {
             nextItem.subquery = dir.subquery;
             query = ParserUtils.skipWhitespace(dir.subquery);
         }
+        
+        Intermediary nullsDir = parseNulls(query);
+        if(nullsDir != null) {
+            if(dir != null) {
+                dir.head.right = nullsDir.head;
+            } else {
+                nextItem.head.right = nullsDir.head;
+            }
+            nextItem.subquery = nullsDir.subquery;
+            query = nullsDir.subquery;
+        }
+        query = ParserUtils.skipWhitespace(nextItem.subquery);
+
         if(query.length() == 0) {
             return nextItem;
         }
