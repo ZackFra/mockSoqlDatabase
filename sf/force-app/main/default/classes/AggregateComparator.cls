@@ -95,11 +95,11 @@ public with sharing class AggregateComparator implements Comparator<Map<String, 
                 }
                 
                 result = comparator.compareTo(bFieldValue);
-                result = adjustForOrder(result, order);
-
-                if(result != 0) {
-                    return result;
+                if(result == 0) {
+                    continue;
                 }
+                result = adjustForOrder(result, order);
+                return result;
             }
         }
         return 0;

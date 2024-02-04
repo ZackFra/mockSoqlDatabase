@@ -94,11 +94,11 @@ public with sharing class SObjectComparator implements Comparator<SObject> {
                 }
 
                 result = comparator.compareTo(bFieldValue);
-                result = adjustForOrder(result, order);
-
-                if(result != 0) {
-                    return result;
+                if(result == 0) {
+                    continue;
                 }
+                result = adjustForOrder(result, order);
+                return result;
             }
         }
 
