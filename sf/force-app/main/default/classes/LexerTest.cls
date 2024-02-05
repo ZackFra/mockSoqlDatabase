@@ -1,8 +1,8 @@
 @IsTest
-public with sharing class LexerTest {
+private with sharing class LexerTest {
 
     @IsTest
-    public static void testToString() {
+    private static void testToString() {
         Test.startTest();
         Lexer t = new Lexer();
         Lexer.Node head = t.parse('SELECT Id FROM Account');
@@ -18,7 +18,7 @@ public with sharing class LexerTest {
 
     // fails for the wrong reason
     @IsTest
-    public static void testAggrFuncFail1() {
+    private static void testAggrFuncFail1() {
         String exMessage;
         Test.startTest();
         Lexer t = new Lexer();
@@ -39,7 +39,7 @@ public with sharing class LexerTest {
     }
 
     @IsTest
-    public static void testAggrFuncFail2() {
+    private static void testAggrFuncFail2() {
         String exMessage;
         Test.startTest();
         Lexer t = new Lexer();
@@ -60,7 +60,7 @@ public with sharing class LexerTest {
     }
 
     @IsTest
-    public static void testAggrFuncFail3() {
+    private static void testAggrFuncFail3() {
         Lexer t = new Lexer();
         Boolean isExceptionThrown = false;
         String exMessage;
@@ -85,7 +85,7 @@ public with sharing class LexerTest {
     }
 
     @IsTest
-    public static void testParseBoolean() {
+    private static void testParseBoolean() {
         Test.startTest();
         Lexer t = new Lexer();
         Lexer.Node head = t.parse('SELECT Id FROM Account WHERE IsDeleted = true');
@@ -141,7 +141,7 @@ public with sharing class LexerTest {
     }
 
     @IsTest
-    public static void testOrderBy() {
+    private static void testOrderBy() {
         Test.startTest();
         Lexer t = new Lexer();
         Lexer.Node head = t.parse('SELECT Id FROM Account ORDER BY Name, Id');
@@ -190,7 +190,7 @@ public with sharing class LexerTest {
     }
 
     @IsTest
-    public static void testLimit() {
+    private static void testLimit() {
         Test.startTest();
         Lexer t = new Lexer();
         Lexer.Node head = t.parse('SELECT Id FROM Account LIMIT 10');
@@ -233,7 +233,7 @@ public with sharing class LexerTest {
     }
 
     @IsTest
-    public static void testForUpdate() {
+    private static void testForUpdate() {
         Test.startTest();
         Lexer t = new Lexer();
         Lexer.Node head = t.parse('SELECT Id FROM Account FOR UPDATE');
@@ -270,7 +270,7 @@ public with sharing class LexerTest {
     }
 
     @IsTest 
-    public static void testHavingClause() {
+    private static void testHavingClause() {
         Test.startTest();
         Lexer t = new Lexer();
         Lexer.Node head = t.parse('SELECT Id FROM Account GROUP BY Id HAVING COUNT(Id) > 0');
@@ -353,7 +353,7 @@ public with sharing class LexerTest {
     }
 
     @IsTest
-    public static void testAggrFuncs() {
+    private static void testAggrFuncs() {
         List<String> aggrFuncs = new List<String> {
             'avg',
             'count',
@@ -413,7 +413,7 @@ public with sharing class LexerTest {
     }
 
     @IsTest
-    public static void testSelectAccount() {
+    private static void testSelectAccount() {
         Test.startTest();
         Lexer t = new Lexer();
         Lexer.Node head = t.parse('SELECT Id FROM Account');
@@ -445,7 +445,7 @@ public with sharing class LexerTest {
     }
 
     @IsTest
-    public static void testSelectWithWhereClause() {
+    private static void testSelectWithWhereClause() {
         Test.startTest();
         Lexer t = new Lexer();
         Lexer.Node head = t.parse('SELECT Id FROM Account WHERE Name = \'Test\'');
@@ -501,7 +501,7 @@ public with sharing class LexerTest {
     }
 
     @IsTest
-    public static void testMixedFieldsSubQueries() {
+    private static void testMixedFieldsSubQueries() {
         Test.startTest();
         Lexer t = new Lexer();
         Lexer.Node head = t.parse('SELECT Id, (SELECT Id FROM Contacts), Name FROM Account');
@@ -569,7 +569,7 @@ public with sharing class LexerTest {
     }
 
     @IsTest
-    public static void testSubQueryWithSubQueryFirst() {
+    private static void testSubQueryWithSubQueryFirst() {
         Test.startTest();
         Lexer t = new Lexer();
         Lexer.Node head = t.parse('SELECT (SELECT Id FROM Contacts), Id FROM Account');
@@ -613,7 +613,7 @@ public with sharing class LexerTest {
     }
 
     @IsTest
-    public static void testSubQueryWithSubQuerySecond() {
+    private static void testSubQueryWithSubQuerySecond() {
         Test.startTest();
         Lexer t = new Lexer();
         Lexer.Node head = t.parse('SELECT Id, (SELECT Id FROM Contacts) FROM Account');
@@ -662,7 +662,7 @@ public with sharing class LexerTest {
     }
 
     @IsTest
-    public static void testMultipleSubQueries() {
+    private static void testMultipleSubQueries() {
         Test.startTest();
         Lexer t = new Lexer();
         Lexer.Node head = t.parse('SELECT Id, (SELECT Id FROM Contacts), (SELECT Id FROM Opportunities) FROM Account');
@@ -742,7 +742,7 @@ public with sharing class LexerTest {
     }
 
     @IsTest
-    public static void testSubQueryWithQueryInWhereClause() {
+    private static void testSubQueryWithQueryInWhereClause() {
         Test.startTest();
         Lexer t = new Lexer();
         Lexer.Node head = t.parse('SELECT Id FROM Account WHERE Id IN (SELECT AccountId FROM Contact)');
@@ -821,7 +821,7 @@ public with sharing class LexerTest {
     }
 
     @IsTest
-    public static void testSubQueryWithQueryInWhereClause2() {
+    private static void testSubQueryWithQueryInWhereClause2() {
         Test.startTest();
         Lexer t = new Lexer();
         Lexer.Node head = t.parse('SELECT Id FROM Account WHERE Id IN (SELECT AccountId FROM Contact WHERE Name = \'Test\')');
@@ -922,7 +922,7 @@ public with sharing class LexerTest {
     }
 
     @IsTest
-    public static void testBindVar() {
+    private static void testBindVar() {
         Test.startTest();
         Lexer t = new Lexer();
         Lexer.Node head = t.parse('SELECT Id FROM Account WHERE Id = :id');
@@ -977,7 +977,7 @@ public with sharing class LexerTest {
     }
 
     @IsTest
-    public static void testAndStatements() {
+    private static void testAndStatements() {
         Test.startTest();
         Lexer t = new Lexer();
         Lexer.Node head = t.parse('SELECT Id FROM Contact WHERE FirstName = \'test\' AND LastName = \'test2\' AND Account.Name = \'testAcct\'');
@@ -1080,7 +1080,7 @@ public with sharing class LexerTest {
     }
 
     @IsTest
-    public static void testQueryWithOrAnd() {
+    private static void testQueryWithOrAnd() {
         Test.startTest();
         Lexer t = new Lexer();
         Lexer.Node head = t.parse('SELECT Id FROM Contact WHERE FirstName = \'test\' OR LastName = \'test2\' AND Account.Name = \'testAcct\'');
@@ -1185,7 +1185,7 @@ public with sharing class LexerTest {
     }
 
     @IsTest
-    public static void testNot() {
+    private static void testNot() {
         Test.startTest();
         Lexer t = new Lexer();
         Lexer.Node head = t.parse('SELECT Id FROM Contact WHERE NOT FirstName = \'test\'');
@@ -1246,7 +1246,7 @@ public with sharing class LexerTest {
     }
 
     @IsTest
-    public static void testCorrectsForAndWithOr() {
+    private static void testCorrectsForAndWithOr() {
         Test.startTest();
         Lexer t = new Lexer();
         Lexer.Node head = t.parse('SELECT Id FROM Contact WHERE FirstName = \'test\' OR LastName = \'test2\' AND Account.Name = \'testAcct\' OR Account.Name = \'testAcct2\'');
@@ -1373,7 +1373,7 @@ public with sharing class LexerTest {
     }
 
     @IsTest
-    public static void testCorrectsForAndWithOrWithSubExpr() {
+    private static void testCorrectsForAndWithOrWithSubExpr() {
         Test.startTest();
         Lexer t = new Lexer();
         Lexer.Node head = t.parse('SELECT Id FROM Contact WHERE FirstName = \'test\' AND LastName = \'test2\' OR (Account.Name = \'testAcct\' AND Account.Name = \'testAcct2\' OR Account.Name = \'testAcct3\')');
@@ -1531,7 +1531,7 @@ public with sharing class LexerTest {
     }
 
     @IsTest
-    public static void testAlias() {
+    private static void testAlias() {
         Test.startTest();
         Lexer t = new Lexer();
         Lexer.Node head = t.parse('SELECT COUNT(Id) cnt1 FROM Account GROUP BY Id');
@@ -1586,7 +1586,7 @@ public with sharing class LexerTest {
     }
 
     @IsTest
-    public static void testParseValueList() {
+    private static void testParseValueList() {
         Test.startTest();
         Lexer t = new Lexer();
         Lexer.Node head = t.parse('SELECT Id FROM Contact WHERE FirstName IN (\'test\', \'test2\')');
@@ -1658,7 +1658,7 @@ public with sharing class LexerTest {
     }
 
     @IsTest
-    public static void testSingularCount() {
+    private static void testSingularCount() {
         Test.startTest();
         Lexer t = new Lexer();
         Lexer.Node head = t.parse('SELECT COUNT() FROM Account');
@@ -1689,7 +1689,7 @@ public with sharing class LexerTest {
     }
 
     @IsTest
-    public static void testSimpleAlias() {
+    private static void testSimpleAlias() {
         Test.startTest();
         Lexer t = new Lexer();
         Lexer.Node head = t.parse('SELECT Id id FROM Account');
@@ -1725,7 +1725,7 @@ public with sharing class LexerTest {
     }
 
     @IsTest
-    public static void testAliases() {
+    private static void testAliases() {
         Test.startTest();
         Lexer t = new Lexer();
         Lexer.Node head = t.parse('SELECT Account.Name acctName, Name, COUNT(Id) FROM Contact GROUP BY Name, Account.Name');
@@ -1797,7 +1797,7 @@ public with sharing class LexerTest {
     }
 
     @IsTest
-    public static void testSubQueryNoAlias() {
+    private static void testSubQueryNoAlias() {
         Test.startTest();
         Lexer t = new Lexer();
         Lexer.Node head = t.parse('SELECT Id, Name, (SELECT Id, FirstName, LastName FROM Contacts) FROM Account');
@@ -1875,7 +1875,7 @@ public with sharing class LexerTest {
     }
 
     @IsTest
-    public static void testHavingClauseWithMultipleConditions() {
+    private static void testHavingClauseWithMultipleConditions() {
         Test.startTest();
         Lexer t = new Lexer();
         Lexer.Node head = t.parse('SELECT Name, COUNT(Id) FROM Account GROUP BY Name HAVING COUNT(Id) > 1 AND COUNT(Id) < 10');
@@ -1990,7 +1990,7 @@ public with sharing class LexerTest {
     }
 
     @IsTest
-    public static void testHavingClauseWhereAdjust() {
+    private static void testHavingClauseWhereAdjust() {
         Lexer l = new Lexer();
         
         Test.startTest();
@@ -2124,7 +2124,7 @@ public with sharing class LexerTest {
     }
 
     @IsTest
-    public static void testOrderByDesc() {
+    private static void testOrderByDesc() {
         Test.startTest();
         Lexer t = new Lexer();
         Lexer.Node head = t.parse('SELECT Name FROM Account ORDER BY Name DESC');
@@ -2173,7 +2173,7 @@ public with sharing class LexerTest {
     }
 
     @IsTest
-    public static void testNullsFirst() {
+    private static void testNullsFirst() {
         Test.startTest();
         Lexer t = new Lexer();
         Lexer.Node head = t.parse('SELECT Name FROM Account ORDER BY Name NULLS FIRST');
@@ -2223,7 +2223,7 @@ public with sharing class LexerTest {
     }
 
     @IsTest
-    public static void testNullsLast() {
+    private static void testNullsLast() {
         Test.startTest();
         Lexer t = new Lexer();
         Lexer.Node head = t.parse('SELECT Name FROM Account ORDER BY Name NULLS LAST');
@@ -2272,7 +2272,7 @@ public with sharing class LexerTest {
     }
 
     @IsTest
-    public static void testOffset() {
+    private static void testOffset() {
         Test.startTest();
         Lexer t = new Lexer();
         Lexer.Node head = t.parse('SELECT Name FROM Account OFFSET 10');

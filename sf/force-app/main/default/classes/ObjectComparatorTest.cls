@@ -2,7 +2,7 @@
 private class ObjectComparatorTest {
 
     @IsTest
-    public static void testLeftNull() {
+    private static void testLeftNull() {
         ObjectComparator comparator = new ObjectComparator(null);
         Test.startTest();
         Integer results = (Integer) comparator.compareTo(1);
@@ -11,7 +11,7 @@ private class ObjectComparatorTest {
     }
 
     @IsTest 
-    public static void testRightNull() {
+    private static void testRightNull() {
         ObjectComparator comparator = new ObjectComparator(1);
         Test.startTest();
         Integer results = (Integer) comparator.compareTo(null);
@@ -20,7 +20,7 @@ private class ObjectComparatorTest {
     }
 
     @IsTest
-    public static void testBothNull() {
+    private static void testBothNull() {
         ObjectComparator comparator = new ObjectComparator(null);
         Test.startTest();
         Integer results = (Integer) comparator.compareTo(null);
@@ -29,7 +29,7 @@ private class ObjectComparatorTest {
     }
 
     @IsTest
-    public static void testIntLessThan() {
+    private static void testIntLessThan() {
         Integer a = 1;
         Integer b = 2;
         ObjectComparator comparator = new ObjectComparator(a);
@@ -40,7 +40,7 @@ private class ObjectComparatorTest {
     }
 
     @IsTest
-    public static void testIntEqual() {
+    private static void testIntEqual() {
         Integer a = 1;
         Integer b = 1;
         ObjectComparator comparator = new ObjectComparator(a);
@@ -51,7 +51,7 @@ private class ObjectComparatorTest {
     }
 
     @IsTest
-    public static void testIntGreaterThan() {
+    private static void testIntGreaterThan() {
         Integer a = 2;
         Integer b = 1;
         ObjectComparator comparator = new ObjectComparator(a);
@@ -62,7 +62,7 @@ private class ObjectComparatorTest {
     }
 
     @IsTest
-    public static void testStringLessThan() {
+    private static void testStringLessThan() {
         String a = 'a';
         String b = 'b';
         ObjectComparator comparator = new ObjectComparator(a);
@@ -73,7 +73,7 @@ private class ObjectComparatorTest {
     }
 
     @IsTest
-    public static void testStringGreaterThan() {
+    private static void testStringGreaterThan() {
         String a = 'b';
         String b = 'a';
         ObjectComparator comparator = new ObjectComparator(a);
@@ -84,7 +84,7 @@ private class ObjectComparatorTest {
     }
 
     @IsTest
-    public static void testStringEqual() {
+    private static void testStringEqual() {
         String a = 'a';
         String b = 'a';
         ObjectComparator comparator = new ObjectComparator(a);
@@ -95,7 +95,7 @@ private class ObjectComparatorTest {
     }
 
     @IsTest
-    public static void testBoolGreaterThan() {
+    private static void testBoolGreaterThan() {
         Boolean a = true;
         Boolean b = false;
         ObjectComparator comparator = new ObjectComparator(a);
@@ -106,7 +106,7 @@ private class ObjectComparatorTest {
     }
 
     @IsTest
-    public static void testBoolLessThan() {
+    private static void testBoolLessThan() {
         Boolean a = false;
         Boolean b = true;
         ObjectComparator comparator = new ObjectComparator(a);
@@ -117,7 +117,7 @@ private class ObjectComparatorTest {
     }
 
     @IsTest
-    public static void testBoolEqual() {
+    private static void testBoolEqual() {
         Boolean a = true;
         Boolean b = true;
         ObjectComparator comparator = new ObjectComparator(a);
@@ -128,7 +128,7 @@ private class ObjectComparatorTest {
     }
 
     @IsTest
-    public static void testDecimalLessThan() {
+    private static void testDecimalLessThan() {
         Decimal a = 1.0;
         Decimal b = 2.0;
         ObjectComparator comparator = new ObjectComparator(a);
@@ -139,7 +139,7 @@ private class ObjectComparatorTest {
     }
 
     @IsTest
-    public static void testDecimalGreaterThan() {
+    private static void testDecimalGreaterThan() {
         Decimal a = 2.0;
         Decimal b = 1.0;
         ObjectComparator comparator = new ObjectComparator(a);
@@ -150,7 +150,7 @@ private class ObjectComparatorTest {
     }
 
     @IsTest
-    public static void testDecimalEqual() {
+    private static void testDecimalEqual() {
         Decimal a = 1.0;
         Decimal b = 1.0;
         ObjectComparator comparator = new ObjectComparator(a);
@@ -161,7 +161,7 @@ private class ObjectComparatorTest {
     }
 
     @IsTest
-    public static void testDateLessThan() {
+    private static void testDateLessThan() {
         Date a = Date.today();
         Date b = Date.today().addDays(1);
         ObjectComparator comparator = new ObjectComparator(a);
@@ -172,7 +172,7 @@ private class ObjectComparatorTest {
     }
 
     @IsTest
-    public static void testDateGreaterThan() {
+    private static void testDateGreaterThan() {
         Date a = Date.today().addDays(1);
         Date b = Date.today();
         ObjectComparator comparator = new ObjectComparator(a);
@@ -183,7 +183,7 @@ private class ObjectComparatorTest {
     }
 
     @IsTest
-    public static void testDateEqual() {
+    private static void testDateEqual() {
         Date a = Date.today();
         Date b = Date.today();
         ObjectComparator comparator = new ObjectComparator(a);
@@ -194,7 +194,7 @@ private class ObjectComparatorTest {
     }
 
     @IsTest
-    public static void testDateTimeLessThan() {
+    private static void testDateTimeLessThan() {
         DateTime a = DateTime.now();
         DateTime b = DateTime.now().addDays(1);
         Test.startTest();
@@ -205,7 +205,7 @@ private class ObjectComparatorTest {
     }
 
     @IsTest
-    public static void testDateTimeGreaterThan() {
+    private static void testDateTimeGreaterThan() {
         DateTime a = DateTime.now().addDays(1);
         DateTime b = DateTime.now();
         Test.startTest();
@@ -216,7 +216,7 @@ private class ObjectComparatorTest {
     }
 
     @IsTest
-    public static void testDateTimeEqual() {
+    private static void testDateTimeEqual() {
         DateTime a = DateTime.now();
         DateTime b = DateTime.now();
         Test.startTest();
@@ -227,7 +227,7 @@ private class ObjectComparatorTest {
     }
 
     @IsTest
-    public static void testTimeLessThan() {
+    private static void testTimeLessThan() {
         Time a = Time.newInstance(1, 1, 1, 1);
         Time b = Time.newInstance(2, 2, 2, 2);
         ObjectComparator comparator = new ObjectComparator(a);
@@ -238,7 +238,7 @@ private class ObjectComparatorTest {
     }
 
     @IsTest
-    public static void testTimeGreaterThan() {
+    private static void testTimeGreaterThan() {
         Time a = Time.newInstance(2, 2, 2, 2);
         Time b = Time.newInstance(1, 1, 1, 1);
         ObjectComparator comparator = new ObjectComparator(a);
@@ -249,7 +249,7 @@ private class ObjectComparatorTest {
     }
 
     @IsTest
-    public static void testTimeEqual() {
+    private static void testTimeEqual() {
         Time a = Time.newInstance(1, 1, 1, 1);
         Time b = Time.newInstance(1, 1, 1, 1);
         ObjectComparator comparator = new ObjectComparator(a);
@@ -260,7 +260,7 @@ private class ObjectComparatorTest {
     }
 
     @IsTest
-    public static void testIdLessThan() {
+    private static void testIdLessThan() {
 
         Integer sObjNum = 1;
         Schema.SObjectType sot = Account.sObjectType;
@@ -277,7 +277,7 @@ private class ObjectComparatorTest {
     }
 
     @IsTest
-    public static void testIdGreaterThan() {
+    private static void testIdGreaterThan() {
         Integer sObjNum = 1;
         Schema.SObjectType sot = Account.sObjectType;
         String result = String.valueOf(sObjNum++);
@@ -293,7 +293,7 @@ private class ObjectComparatorTest {
     }
 
     @IsTest
-    public static void testIdEqual() {
+    private static void testIdEqual() {
         Integer sObjNum = 1;
         Schema.SObjectType sot = Account.sObjectType;
         String result = String.valueOf(sObjNum++);
@@ -307,7 +307,7 @@ private class ObjectComparatorTest {
     }
 
     @IsTest
-    public static void testCompareDiffObjects() {
+    private static void testCompareDiffObjects() {
         Integer a = 1;
         String b = 'a';
         ObjectComparator comparator = new ObjectComparator(a);
