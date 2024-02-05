@@ -34,7 +34,11 @@ public with sharing class ObjectComparator implements Comparable {
     private class UnsupportedTypeException extends Exception {}
 
     private Boolean checkType(Object obj) {
-        if(this.obj instanceof String && obj instanceof String) {
+        if(this.obj == null || obj == null) {
+            return true;
+        } else if(this.obj instanceof Id && obj instanceof Id) {
+            return true; 
+        } else if(this.obj instanceof String && obj instanceof String) {
             return true;
         } else if(this.obj instanceof Integer && obj instanceof Integer) {
             return true;
@@ -47,8 +51,6 @@ public with sharing class ObjectComparator implements Comparable {
         } else if(this.obj instanceof Time && obj instanceof Time) {
             return true;
         } else if(this.obj instanceof Boolean && obj instanceof Boolean) {
-            return true;
-        } else if(this.obj instanceof Id && obj instanceof Id) {
             return true;
         }
 
@@ -64,7 +66,9 @@ public with sharing class ObjectComparator implements Comparable {
         Object obj1 = this.obj;
         Object obj2 = objectToCompareTo;
 
-        if (obj1 instanceof String) {
+        if (obj1 instanceof Id) {
+            return ((String)obj1).compareTo((String)obj2);
+        } else if (obj1 instanceof String) {
             return ((String)obj1).compareTo((String)obj2);
         } else if (obj1 instanceof Integer) {
             return (Integer)obj1 - (Integer) obj2;
@@ -113,8 +117,6 @@ public with sharing class ObjectComparator implements Comparable {
                 return 1;
             }
             return -1;
-        } else if (obj1 instanceof Id) {
-            return ((String)obj1).compareTo((String)obj2);
         }
         return null;
     }
