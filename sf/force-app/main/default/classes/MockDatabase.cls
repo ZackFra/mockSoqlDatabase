@@ -1318,8 +1318,6 @@ public with sharing class MockDatabase {
         List<String> groupByFields = aggregateFields.get('groupByFields');
         List<String> selectFields = aggregateFields.get('selectFields');
 
-        Map<String, Lexer.Node> topLevelNodes = getTopLevelNodes(selectNode);
-
         List<Aggregate> aggregateResultsList = new List<Aggregate>();
         for(Integer i = 0; i < aggregateResults.size(); i++) {
             Map<String, Object> ar = aggregateResults[i];
