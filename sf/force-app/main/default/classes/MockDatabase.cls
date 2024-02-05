@@ -1351,16 +1351,18 @@ public with sharing class MockDatabase {
 
     private Map<String, String> getFieldAlias(Lexer.Node curr, Lexer.Node fieldNode, Lexer.Node selectNode) {
         Lexer.Node aliasNode = curr.right;
+        String fieldApiName;
+        String relationshipName;
+
         if(aliasNode != null) {
-            return new Map<String, String> {
-                'fieldApiName' => aliasNode.id,
-                'relationshipName' => null
-            };
+            fieldApiName = aliasNode.id;
+            relationshipName = null;
+        } else {
+            Map<String, String> aliasData = getAlias(selectNode, fieldNode);
+            fieldApiName = aliasData.get('fieldApiName');
+            relationshipName = aliasData.get('relationshipName');
         }
 
-        Map<String, Object> comparables = getComparableDataFromNodes(fieldNode, selectNode);
-        String relationshipName = (String) comparables.get('relationshipName');
-        String fieldApiName = (String) comparables.get('comparableField');
         return new Map<String, String> {
             'fieldApiName' => fieldApiName,
             'relationshipName' => relationshipName
