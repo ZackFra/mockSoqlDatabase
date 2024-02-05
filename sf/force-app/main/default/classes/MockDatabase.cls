@@ -918,13 +918,23 @@ public with sharing class MockDatabase {
         };
     }
 
-    private Object handleLimitNode(String typeOfQuery, Lexer.Node limitNode, Object results) {
+    private Object handleLimitNode(String typeOfQuery, Lexer.Node limitNode, Object results, Map<String, Object> params) {
         if(limitNode == null) {
             return results;
         }
 
         Lexer.Node limitSizeNode = limitNode.left;
-        Integer limitSize = Integer.valueOf(limitSizeNode.id);
+        Integer limitSize;
+
+        if(limitSizeNode.nodeType == 'bind variable' && (params == null || !params.containsKey(limitSizeNode.id))) {
+            throw new QueryException('Missing bind variable: ' + limitSizeNode.id);
+        }
+
+        if(limitSizeNode.nodeType == 'bind variable') {
+            limitSize = (Integer) params.get(limitSizeNode.id);
+        } else {
+            limitSize = Integer.valueOf(limitSizeNode.id);
+        }
 
         if(typeOfQuery == 'count') {
             Integer count = (Integer) results;
@@ -1035,6 +1045,7 @@ public with sharing class MockDatabase {
         Lexer.Node havingNode;
         Lexer.Node orderByNode;
         Lexer.Node limitNode;
+        Lexer.Node offsetNode;
 
         Lexer.Node curr = fromNode.right;
 
@@ -1063,13 +1074,19 @@ public with sharing class MockDatabase {
             curr = curr.right;
         }
 
+        if(curr != null && curr.nodeType == 'offset') {
+            offsetNode = curr;
+            curr = curr.right;
+        }
+
         Map<String, Lexer.Node> topLevelNodes = new Map<String, Lexer.Node> {
             'fromNode' => fromNode,
             'whereNode' => whereNode,
             'groupByNode' => groupByNode,
             'havingNode' => havingNode,
             'orderByNode' => orderByNode,
-            'limitNode' => limitNode
+            'limitNode' => limitNode,
+            'offsetNode' => offsetNode
         };
         return topLevelNodes;
     }
@@ -1394,6 +1411,55 @@ public with sharing class MockDatabase {
         }
     }
 
+    /**
+     * @description : given an offset node, return the offset value
+     */
+    private Object handleOffsetNode(
+        String typeOfQuery, 
+        Lexer.Node offsetNode, 
+        Object results, 
+        Map<String, Object> params
+    ) {
+        if(offsetNode == null) {
+            return results;
+        }
+        Integer offset;
+        Lexer.Node offsetSizeNode = offsetNode.left;
+    
+        if(offsetNode.nodeType == 'bind variable' && (params == null || !params.containsKey(offsetSizeNode.id))) {
+            throw new QueryException('Missing bind variable: ' + offsetSizeNode.id);
+        }
+        if(offsetSizeNode.nodeType == 'bind variable') {
+            offset = (Integer) params.get(offsetSizeNode.id);
+        } else {
+            offset = Integer.valueOf(offsetSizeNode.id);
+        }
+
+        if(typeOfQuery == 'aggregate') {
+            List<Map<String, Object>> aggrResults = new List<Map<String, Object>>((List<Map<String, Object>>) results);
+            while(offset > 0) {
+                aggrResults.remove(0);
+                offset--;
+            }
+            return aggrResults;
+        } else if(typeOfQuery == 'sObject') {
+            List<SObject> sObjResults = new List<SObject>((List<SObject>) results);
+            while(offset > 0) {
+                sObjResults.remove(0);
+                offset--;
+            }
+            return sObjResults;
+        } else if(typeOfQuery == 'count') {
+            Integer value = (Integer) results - offset;
+            if(value < 0) {
+                value = 0;
+            }
+            return value;
+        } else {
+            throw new QueryException('Invalid query type');
+        }
+    }
+
     private List<Map<String, Object>> sortByOrderBy(List<Map<String, Object>> aggregates, Lexer.Node selectNode, Lexer.Node orderByNode) {
         // clone the list so we don't modify the original
         aggregates = new List<Map<String, Object>>(aggregates);
@@ -1639,6 +1705,7 @@ public with sharing class MockDatabase {
         Lexer.Node havingNode = topLevelNodes.get('havingNode');
         Lexer.Node orderByNode = topLevelNodes.get('orderByNode');
         Lexer.Node limitNode = topLevelNodes.get('limitNode');
+        Lexer.Node offsetNode = topLevelNodes.get('offsetNode');
 
         Lexer.Node objNode = fromNode.left;
         String objName = objNode.id;
@@ -1664,13 +1731,21 @@ public with sharing class MockDatabase {
             throw new QueryException('COUNT() and ORDER BY may not be used together');
         }
 
+        if(isAggregateQuery && groupByNode == null && limitNode != null) {
+            throw new QueryException('Non-grouped query that uses overall aggregate functions cannot also use LIMIT');
+        }
+
+        if(isAggregateQuery && groupByNode == null && offsetNode != null) {
+            throw new QueryException('Non-grouped query that uses overall aggregate functions cannot also use OFFSET');
+        }
+
         Object results;
 
         // results will either be a count, a list of sObjects, or a list of aggregates
         Integer count = 0;
         List<Map<String, Object>> aggregateResults = new List<Map<String, Object>>();
         List<sObject> sObjects = new List<sObject>();
-        
+
         // process the query, whether it's a count, aggregate, or regular query
         for(sObject obj : mockObjects.values()) {
             if(!checkWhereCondition(obj, whereNode, params)) {
@@ -1698,9 +1773,10 @@ public with sharing class MockDatabase {
 
         // handle the ORDER BY and LIMIT logic here
         if(isAggregateQuery) {
-            aggregateResults = (List<Map<String, Object>>) handleOrderByNode('aggregate', aggregateResults, selectNode, orderByNode);
-            aggregateResults = (List<Map<String, Object>>) handleLimitNode('aggregate', limitNode, aggregateResults);
             aggregateResults = (List<Map<String, Object>>) handleHavingNode(aggregateResults, selectNode, params);
+            aggregateResults = (List<Map<String, Object>>) handleOrderByNode('aggregate', aggregateResults, selectNode, orderByNode);
+            aggregateResults = (List<Map<String, Object>>) handleOffsetNode('aggregate', offsetNode, aggregateResults, params);
+            aggregateResults = (List<Map<String, Object>>) handleLimitNode('aggregate', limitNode, aggregateResults, params);
 
             // Remove internal fields from the aggregate results ('__n', '__distinct')
             List<Aggregate> aggregateResultsList = handleAggregateQueryPostProcessing(
@@ -1710,11 +1786,13 @@ public with sharing class MockDatabase {
             );
             results = aggregateResultsList;
         } else if(isCount) {
-            count = (Integer) handleLimitNode('count', limitNode, count);
+            count = (Integer) handleOffsetNode('count', offsetNode, count, params);
+            count = (Integer) handleLimitNode('count', limitNode, count, params);
             results = count;
         } else {
             sObjects = (List<SObject>) handleOrderByNode('sObject', sObjects, selectNode, orderByNode);
-            sObjects = (List<SObject>) handleLimitNode('sObject', limitNode, sObjects);
+            sObjects = (List<SObject>) handleOffsetNode('sObject', offsetNode, sObjects, params);
+            sObjects = (List<SObject>) handleLimitNode('sObject', limitNode, sObjects, params);
             results = sObjects;
         }
 
