@@ -2009,10 +2009,6 @@ public with sharing class MockDatabaseTest {
         List<Account> queriedAccts = (List<Account>) mockDb.query('SELECT Id, Name, NumberOfEmployees, AnnualRevenue FROM Account ORDER BY AnnualRevenue OFFSET 5');
         Test.stopTest();
 
-        for(Account acct : queriedAccts) {
-            System.debug(acct.Name);
-        }
-
         Assert.areEqual(10, queriedAccts.size(), 'Incorrect number of accounts queried');
         Assert.areEqual('Test6', queriedAccts[0].Name, 'Incorrect order');
         Assert.areEqual('Test7', queriedAccts[1].Name, 'Incorrect order');
