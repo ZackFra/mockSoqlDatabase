@@ -1789,8 +1789,8 @@ public with sharing class MockDatabase {
 
             // handle fields
             if(!isAggregateQuery) {
-                sObjects.add(copyWithFields(obj, selectNode, params));
-                continue;
+                SObject sObj = copyWithFields(obj, selectNode, params);
+                sObjects.add(sObj);
             }
 
             Map<String, Object> aggrResultValues = handleAggregateQuery(
