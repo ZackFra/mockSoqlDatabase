@@ -314,12 +314,13 @@ private class ObjectComparatorTest {
         String exMessage;
         Test.startTest();
         try {
-            Integer results = (Integer) comparator.compareTo(b);
+            comparator.compareTo(b);
         } catch (Exception e) {
             exMessage = e.getMessage();
         }
         Test.stopTest();
         Assert.isTrue(
+            exMessage != null &&
             exMessage.contains('These objects must be of the same type'),
             'The result should be an exception'
         );

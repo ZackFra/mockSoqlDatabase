@@ -23,7 +23,7 @@ public with sharing class LexerTest {
         Test.startTest();
         Lexer t = new Lexer();
         try {
-            Lexer.Node head = t.parse('SELECT SUM_DISTINCT(Amount) FROM Opportunity');
+            t.parse('SELECT SUM_DISTINCT(Amount) FROM Opportunity');
         } catch(Exception e) {
             exMessage = e.getMessage();
         }
@@ -44,7 +44,7 @@ public with sharing class LexerTest {
         Test.startTest();
         Lexer t = new Lexer();
         try {
-            Lexer.Node head = t.parse('SELECT C(Amount) FROM Opportunity');
+            t.parse('SELECT C(Amount) FROM Opportunity');
         } catch(Exception e) {
             exMessage = e.getMessage();
         }
@@ -67,7 +67,7 @@ public with sharing class LexerTest {
 
         Test.startTest();
         try {
-            Lexer.Node head = t.parse('SELECT SUM(DISTINCT Amount) FROM Opportunity');
+            t.parse('SELECT SUM(DISTINCT Amount) FROM Opportunity');
         } catch(Exception e) {
             exMessage = e.getMessage();
             isExceptionThrown = true;
