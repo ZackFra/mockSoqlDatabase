@@ -69,8 +69,8 @@ public with sharing class AggregateComparator implements Comparator<Map<String, 
 
     /**
      * @description Compare two SObjects based on the fields provided in the constructor
-     * @param a The first SObject
-     * @param b The second SObject
+     * @param a The first proto-Aggregate
+     * @param b The second proto-Aggregate
      * @return Integer
      */
     public Integer compare(Map<String, Object> a, Map<String, Object> b) {
