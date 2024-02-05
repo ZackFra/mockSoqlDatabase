@@ -1,3 +1,7 @@
+/**
+ * @description A class to compare two pre-Aggregate based on a set of fields
+ *              (a pre-Aggregate is a Map<String, Object> where the keys are the field names and the values are the field values)
+ */
 public with sharing class AggregateComparator implements Comparator<Map<String, Object>>{
     private Map<String, Map<String, String>> fields;
 
@@ -35,23 +39,32 @@ public with sharing class AggregateComparator implements Comparator<Map<String, 
      * @return Integer
      */
     private Integer checkForNull(Object a, Object b, String nullDir) {
-        if(a == null && b == null) {
+        Boolean isANull = (a == null);
+        Boolean isBNull = (b == null);
+        Boolean isNullDirFirst = (nullDir == 'first');
+        
+        Integer nullFirstAdjustment = 1;
+        if(!isNullDirFirst) {
+            nullFirstAdjustment = -1;
+        }
+
+        if(isANull && isBNull) {
             return 0;
-        } else if(a == null && b != null) {
-            if(nullDir == 'first') {
-                return -1;
-            } else {
-                return 1;
-            }
-        } else if(a != null && b == null) {
-            if(nullDir == 'first') {
-                return 1;
-            } else {
-                return -1;
-            }
+        } else if(isANull && !isBNull) {
+            return -1 * nullFirstAdjustment;
+        } else if(!isANull && isBNull) {
+            return 1 * nullFirstAdjustment;
         }
 
         return null;
+    }
+
+    private Integer adjustForOrder(Integer result, String order) {
+        if(order == 'desc') {
+            return result * -1;
+        } else {
+            return result;
+        }
     }
 
     /**
@@ -65,7 +78,6 @@ public with sharing class AggregateComparator implements Comparator<Map<String, 
 
             Map<String, String> fieldData = this.fields.get(field);
             
-            String fieldApiName = (String) fieldData.get('fieldApiName');
             String order = (String) fieldData.get('order');
             String nullDir = (String) fieldData.get('nullDir');
 
@@ -82,15 +94,12 @@ public with sharing class AggregateComparator implements Comparator<Map<String, 
                     continue;
                 }
                 
-
-                if(order == 'desc') {
-                    result = (comparator.compareTo(bFieldValue) * -1);
-                } else {
-                    result = (comparator.compareTo(bFieldValue));
+                result = comparator.compareTo(bFieldValue);
+                if(result == 0) {
+                    continue;
                 }
-                if(result != 0) {
-                    return result;
-                }
+                result = adjustForOrder(result, order);
+                return result;
             }
         }
         return 0;

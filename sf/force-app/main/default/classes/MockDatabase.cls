@@ -183,7 +183,6 @@ public with sharing class MockDatabase {
         Lexer.Node operatorNode, 
         Map<String, Object> params
     ) {
-        Integer exprNumber = 0;
         Lexer.Node aggrNode = operatorNode.left;
         Map<String, Object> aggrNodeValue = getAggrNodeValue(aggrNode, selectNode);
         String alias = (String) aggrNodeValue.get('alias');
@@ -919,12 +918,123 @@ public with sharing class MockDatabase {
         };
     }
 
-    private Object doQuery(Lexer.Node selectNode, Map<String, Object> params) {
+    private Object handleLimitNode(String typeOfQuery, Lexer.Node limitNode, Object results) {
+        if(limitNode == null) {
+            return results;
+        }
+
+        Lexer.Node limitSizeNode = limitNode.left;
+        Integer limitSize = Integer.valueOf(limitSizeNode.id);
+
+        if(typeOfQuery == 'count') {
+            Integer count = (Integer) results;
+            if(count > limitSize) {
+                return limitSize;
+            }
+            return count;
+        }
+
+        if(typeOfQuery == 'aggregate') {
+            List<Map<String, Object>> resultsList = new List<Map<String, Object>>((List<Map<String, Object>>) results);
+            while(resultsList.size() > limitSize) {
+                resultsList.remove(resultsList.size()-1);
+            }
+            return resultsList;
+        }
+
+        if(typeOfQuery == 'sObject') {
+            List<SObject> resultsList = new List<SObject>((List<SObject>) results);
+            while(resultsList.size() > limitSize) {
+                resultsList.remove(resultsList.size()-1);
+            }
+            return resultsList;
+        }
+
+        throw new QueryException('Invalid query type');
+    }
+
+    /**
+     * @description : given a select node, return a map with the fields to group by and the fields to select
+     * @param selectNode : the select node
+     * @param groupByNode : the group by node
+     * @return : a map with the fields to group by and the fields to select
+     */
+    Map<String, List<String>> getAggregateFields(Lexer.Node selectNode) {
+        Map<String, Lexer.Node> topLevelNodes = getTopLevelNodes(selectNode);
+        Lexer.Node groupByNode = topLevelNodes.get('groupByNode');
+
+        if(groupByNode == null) {
+            return new Map<String, List<String>> {
+                'groupByFields' => new List<String>(),
+                'selectFields' => new List<String>()
+            };
+        }
+        List<String> groupByFields = new List<String>();
+        List<String> selectFields = new List<String>();
+
+        if(groupByNode != null) {
+            Lexer.Node currGroupByNode = groupByNode.left;
+            while(currGroupByNode != null) {
+                groupByFields.add(currGroupByNode.id);
+                currGroupByNode = currGroupByNode.left;
+            }
+        }
+
+        Lexer.Node currSelectNode = selectNode.left;
+        Set<String> aliases = new Set<String>();
+        while(currSelectNode != null) {
+            // begin with error-handling for the aggregate query
+
+            if(currSelectNode.nodeType == 'field') {
+                // check that selected fields are grouped or aggregated
+                if(!groupByFields.contains(currSelectNode.id)) {
+                    throw new QueryException('Field must be grouped or aggregated: ' + currSelectNode.id);
+                }
+
+                // check for duplicate aliases
+                Lexer.Node aliasNode = currSelectNode.right;
+                String alias;
+                if(aliasNode != null) {
+                    alias = aliasNode.id;
+                } else if(currSelectNode.id.contains('.')){
+                    List<String> aliasParts = currSelectNode.id.split('\\.');
+                    alias = aliasParts[aliasParts.size()-1];
+                } else {
+                    alias = currSelectNode.id;
+                }
+
+                Integer initAliasSize = aliases.size();
+                aliases.add(alias);
+                
+                if(initAliasSize == aliases.size()) {
+                    throw new QueryException('Duplicate alias: ' + alias);
+                }
+
+                selectFields.add(currSelectNode.id);
+            } else if(currSelectNode.nodeType == 'aggregate function') {
+                // check that aggregated fields are not grouped
+                Lexer.Node fieldNode = currSelectNode.right;
+                if(groupByFields.contains(fieldNode.id)) {
+                    throw new QueryException('Grouped field should not be aggregated: ' + fieldNode.id);
+                }
+            }
+            currSelectNode = currSelectNode.left;
+        }
+        
+        Map<String, List<String>> aggregateFields = new Map<String, List<String>> {
+            'groupByFields' => groupByFields,
+            'selectFields' => selectFields
+        };
+        return aggregateFields;
+    }
+
+    private Map<String, Lexer.Node> getTopLevelNodes(Lexer.Node selectNode) {
         Lexer.Node fromNode = selectNode.right;
         Lexer.Node whereNode;
         Lexer.Node groupByNode;
         Lexer.Node havingNode;
         Lexer.Node orderByNode;
+        Lexer.Node limitNode;
 
         Lexer.Node curr = fromNode.right;
 
@@ -948,311 +1058,275 @@ public with sharing class MockDatabase {
             curr = curr.right;
         }
 
-        Lexer.Node objNode = fromNode.left;
-        String objName = objNode.id;
-        String objApiName = getSObjectApiName(objName);
-
-        Map<String, sObject> mockObjects = this.db.get(objApiName);
-        if (mockObjects == null) {
-            return new List<sObject>();
+        if(curr != null && curr.nodeType == 'limit') {
+            limitNode = curr;
+            curr = curr.right;
         }
 
-        if(hasDuplicateSubQueries(selectNode)) {
-            throw new QueryException('Cannot follow the same aggregate relationship twice');
-        }
+        Map<String, Lexer.Node> topLevelNodes = new Map<String, Lexer.Node> {
+            'fromNode' => fromNode,
+            'whereNode' => whereNode,
+            'groupByNode' => groupByNode,
+            'havingNode' => havingNode,
+            'orderByNode' => orderByNode,
+            'limitNode' => limitNode
+        };
+        return topLevelNodes;
+    }
 
-        if(hasDuplicateFields(selectNode)) {
-            throw new QueryException('Duplicate field selected');
-        }
-
-        Object results;
-        List<sObject> sObjects = new List<sObject>();
-        Integer count = 0;
-        Boolean isAggregateQuery = isAggregateQuery(selectNode);
-        Boolean isCount = isSingularCount(selectNode);
-
-        if(isCount && orderByNode != null) {
-            throw new QueryException('COUNT() and ORDER BY may not be used together');
-        }
-
-        List<Map<String, Object>> aggregateResults = new List<Map<String, ObjecT>>();
+    private Map<String, Object> handleAggregateQuery(
+        Lexer.Node selectNode,
+        SObject obj, 
+        List<Map<String, Object>> aggregateResults
+    ) {
+        aggregateResults = new List<Map<String, Object>>(aggregateResults);
         
-        // get list of all fields to group by, if is aggregate query
-        List<String> groupByFields = new List<String>();
-        List<String> selectFields = new List<String>();
-        if(isAggregateQuery) {
-            if(groupByNode != null) {
-                Lexer.Node currGroupByNode = groupByNode.left;
-                while(currGroupByNode != null) {
-                    groupByFields.add(currGroupByNode.id);
-                    currGroupByNode = currGroupByNode.left;
-                }
+        Map<String, List<String>> aggrFields = getAggregateFields(selectNode);
+        List<String> groupByFields = aggrFields.get('groupByFields');
+
+        Map<String, Object> aggregateResult;
+
+        for(Map<String, Object> ar : aggregateResults) {
+            Boolean isSame = true;
+            for(String groupByField : groupByFields) {
+                Map<String, Object> comparableInfo = getComparables(obj, groupByField);
+                sObject comparableRecord = (sObject) comparableInfo.get('comparableRecord');
+                String comparableField = (String) comparableInfo.get('comparableField');
+                isSame = (isSame && (comparableRecord.get(comparableField) == ar.get(comparableField)));
             }
-
-            Lexer.Node currSelectNode = selectNode.left;
-            Set<String> aliases = new Set<String>();
-            while(currSelectNode != null) {
-                // begin with error-handling for the aggregate query
-
-                if(currSelectNode.nodeType == 'field') {
-                    // check that selected fields are grouped or aggregated
-                    if(!groupByFields.contains(currSelectNode.id)) {
-                        throw new QueryException('Field must be grouped or aggregated: ' + currSelectNode.id);
-                    }
-
-                    // check for duplicate aliases
-                    Lexer.Node aliasNode = currSelectNode.right;
-                    String alias;
-                    if(aliasNode != null) {
-                        alias = aliasNode.id;
-                    } else if(currSelectNode.id.contains('.')){
-                        List<String> aliasParts = currSelectNode.id.split('\\.');
-                        alias = aliasParts[aliasParts.size()-1];
-                    } else {
-                        alias = currSelectNode.id;
-                    }
-
-                    Integer initAliasSize = aliases.size();
-                    aliases.add(alias);
-                    
-                    if(initAliasSize == aliases.size()) {
-                        throw new QueryException('Duplicate alias: ' + alias);
-                    }
-
-                    selectFields.add(currSelectNode.id);
-                } else if(currSelectNode.nodeType == 'aggregate function') {
-                    // check that aggregated fields are not grouped
-                    Lexer.Node fieldNode = currSelectNode.right;
-                    if(groupByFields.contains(fieldNode.id)) {
-                        throw new QueryException('Grouped field should not be aggregated: ' + fieldNode.id);
-                    }
-                }
-                currSelectNode = currSelectNode.left;
+            if(isSame) {
+                aggregateResult = ar;
+                break;
             }
         }
 
-        for(sObject obj : mockObjects.values()) {
-            if(!checkWhereCondition(obj, whereNode, params)) {
-                continue;
-            }
-
-            if(isCount && !isAggregateQuery) {
-                count++;
-                continue;
-            }
-
-            // handle fields
-            if(!isAggregateQuery) {
-                sObjects.add(copyWithFields(obj, selectNode, params));
-                continue;
-            }
-
-            // handle aggregate functions
-            Map<String, Object> aggregateResult;
-            for(Map<String, Object> ar : aggregateResults) {
-                Boolean isSame = true;
-                for(String groupByField : groupByFields) {
-                    Map<String, Object> comparableInfo = getComparables(obj, groupByField);
-                    sObject comparableRecord = (sObject) comparableInfo.get('comparableRecord');
-                    String comparableField = (String) comparableInfo.get('comparableField');
-                    isSame = (isSame && (comparableRecord.get(comparableField) == ar.get(comparableField)));
-                }
-                if(isSame) {
-                    aggregateResult = ar;
-                    break;
-                }
-            }
-
-
-            if(aggregateResult == null) {
-                aggregateResult = new Map<String, Object>();
-                for(String groupByField : groupByFields) {
-                    Map<String, Object> comparableInfo = getComparables(obj, groupByField);
-                    sObject comparableRecord = (sObject) comparableInfo.get('comparableRecord');
-                    String comparableField = (String) comparableInfo.get('comparableField');
-
-                    aggregateResult.put(comparableField, comparableRecord.get(comparableField));
-                }
-                // pointer logic, we won't have to add this again
-                aggregateResults.add(aggregateResult);
-            }
-
-            Lexer.Node currSelect = selectNode.left;
-            Integer exprNumber = 0;
-            while(currSelect != null) {
-                Boolean isAggregateFunc = (currSelect.nodeType == 'aggregate function');
-                Boolean isAggrSum = (isAggregateFunc && currSelect.id == 'sum');
-                Boolean isAggrCount = (isAggregateFunc && currSelect.id == 'count');
-                Boolean isAggrMax = (isAggregateFunc && currSelect.id == 'max');
-                Boolean isAggrMin = (isAggregateFunc && currSelect.id == 'min');
-                Boolean isAggrAvg = (isAggregateFunc && currSelect.id == 'avg');
-                Boolean isAggrCountDistinct = (isAggregateFunc && currSelect.id == 'count_distinct');
-
-                if(currSelect.nodeType == 'field') {
-                    currSelect = currSelect.left;
-                    continue;
-                }
-
-
-                Lexer.Node fieldNode = currSelect.right;
-                Lexer.Node aliasNode = fieldNode.left;
-                String fieldName = fieldNode.id;
-
-                Map<String, Object> comparableInfo = getComparables(obj, fieldName);
+        if(aggregateResult == null) {
+            aggregateResult = new Map<String, Object>();
+            for(String groupByField : groupByFields) {
+                Map<String, Object> comparableInfo = getComparables(obj, groupByField);
                 sObject comparableRecord = (sObject) comparableInfo.get('comparableRecord');
                 String comparableField = (String) comparableInfo.get('comparableField');
 
-                Map<String, Schema.SObjectField> fieldMap = comparableRecord.getSObjectType().getDescribe().fields.getMap();
-                Schema.DisplayType fieldType = fieldMap
-                    .get(comparableField)
-                    .getDescribe()
-                    .getType();
-                
-                String alias = 'expr' + exprNumber;
+                aggregateResult.put(comparableField, comparableRecord.get(comparableField));
+            }
+            // pointer logic, we won't have to add this again
+            aggregateResults.add(aggregateResult);
+        }
 
-                if(aliasNode != null) {
-                    alias = aliasNode.id;
-                } else {
-                    exprNumber++;
-                }
+        Lexer.Node currSelect = selectNode.left;
+        Integer exprNumber = 0;
+        while(currSelect != null) {
+            Boolean isAggregateFunc = (currSelect.nodeType == 'aggregate function');
+            Boolean isAggrSum = (isAggregateFunc && currSelect.id == 'sum');
+            Boolean isAggrCount = (isAggregateFunc && currSelect.id == 'count');
+            Boolean isAggrMax = (isAggregateFunc && currSelect.id == 'max');
+            Boolean isAggrMin = (isAggregateFunc && currSelect.id == 'min');
+            Boolean isAggrAvg = (isAggregateFunc && currSelect.id == 'avg');
+            Boolean isAggrCountDistinct = (isAggregateFunc && currSelect.id == 'count_distinct');
 
-                if(isAggrCountDistinct) {
-                    Integer currValue = (Integer) aggregateResult.get(alias);
-                    if(currValue == null) {
-                        currValue = 0;
-                    }
-                    Set<Object> distinctValues = (Set<Object>) aggregateResult.get(alias + '__distinct');
-                    if(distinctValues == null) {
-                        distinctValues = new Set<Object>();
-                    }
-                    aggregateResult.put(alias + '__distinct', distinctValues);
-                    Object value = comparableRecord.get(comparableField);
-                    if(value != null) {
-                        distinctValues.add(value);
-                    }
-                    aggregateResult.put(alias, distinctValues.size());
-                } else if(isAggrAvg) {
-                    if(!isFieldNumeric(fieldType)) {
-                        throw new QueryException('Invalid field type');
-                    }
-
-                    Decimal currValue = (Decimal) aggregateResult.get(alias);
-                    Decimal newValue = (Decimal) comparableRecord.get(comparableField);
-                    Decimal n = (Decimal) aggregateResult.get(alias + '__n');
-                    if(n == null) {
-                        n = 1;
-                    }
-
-                    if(currValue == null) {
-                        currValue = newValue;
-                    } else {
-                        currValue = currValue + (newValue - currValue) / n;
-                    }
-
-                    aggregateResult.put(alias, currValue);
-                    aggregateResult.put(alias + '__n', n + 1);
-                } if(isAggrMin) {
-                    if(!isFieldNumeric(fieldType)) {
-                        throw new QueryException('Invalid field type');
-                    }
-
-                    Decimal currValue = (Decimal) aggregateResult.get(alias);
-                    Decimal newValue = (Decimal) comparableRecord.get(comparableField);
-
-                    if(currValue == null) {
-                        currValue = newValue;
-                    } else {
-                        currValue = Math.min(currValue, newValue);
-                    }
-
-                    aggregateResult.put(alias, currValue);
-                } else if(isAggrMax) {
-                    if(!isFieldNumeric(fieldType)) {
-                        throw new QueryException('Invalid field type');
-                    }
-
-                    Decimal currValue = (Decimal) aggregateResult.get(alias);
-                    Decimal newValue = (Decimal) comparableRecord.get(comparableField);
-                    if(currValue == null) {
-                        currValue = newValue;
-                    } else {
-                        currValue = Math.max(currValue, newValue);
-                    }
-
-                    aggregateResult.put(alias, currValue);
-                } else if(isAggrCount) {
-                    Integer currValue = (Integer) aggregateResult.get(alias);
-                    if(currValue == null) {
-                        currValue = 0;
-                    }
-                    aggregateResult.put(alias, currValue + 1);
-                } else if(isAggrSum) {
-
-                    if(!isFieldNumeric(fieldType)) {
-                        throw new QueryException('Invalid field type');
-                    }
-
-                    Decimal currValue = (Decimal) aggregateResult.get(alias);
-                    Decimal newValue = (Decimal) comparableRecord.get(comparableField);
-                    Decimal sum;
-                    if(currValue == null) {
-                        sum = newValue;
-                    } else {
-                        sum = currValue + newValue;
-                    }
-
-                    aggregateResult.put(alias, sum);
-                }
+            if(currSelect.nodeType == 'field') {
                 currSelect = currSelect.left;
+                continue;
             }
+
+
+            Lexer.Node fieldNode = currSelect.right;
+            Lexer.Node aliasNode = fieldNode.left;
+            String fieldName = fieldNode.id;
+
+            Map<String, Object> comparableInfo = getComparables(obj, fieldName);
+            sObject comparableRecord = (sObject) comparableInfo.get('comparableRecord');
+            String comparableField = (String) comparableInfo.get('comparableField');
+
+            Map<String, Schema.SObjectField> fieldMap = comparableRecord.getSObjectType().getDescribe().fields.getMap();
+            Schema.DisplayType fieldType = fieldMap
+                .get(comparableField)
+                .getDescribe()
+                .getType();
+            
+            String alias = 'expr' + exprNumber;
+
+            if(aliasNode != null) {
+                alias = aliasNode.id;
+            } else {
+                exprNumber++;
+            }
+
+            if(isAggrCountDistinct) {
+                Integer currValue = (Integer) aggregateResult.get(alias);
+                if(currValue == null) {
+                    currValue = 0;
+                }
+                Set<Object> distinctValues = (Set<Object>) aggregateResult.get(alias + '__distinct');
+                if(distinctValues == null) {
+                    distinctValues = new Set<Object>();
+                }
+                aggregateResult.put(alias + '__distinct', distinctValues);
+                Object value = comparableRecord.get(comparableField);
+                if(value != null) {
+                    distinctValues.add(value);
+                }
+                aggregateResult.put(alias, distinctValues.size());
+            } else if(isAggrAvg) {
+                if(!isFieldNumeric(fieldType)) {
+                    throw new QueryException('Invalid field type');
+                }
+
+                Decimal currValue = (Decimal) aggregateResult.get(alias);
+                Decimal newValue = (Decimal) comparableRecord.get(comparableField);
+                Decimal n = (Decimal) aggregateResult.get(alias + '__n');
+                if(n == null) {
+                    n = 1;
+                }
+
+                if(currValue == null) {
+                    currValue = newValue;
+                } else {
+                    currValue = currValue + (newValue - currValue) / n;
+                }
+
+                aggregateResult.put(alias, currValue);
+                aggregateResult.put(alias + '__n', n + 1);
+            } if(isAggrMin) {
+                if(!isFieldNumeric(fieldType)) {
+                    throw new QueryException('Invalid field type');
+                }
+
+                Decimal currValue = (Decimal) aggregateResult.get(alias);
+                Decimal newValue = (Decimal) comparableRecord.get(comparableField);
+
+                if(currValue == null) {
+                    currValue = newValue;
+                } else {
+                    currValue = Math.min(currValue, newValue);
+                }
+
+                aggregateResult.put(alias, currValue);
+            } else if(isAggrMax) {
+                if(!isFieldNumeric(fieldType)) {
+                    throw new QueryException('Invalid field type');
+                }
+
+                Decimal currValue = (Decimal) aggregateResult.get(alias);
+                Decimal newValue = (Decimal) comparableRecord.get(comparableField);
+                if(currValue == null) {
+                    currValue = newValue;
+                } else {
+                    currValue = Math.max(currValue, newValue);
+                }
+
+                aggregateResult.put(alias, currValue);
+            } else if(isAggrCount) {
+                Integer currValue = (Integer) aggregateResult.get(alias);
+                if(currValue == null) {
+                    currValue = 0;
+                }
+                aggregateResult.put(alias, currValue + 1);
+            } else if(isAggrSum) {
+
+                if(!isFieldNumeric(fieldType)) {
+                    throw new QueryException('Invalid field type');
+                }
+
+                Decimal currValue = (Decimal) aggregateResult.get(alias);
+                Decimal newValue = (Decimal) comparableRecord.get(comparableField);
+                Decimal sum;
+                if(currValue == null) {
+                    sum = newValue;
+                } else {
+                    sum = currValue + newValue;
+                }
+
+                aggregateResult.put(alias, sum);
+            }
+            currSelect = currSelect.left;
         }
 
-        if(isCount) {
-            results = count;
-        } else if(isAggregateQuery) {
-            aggregateResults = sortByOrderBy(aggregateResults, selectNode, orderByNode);
-            List<Aggregate> aggregateResultsList = new List<Aggregate>();
-            for(Integer i = 0; i < aggregateResults.size(); i++) {
-                Map<String, Object> ar = aggregateResults[i];
+        Map<String, Object> results = new Map<String, Object> {
+            'aggregateResults' => aggregateResults,
+            'aggregateResult' => aggregateResult
+        };
 
-                Boolean isHavingNode = (havingNode != null);
-                if(!checkHavingCondition(ar, selectNode, havingNode, params)) {
-                    aggregateResults.remove(i);
-                    i--;
-                    continue;
-                }
+        return results;
+    }
 
-                // filter out grouped fields that are not selected in the select clause
-                for(String groupByField : groupByFields) {
-                    if(selectFields.contains(groupByField)) {
-                        continue;
-                    }
+    private Map<String, Object> cleanUpAggregateResult(
+        Map<String, Object> aggr, 
+        List<String> groupByFields, 
+        List<String> selectFields
+    ) {
+        aggr = aggr.clone();
 
-                    for(String key : ar.keySet()) {
-                        if(key.toLowerCase() == groupByField) {
-                            ar.remove(key);
-                        }
-                    }
-                }
-
-                // remove any rolling sums for averages and distinct sets
-                for(String key : ar.keySet()) {
-                    Boolean isAvg = key.endsWith('__n');
-                    Boolean isDistinct = key.endsWith('__distinct');
-                    if(isAvg || isDistinct) {
-                        ar.remove(key);
-                    }
-                    
-                }
-                Aggregate arp = new Aggregate(ar);
-                aggregateResultsList.add(arp);
+        for(String groupByField : groupByFields) {
+            if(selectFields.contains(groupByField)) {
+                continue;
             }
-            results = aggregateResultsList;
-        } else {
-            sObjects = sortByOrderBy(sObjects, selectNode, orderByNode);
-            results = sObjects;
+
+            for(String key : aggr.keySet()) {
+                if(key.toLowerCase() == groupByField) {
+                    aggr.remove(key);
+                }
+            }
+        }
+        
+        for(String key : aggr.keySet()) {
+            Boolean isAvg = key.endsWith('__n');
+            Boolean isDistinct = key.endsWith('__distinct');
+            if(isAvg || isDistinct) {
+                aggr.remove(key);
+            }
+        }
+        return aggr;
+    }
+
+    /**
+     * @description Remove the fields that are not in the select clause
+     * @param aggregateResults : the aggregate result list
+     * @param selectNode : the select node
+     * @return : the cleaned up aggregate result list
+     */
+    private List<Aggregate> handleAggregateQueryPostProcessing(
+        List<Map<String, Object>> aggregateResults, 
+        Lexer.Node selectNode,
+        Map<String, Object> params
+    ) {
+        // get list of all fields to group by, if is aggregate query
+        Map<String, List<String>> aggregateFields = getAggregateFields(selectNode);
+        List<String> groupByFields = aggregateFields.get('groupByFields');
+        List<String> selectFields = aggregateFields.get('selectFields');
+
+        Map<String, Lexer.Node> topLevelNodes = getTopLevelNodes(selectNode);
+        Lexer.Node havingNode = topLevelNodes.get('havingNode');
+
+
+        List<Aggregate> aggregateResultsList = new List<Aggregate>();
+        for(Integer i = 0; i < aggregateResults.size(); i++) {
+            Map<String, Object> ar = aggregateResults[i];
+
+            ar = cleanUpAggregateResult(ar, groupByFields, selectFields);
+            Aggregate arp = new Aggregate(ar);
+            aggregateResultsList.add(arp);
+        }
+        return aggregateResultsList;
+    }
+
+    private List<Map<String, Object>> handleHavingNode(
+        List<Map<String, Object>> aggregateResults, 
+        Lexer.Node selectNode, 
+        Map<String, Object> params
+    ) {
+        Map<String, Lexer.Node> topLevelNodes = getTopLevelNodes(selectNode);
+        Lexer.Node havingNode = topLevelNodes.get('havingNode');
+        if(havingNode == null) {
+            return aggregateResults;
         }
 
+        List<Map<String, Object>> results = new List<Map<String, Object>>();
+        for(Map<String, Object> ar : aggregateResults) {
+            if(checkHavingCondition(ar, selectNode, havingNode, params)) {
+                results.add(ar);
+            }
+        }
         return results;
     }
     
@@ -1304,6 +1378,20 @@ public with sharing class MockDatabase {
             curr = curr.left;
         }
         throw new QueryException('No alias found');
+    }
+
+    private Object handleOrderByNode(String typeOfQuery, Object results, Lexer.Node selectNode, Lexer.Node orderByNode) {
+        if(results == null) {
+            return results;
+        }
+
+        if(typeOfQuery == 'aggregate') {
+            return sortByOrderBy((List<Map<String, Object>>) results, selectNode, orderByNode);
+        } else if(typeOfQuery == 'sObject') {
+            return sortByOrderBy((List<SObject>) results, selectNode, orderByNode);
+        } else {
+            throw new QueryException('Invalid results type');
+        }
     }
 
     private List<Map<String, Object>> sortByOrderBy(List<Map<String, Object>> aggregates, Lexer.Node selectNode, Lexer.Node orderByNode) {
@@ -1405,13 +1493,6 @@ public with sharing class MockDatabase {
     private Boolean isSingularCount(Lexer.Node selectNode) {
         return (selectNode.left.id == 'count' && selectNode.left.right == null && selectNode.left.left == null);
     } 
-
-    // @description: This method is used to query the mock database by traversing the AST
-    private Object doQuery(String query, Map<String, Object> params) {
-        Lexer parser = new Lexer();
-        Lexer.Node selectNode = parser.parse(query);
-        return doQuery(selectNode, params);
-    }
 
     /** DML methods **/
 
@@ -1541,5 +1622,102 @@ public with sharing class MockDatabase {
      */
     public Object queryWithBinds(String query, Map<String, Object> params, AccessLevel access) {
         return queryWithBinds(query, params);
+    }
+
+    // @description: This method is used to query the mock database by traversing the AST
+    private Object doQuery(String query, Map<String, Object> params) {
+        Lexer parser = new Lexer();
+        Lexer.Node selectNode = parser.parse(query);
+        return doQuery(selectNode, params);
+    }
+
+    private Object doQuery(Lexer.Node selectNode, Map<String, Object> params) {
+        Map<String, Lexer.Node> topLevelNodes = getTopLevelNodes(selectNode);
+        Lexer.Node fromNode = topLevelNodes.get('fromNode');
+        Lexer.Node whereNode = topLevelNodes.get('whereNode');
+        Lexer.Node groupByNode = topLevelNodes.get('groupByNode');
+        Lexer.Node havingNode = topLevelNodes.get('havingNode');
+        Lexer.Node orderByNode = topLevelNodes.get('orderByNode');
+        Lexer.Node limitNode = topLevelNodes.get('limitNode');
+
+        Lexer.Node objNode = fromNode.left;
+        String objName = objNode.id;
+        String objApiName = getSObjectApiName(objName);
+
+        Map<String, sObject> mockObjects = this.db.get(objApiName);
+        if (mockObjects == null) {
+            return new List<sObject>();
+        }
+
+        if(hasDuplicateSubQueries(selectNode)) {
+            throw new QueryException('Cannot follow the same aggregate relationship twice');
+        }
+
+        if(hasDuplicateFields(selectNode)) {
+            throw new QueryException('Duplicate field selected');
+        }
+
+        Boolean isAggregateQuery = isAggregateQuery(selectNode);
+        Boolean isCount = isSingularCount(selectNode);
+
+        if(isCount && orderByNode != null) {
+            throw new QueryException('COUNT() and ORDER BY may not be used together');
+        }
+
+        Object results;
+
+        // results will either be a count, a list of sObjects, or a list of aggregates
+        Integer count = 0;
+        List<Map<String, Object>> aggregateResults = new List<Map<String, Object>>();
+        List<sObject> sObjects = new List<sObject>();
+        
+        // process the query, whether it's a count, aggregate, or regular query
+        for(sObject obj : mockObjects.values()) {
+            if(!checkWhereCondition(obj, whereNode, params)) {
+                continue;
+            }
+
+            if(isCount && !isAggregateQuery) {
+                count++;
+                continue;
+            }
+
+            // handle fields
+            if(!isAggregateQuery) {
+                sObjects.add(copyWithFields(obj, selectNode, params));
+                continue;
+            }
+
+            Map<String, Object> aggrResultValues = handleAggregateQuery(
+                selectNode, 
+                obj, 
+                aggregateResults
+            );
+            aggregateResults = (List<Map<String, Object>>) aggrResultValues.get('aggregateResults');
+        }
+
+        // handle the ORDER BY and LIMIT logic here
+        if(isAggregateQuery) {
+            aggregateResults = (List<Map<String, Object>>) handleOrderByNode('aggregate', aggregateResults, selectNode, orderByNode);
+            aggregateResults = (List<Map<String, Object>>) handleLimitNode('aggregate', limitNode, aggregateResults);
+            aggregateResults = (List<Map<String, Object>>) handleHavingNode(aggregateResults, selectNode, params);
+
+            // Remove internal fields from the aggregate results ('__n', '__distinct')
+            List<Aggregate> aggregateResultsList = handleAggregateQueryPostProcessing(
+                aggregateResults, 
+                selectNode,
+                params
+            );
+            results = aggregateResultsList;
+        } else if(isCount) {
+            count = (Integer) handleLimitNode('count', limitNode, count);
+            results = count;
+        } else {
+            sObjects = (List<SObject>) handleOrderByNode('sObject', sObjects, selectNode, orderByNode);
+            sObjects = (List<SObject>) handleLimitNode('sObject', limitNode, sObjects);
+            results = sObjects;
+        }
+
+        return results;
     }
 }

@@ -1,0 +1,5 @@
+SELECT Account.Name, COUNT(Id)
+FROM Contact
+WHERE Account.Name = 'United Oil & Gas Corp.'
+GROUP BY Account.Name
+LIMIT 1

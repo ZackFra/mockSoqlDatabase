@@ -1,74 +1,13 @@
 @IsTest
 public with sharing class LexerTest {
 
-    /**
-     * Helper class to assert the properties of a node
-     */
-    private class AssertNode {
-        public String id;
-        public String nodeType;
-        public Boolean isLeftNull;
-        public Boolean isRightNull;
-        public Lexer.Node node;
-
-        public AssertNode(Lexer.Node node, String id, String nodeType, Boolean isLeftNull, Boolean isRightNull) {
-            this.node = node;
-            this.id = id;
-            this.nodeType = nodeType;
-            this.isLeftNull = isLeftNull;
-            this.isRightNull = isRightNull;
-        }
-
-        public void doAssert() {
-            Assert.areEqual(id, node.id, 'Expected id to be "' + id + '"');
-            Assert.areEqual(nodeType, node.nodeType, 'Expected nodeType to be "' + nodeType + '"');
-            Assert.areEqual(isLeftNull, node.left == null, 'Expected left to be ' + (isLeftNull ? 'null' : 'not null'));
-            Assert.areEqual(isRightNull, node.right == null, 'Expected right to be ' + (isRightNull ? 'null' : 'not null'));
-        }
-    }
-
-    public class AssertNodeBuilder {
-        Lexer.Node node;
-        String id;
-        String nodeType;
-        Boolean isLeftNull;
-        Boolean isRightNull;
-
-        AssertNodeBuilder setNode(Lexer.Node node) {
-            this.node = node;
-            return this;
-        }
-
-        AssertNodeBuilder setId(String id) {
-            this.id = id;
-            return this;
-        }
-
-        AssertNodeBuilder setNodeType(String nodeType) {
-            this.nodeType = nodeType;
-            return this;
-        }
-
-        AssertNodeBuilder setIsLeftNull(Boolean isLeftNull) {
-            this.isLeftNull = isLeftNull;
-            return this;
-        }
-
-        AssertNodeBuilder setIsRightNull(Boolean isRightNull) {
-            this.isRightNull = isRightNull;
-            return this;
-        }
-
-        AssertNode build() {
-            return new AssertNode(this.node, this.id, this.nodeType, this.isLeftNull, this.isRightNull);
-        }
-    }
-
     @IsTest
     public static void testToString() {
+        Test.startTest();
         Lexer t = new Lexer();
         Lexer.Node head = t.parse('SELECT Id FROM Account');
         String result = head.toString();
+        Test.stopTest();
         String expectedResult = '{ id: id, nodeType: field }, { id: select, nodeType: select }, { id: account, nodeType: object }, { id: from, nodeType: from }';
         Assert.areEqual(
             expectedResult,
@@ -80,435 +19,337 @@ public with sharing class LexerTest {
     // fails for the wrong reason
     @IsTest
     public static void testAggrFuncFail1() {
+        String exMessage;
+        Test.startTest();
         Lexer t = new Lexer();
         try {
             Lexer.Node head = t.parse('SELECT SUM_DISTINCT(Amount) FROM Opportunity');
-            Assert.fail('Expected exception to be thrown');
         } catch(Exception e) {
-            Assert.isTrue(
-                e.getMessage().startsWith('Parsing exception, expected "("'),
-                'Expected exception message to start with "Parsing exception, expected "(""'
-            );
+            exMessage = e.getMessage();
         }
+        Test.stopTest();
+        Assert.isNotNull(
+            exMessage, 
+            'Expected exception message to be not null'
+        );
+        Assert.isTrue(
+            exMessage.startsWith('Parsing exception, expected "("'),
+            'Expected exception message to start with "Parsing exception, expected "(""'
+        );
     }
 
     @IsTest
     public static void testAggrFuncFail2() {
+        String exMessage;
+        Test.startTest();
         Lexer t = new Lexer();
         try {
             Lexer.Node head = t.parse('SELECT C(Amount) FROM Opportunity');
-            Assert.fail('Expected exception to be thrown');
         } catch(Exception e) {
-            Assert.isTrue(
-                e.getMessage().startsWith('Parsing exception, expected "from"'),
-                'Expected exception message to start with "Parsing exception, expected "from""'
-            );
+            exMessage = e.getMessage();
         }
+        Test.stopTest();
+        Assert.isNotNull(
+            exMessage, 
+            'Expected exception message to be not null'
+        );
+        Assert.isTrue(
+            exMessage.startsWith('Parsing exception, expected "from"'),
+            'Expected exception message to start with "Parsing exception, expected "from""'
+        );
     }
 
     @IsTest
     public static void testAggrFuncFail3() {
         Lexer t = new Lexer();
+        Boolean isExceptionThrown = false;
+        String exMessage;
+
+        Test.startTest();
         try {
             Lexer.Node head = t.parse('SELECT SUM(DISTINCT Amount) FROM Opportunity');
-            Assert.fail('Expected exception to be thrown');
         } catch(Exception e) {
-            Assert.isTrue(
-                e.getMessage().startsWith('Parsing exception, expected ")"'),
-                'Expected exception message to start with "Parsing exception, expected ")"'
-            );
+            exMessage = e.getMessage();
+            isExceptionThrown = true;
         }
+        Test.stopTest();
+
+        Assert.isTrue(
+            isExceptionThrown, 
+            'Expected exception to be thrown'
+        );
+        Assert.isTrue(
+            exMessage.startsWith('Parsing exception, expected ")"'),
+            'Expected exception message to start with "Parsing exception, expected ")"'
+        );
     }
 
     @IsTest
     public static void testParseBoolean() {
+        Test.startTest();
         Lexer t = new Lexer();
         Lexer.Node head = t.parse('SELECT Id FROM Account WHERE IsDeleted = true');
-        AssertNode assertSelect = new AssertNodeBuilder()
-            .setNode(head)
-            .setId('select')
-            .setNodeType('select')
-            .setIsLeftNull(false)
-            .setIsRightNull(false)
-            .build();
-        assertSelect.doAssert();
+        Test.stopTest();
+
+        Assert.areEqual('select', head.id, 'Expected id to be "select"');
+        Assert.areEqual('select', head.nodeType, 'Expected nodeType to be "select"');
+        Assert.isNotNull(head.left, 'Expected left to be not null');
+        Assert.isNotNull(head.right, 'Expected right to be not null');
+
 
         Lexer.Node idNode = head.left;
-        AssertNode assertId = new AssertNodeBuilder()
-            .setNode(idNode)
-            .setId('id')
-            .setNodeType('field')
-            .setIsLeftNull(true)
-            .setIsRightNull(true)
-            .build();
-        assertId.doAssert();
+        Assert.areEqual('id', idNode.id, 'Expected id to be "id"');
+        Assert.areEqual('field', idNode.nodeType, 'Expected nodeType to be "field"');
+        Assert.isNull(idNode.left, 'Expected left to be null');
+        Assert.isNull(idNode.right, 'Expected right to be null');
 
         Lexer.Node fromNode = head.right;
-        AssertNode assertFrom = new AssertNodeBuilder()
-            .setNode(fromNode)
-            .setId('from')
-            .setNodeType('from')
-            .setIsLeftNull(false)
-            .setIsRightNull(false)
-            .build();
-        assertFrom.doAssert();
+        Assert.areEqual('from', fromNode.id, 'Expected id to be "from"');
+        Assert.areEqual('from', fromNode.nodeType, 'Expected nodeType to be "from"');
+        Assert.isNotNull(fromNode.left, 'Expected left to be not null');
+        Assert.isNotNull(fromNode.right, 'Expected right to be not null');
 
         Lexer.Node accountNode = fromNode.left;
-        AssertNode assertAccount = new AssertNodeBuilder()
-            .setNode(accountNode)
-            .setId('account')
-            .setNodeType('object')
-            .setIsLeftNull(true)
-            .setIsRightNull(true)
-            .build();
-        assertAccount.doAssert();
+        Assert.areEqual('account', accountNode.id, 'Expected id to be "account"');
+        Assert.areEqual('object', accountNode.nodeType, 'Expected nodeType to be "object"');
+        Assert.isNull(accountNode.left, 'Expected left to be null');
+        Assert.isNull(accountNode.right, 'Expected right to be null');
 
         Lexer.Node whereNode = fromNode.right;
-        AssertNode assertWhere = new AssertNodeBuilder()
-            .setNode(whereNode)
-            .setId('where')
-            .setNodeType('where')
-            .setIsLeftNull(false)
-            .setIsRightNull(true)
-            .build();
-        assertWhere.doAssert();
+        Assert.areEqual('where', whereNode.id, 'Expected id to be "where"');
+        Assert.areEqual('where', whereNode.nodeType, 'Expected nodeType to be "where"');
+        Assert.isNotNull(whereNode.left, 'Expected left to be not null');
+        Assert.isNull(whereNode.right, 'Expected right to be null');
 
         Lexer.Node operatorNode = whereNode.left;
-        AssertNode assertOperator = new AssertNodeBuilder()
-            .setNode(operatorNode)
-            .setId('=')
-            .setNodeType('operator')
-            .setIsLeftNull(false)
-            .setIsRightNull(false)
-            .build();
-        assertOperator.doAssert();
+        Assert.areEqual('=', operatorNode.id, 'Expected id to be "operator"');
+        Assert.areEqual('operator', operatorNode.nodeType, 'Expected nodeType to be "operator"');
+        Assert.isNotNull(operatorNode.left, 'Expected left to not be null');
+        Assert.isNotNull(operatorNode.right, 'Expected right to not be null');
 
         Lexer.Node isDeletedNode = operatorNode.left;
-        AssertNode assertIsDeleted = new AssertNodeBuilder()
-            .setNode(isDeletedNode)
-            .setId('isdeleted')
-            .setNodeType('field')
-            .setIsLeftNull(true)
-            .setIsRightNull(true)
-            .build();
-        assertIsDeleted.doAssert();
+        Assert.areEqual('isdeleted', isDeletedNode.id, 'Expected id to be "isdeleted"');
+        Assert.areEqual('field', isDeletedNode.nodeType, 'Expected nodeType to be "field"');
+        Assert.isNull(isDeletedNode.left, 'Expected left to be null');
+        Assert.isNull(isDeletedNode.right, 'Expected right to be null');
 
         Lexer.Node valueNode = operatorNode.right;
-        AssertNode assertValue = new AssertNodeBuilder()
-            .setNode(valueNode)
-            .setId('true')
-            .setNodeType('boolean')
-            .setIsLeftNull(true)
-            .setIsRightNull(true)
-            .build();
-        assertValue.doAssert();
+        Assert.areEqual('true', valueNode.id, 'Expected id to be "true"');
+        Assert.areEqual('boolean', valueNode.nodeType, 'Expected nodeType to be "boolean"');
+        Assert.isNull(valueNode.left, 'Expected left to be null');
+        Assert.isNull(valueNode.right, 'Expected right to be null');
     }
 
     @IsTest
     public static void testOrderBy() {
+        Test.startTest();
         Lexer t = new Lexer();
         Lexer.Node head = t.parse('SELECT Id FROM Account ORDER BY Name, Id');
-        AssertNode assertSelect = new AssertNodeBuilder()
-            .setNode(head)
-            .setId('select')
-            .setNodeType('select')
-            .setIsLeftNull(false)
-            .setIsRightNull(false)
-            .build();
-        assertSelect.doAssert();
+        Test.stopTest();
+
+        Assert.areEqual('select', head.id, 'Expected id to be "select"');
+        Assert.areEqual('select', head.nodeType, 'Expected nodeType to be "select"');
+        Assert.isNotNull(head.left, 'Expected left to be not null');
+        Assert.isNotNull(head.right, 'Expected right to be not null');
 
         Lexer.Node idNode = head.left;
-        AssertNode assertId = new AssertNodeBuilder()
-            .setNode(idNode)
-            .setId('id')
-            .setNodeType('field')
-            .setIsLeftNull(true)
-            .setIsRightNull(true)
-            .build();
-        assertId.doAssert();
+        Assert.areEqual('id', idNode.id, 'Expected id to be "id"');
+        Assert.areEqual('field', idNode.nodeType, 'Expected nodeType to be "field"');
+        Assert.isNull(idNode.left, 'Expected left to be null');
+        Assert.isNull(idNode.right, 'Expected right to be null');
 
         Lexer.Node fromNode = head.right;
-        AssertNode assertFrom = new AssertNodeBuilder()
-            .setNode(fromNode)
-            .setId('from')
-            .setNodeType('from')
-            .setIsLeftNull(false)
-            .setIsRightNull(false)
-            .build();
-        assertFrom.doAssert();
+        Assert.areEqual('from', fromNode.id, 'Expected id to be "from"');
+        Assert.areEqual('from', fromNode.nodeType, 'Expected nodeType to be "from"');
+        Assert.isNotNull(fromNode.left, 'Expected left to be not null');
+        Assert.isNotNull(fromNode.right, 'Expected right to be not null');
 
         Lexer.Node accountNode = fromNode.left;
-        AssertNode assertAccount = new AssertNodeBuilder()
-            .setNode(accountNode)
-            .setId('account')
-            .setNodeType('object')
-            .setIsLeftNull(true)
-            .setIsRightNull(true)
-            .build();
-        assertAccount.doAssert();
+        Assert.areEqual('account', accountNode.id, 'Expected id to be "account"');
+        Assert.areEqual('object', accountNode.nodeType, 'Expected nodeType to be "object"');
+        Assert.isNull(accountNode.left, 'Expected left to be null');
+        Assert.isNull(accountNode.right, 'Expected right to be null');
 
         Lexer.Node orderByNode = fromNode.right;
-        AssertNode assertOrderBy = new AssertNodeBuilder()
-            .setNode(orderByNode)
-            .setId('order by')
-            .setNodeType('order by')
-            .setIsLeftNull(false)
-            .setIsRightNull(true)
-            .build();
-        assertOrderBy.doAssert();
+        Assert.areEqual('order by', orderByNode.id, 'Expected id to be "order by"');
+        Assert.areEqual('order by', orderByNode.nodeType, 'Expected nodeType to be "order by"');
+        Assert.isNotNull(orderByNode.left, 'Expected left to be not null');
+        Assert.isNull(orderByNode.right, 'Expected right to be null');
 
         Lexer.Node nameNode = orderByNode.left;
-        AssertNode assertName = new AssertNodeBuilder()
-            .setNode(nameNode)
-            .setId('name')
-            .setNodeType('field')
-            .setIsLeftNull(false)
-            .setIsRightNull(true)
-            .build();
-        assertName.doAssert();
+        Assert.areEqual('name', nameNode.id, 'Expected id to be "name"');
+        Assert.areEqual('field', nameNode.nodeType, 'Expected nodeType to be "field"');
+        Assert.isNotNull(nameNode.left, 'Expected left to not be null');
+        Assert.isNull(nameNode.right, 'Expected right to be null');
 
         Lexer.Node idNode2 = nameNode.left;
-        AssertNode assertId2 = new AssertNodeBuilder()
-            .setNode(idNode2)
-            .setId('id')
-            .setNodeType('field')
-            .setIsLeftNull(true)
-            .setIsRightNull(true)
-            .build();
-        assertId2.doAssert();
+        Assert.areEqual('id', idNode2.id, 'Expected id to be "id"');
+        Assert.areEqual('field', idNode2.nodeType, 'Expected nodeType to be "field"');
+        Assert.isNull(idNode2.left, 'Expected left to be null');
+        Assert.isNull(idNode2.right, 'Expected right to be null');
     }
 
     @IsTest
     public static void testLimit() {
+        Test.startTest();
         Lexer t = new Lexer();
         Lexer.Node head = t.parse('SELECT Id FROM Account LIMIT 10');
+        Test.stopTest();
 
-        AssertNode assertSelect = new AssertNodeBuilder()
-            .setNode(head)
-            .setId('select')
-            .setNodeType('select')
-            .setIsLeftNull(false)
-            .setIsRightNull(false)
-            .build();
-        assertSelect.doAssert();
+        Assert.areEqual('select', head.id, 'Expected id to be "select"');
+        Assert.areEqual('select', head.nodeType, 'Expected nodeType to be "select"');
+        Assert.isNotNull(head.left, 'Expected left to be not null');
+        Assert.isNotNull(head.right, 'Expected right to be not null');
 
         Lexer.Node idNode = head.left;
-        AssertNode assertId = new AssertNodeBuilder()
-            .setNode(idNode)
-            .setId('id')
-            .setNodeType('field')
-            .setIsLeftNull(true)
-            .setIsRightNull(true)
-            .build();
-        assertId.doAssert();
+        Assert.areEqual('id', idNode.id, 'Expected id to be "id"');
+        Assert.areEqual('field', idNode.nodeType, 'Expected nodeType to be "field"');
+        Assert.isNull(idNode.left, 'Expected left to be null');
+        Assert.isNull(idNode.right, 'Expected right to be null');
 
         Lexer.Node fromNode = head.right;
-        AssertNode assertFrom = new AssertNodeBuilder()
-            .setNode(fromNode)
-            .setId('from')
-            .setNodeType('from')
-            .setIsLeftNull(false)
-            .setIsRightNull(false)
-            .build();
-        assertFrom.doAssert();
+        Assert.areEqual('from', fromNode.id, 'Expected id to be "from"');
+        Assert.areEqual('from', fromNode.nodeType, 'Expected nodeType to be "from"');
+        Assert.isNotNull(fromNode.left, 'Expected left to be not null');
+        Assert.isNotNull(fromNode.right, 'Expected right to be not null');
 
         Lexer.Node accountNode = fromNode.left;
-        AssertNode assertAccount = new AssertNodeBuilder()
-            .setNode(accountNode)
-            .setId('account')
-            .setNodeType('object')
-            .setIsLeftNull(true)
-            .setIsRightNull(true)
-            .build();
-        assertAccount.doAssert();
+        Assert.areEqual('account', accountNode.id, 'Expected id to be "account"');
+        Assert.areEqual('object', accountNode.nodeType, 'Expected nodeType to be "object"');
+        Assert.isNull(accountNode.left, 'Expected left to be null');
+        Assert.isNull(accountNode.right, 'Expected right to be null');
 
         Lexer.Node limitNode = fromNode.right;
-        AssertNode assertLimit = new AssertNodeBuilder()
-            .setNode(limitNode)
-            .setId('limit')
-            .setNodeType('limit')
-            .setIsLeftNull(false)
-            .setIsRightNull(true)
-            .build();
-        assertLimit.doAssert();
+        Assert.areEqual('limit', limitNode.id, 'Expected id to be "limit"');
+        Assert.areEqual('limit', limitNode.nodeType, 'Expected nodeType to be "limit"');
+        Assert.isNotNull(limitNode.left, 'Expected left to be not null');
+        Assert.isNull(limitNode.right, 'Expected right to be null');
 
         Lexer.Node valueNode = limitNode.left;
-        AssertNode assertValue = new AssertNodeBuilder()
-            .setNode(valueNode)
-            .setId('10')
-            .setNodeType('number')
-            .setIsLeftNull(true)
-            .setIsRightNull(true)
-            .build();
-        assertValue.doAssert();
+        Assert.areEqual('10', valueNode.id, 'Expected id to be "10"');
+        Assert.areEqual('number', valueNode.nodeType, 'Expected nodeType to be "number"');
+        Assert.isNull(valueNode.left, 'Expected left to be null');
+        Assert.isNull(valueNode.right, 'Expected right to be null');
     }
 
     @IsTest
     public static void testForUpdate() {
+        Test.startTest();
         Lexer t = new Lexer();
         Lexer.Node head = t.parse('SELECT Id FROM Account FOR UPDATE');
-        AssertNode assertSelect = new AssertNodeBuilder()
-            .setNode(head)
-            .setId('select')
-            .setNodeType('select')
-            .setIsLeftNull(false)
-            .setIsRightNull(false)
-            .build();
-        assertSelect.doAssert();
+        Test.stopTest();
+
+        Assert.areEqual('select', head.id, 'Expected id to be "select"');
+        Assert.areEqual('select', head.nodeType, 'Expected nodeType to be "select"');
+        Assert.isNotNull(head.left, 'Expected left to be not null');
+        Assert.isNotNull(head.right, 'Expected right to be not null');
 
         Lexer.Node idNode = head.left;
-        AssertNode assertId = new AssertNodeBuilder()
-            .setNode(idNode)
-            .setId('id')
-            .setNodeType('field')
-            .setIsLeftNull(true)
-            .setIsRightNull(true)
-            .build();
-        assertId.doAssert();
+        Assert.areEqual('id', idNode.id, 'Expected id to be "id"');
+        Assert.areEqual('field', idNode.nodeType, 'Expected nodeType to be "field"');
+        Assert.isNull(idNode.left, 'Expected left to be null');
+        Assert.isNull(idNode.right, 'Expected right to be null');
 
         Lexer.Node fromNode = head.right;
-        AssertNode assertFrom = new AssertNodeBuilder()
-            .setNode(fromNode)
-            .setId('from')
-            .setNodeType('from')
-            .setIsLeftNull(false)
-            .setIsRightNull(false)
-            .build();
-        assertFrom.doAssert();
+        Assert.areEqual('from', fromNode.id, 'Expected id to be "from"');
+        Assert.areEqual('from', fromNode.nodeType, 'Expected nodeType to be "from"');
+        Assert.isNotNull(fromNode.left, 'Expected left to be not null');
+        Assert.isNotNull(fromNode.right, 'Expected right to be not null');
 
         Lexer.Node accountNode = fromNode.left;
-        AssertNode assertAccount = new AssertNodeBuilder()
-            .setNode(accountNode)
-            .setId('account')
-            .setNodeType('object')
-            .setIsLeftNull(true)
-            .setIsRightNull(true)
-            .build();
-        assertAccount.doAssert();
+        Assert.areEqual('account', accountNode.id, 'Expected id to be "account"');
+        Assert.areEqual('object', accountNode.nodeType, 'Expected nodeType to be "object"');
+        Assert.isNull(accountNode.left, 'Expected left to be null');
+        Assert.isNull(accountNode.right, 'Expected right to be null');
 
         Lexer.Node forUpdateNode = fromNode.right;
-        AssertNode assertForUpdate = new AssertNodeBuilder()
-            .setNode(forUpdateNode)
-            .setId('for update')
-            .setNodeType('for update')
-            .setIsLeftNull(true)
-            .setIsRightNull(true)
-            .build();
-        assertForUpdate.doAssert();
+        Assert.areEqual('for update', forUpdateNode.id, 'Expected id to be "for update"');
+        Assert.areEqual('for update', forUpdateNode.nodeType, 'Expected nodeType to be "for update"');
+        Assert.isNull(forUpdateNode.left, 'Expected left to be null');
+        Assert.isNull(forUpdateNode.right, 'Expected right to be null');
     }
 
     @IsTest 
     public static void testHavingClause() {
+        Test.startTest();
         Lexer t = new Lexer();
         Lexer.Node head = t.parse('SELECT Id FROM Account GROUP BY Id HAVING COUNT(Id) > 0');
-        AssertNode assertSelect = new AssertNodeBuilder()
-            .setNode(head)
-            .setId('select')
-            .setNodeType('select')
-            .setIsLeftNull(false)
-            .setIsRightNull(false)
-            .build();
-        assertSelect.doAssert();
+        Test.stopTest();
+
+        Assert.areEqual('select', head.id, 'Expected id to be "select"');
+        Assert.areEqual('select', head.nodeType, 'Expected nodeType to be "select"');
+        Assert.isNotNull(head.left, 'Expected left to be not null');
+        Assert.isNotNull(head.right, 'Expected right to be not null');
+
+        Assert.areEqual('select', head.id, 'Expected id to be "select"');
+        Assert.areEqual('select', head.nodeType, 'Expected nodeType to be "select"');
+        Assert.isNotNull(head.left, 'Expected left to be not null');
+        Assert.isNotNull(head.right, 'Expected right to be not null');
     
         Lexer.Node idNode = head.left;
-        AssertNode assertId = new AssertNodeBuilder()
-            .setNode(idNode)
-            .setId('id')
-            .setNodeType('field')
-            .setIsLeftNull(true)
-            .setIsRightNull(true)
-            .build();
-        assertId.doAssert();
+        Assert.areEqual('id', idNode.id, 'Expected id to be "id"');
+        Assert.areEqual('field', idNode.nodeType, 'Expected nodeType to be "field"');
+        Assert.isNull(idNode.left, 'Expected left to be null');
+        Assert.isNull(idNode.right, 'Expected right to be null');
 
         Lexer.Node fromNode = head.right;
-        AssertNode assertFrom = new AssertNodeBuilder()
-            .setNode(fromNode)
-            .setId('from')
-            .setNodeType('from')
-            .setIsLeftNull(false)
-            .setIsRightNull(false)
-            .build();
-        assertFrom.doAssert();
+        Assert.areEqual('from', fromNode.id, 'Expected id to be "from"');
+        Assert.areEqual('from', fromNode.nodeType, 'Expected nodeType to be "from"');
+        Assert.isNotNull(fromNode.left, 'Expected left to be not null');
+        Assert.isNotNull(fromNode.right, 'Expected right to be not null');
 
         Lexer.Node accountNode = fromNode.left;
-        AssertNode assertAccount = new AssertNodeBuilder()
-            .setNode(accountNode)
-            .setId('account')
-            .setNodeType('object')
-            .setIsLeftNull(true)
-            .setIsRightNull(true)
-            .build();
-        assertAccount.doAssert();
+        Assert.areEqual('account', accountNode.id, 'Expected id to be "account"');
+        Assert.areEqual('object', accountNode.nodeType, 'Expected nodeType to be "object"');
+        Assert.isNull(accountNode.left, 'Expected left to be null');
+        Assert.isNull(accountNode.right, 'Expected right to be null');
 
         Lexer.Node groupByNode = fromNode.right;
-        AssertNode assertGroupBy = new AssertNodeBuilder()
-            .setNode(groupByNode)
-            .setId('group by')
-            .setNodeType('group by')
-            .setIsLeftNull(false)
-            .setIsRightNull(false)
-            .build();
-        assertGroupBy.doAssert();
+        Assert.areEqual('group by', groupByNode.id, 'Expected id to be "group by"');
+        Assert.areEqual('group by', groupByNode.nodeType, 'Expected nodeType to be "group by"');
+        Assert.isNotNull(groupByNode.left, 'Expected left to be not null');
+        Assert.isNotNull(groupByNode.right, 'Expected right to be not null');
+
+        Assert.areEqual('group by', groupByNode.id, 'Expected id to be "group by"');
+        Assert.areEqual('group by', groupByNode.nodeType, 'Expected nodeType to be "group by"');
+        Assert.isNotNull(groupByNode.left, 'Expected left to be not null');
+        Assert.isNotNull(groupByNode.right, 'Expected right to be not null');
 
         Lexer.Node idNode2 = groupByNode.left;
-        AssertNode assertId2 = new AssertNodeBuilder()
-            .setNode(idNode2)
-            .setId('id')
-            .setNodeType('field')
-            .setIsLeftNull(true)
-            .setIsRightNull(true)
-            .build();
-        assertId2.doAssert();
+        Assert.areEqual('id', idNode2.id, 'Expected id to be "id"');
+        Assert.areEqual('field', idNode2.nodeType, 'Expected nodeType to be "field"');
+        Assert.isNull(idNode2.left, 'Expected left to be null');
+        Assert.isNull(idNode2.right, 'Expected right to be null');
 
         Lexer.Node havingNode = groupByNode.right;
-        AssertNode assertHaving = new AssertNodeBuilder()
-            .setNode(havingNode)
-            .setId('having')
-            .setNodeType('having')
-            .setIsLeftNull(false)
-            .setIsRightNull(true)
-            .build();
-        assertHaving.doAssert();
+        Assert.areEqual('having', havingNode.id, 'Expected id to be "having"');
+        Assert.areEqual('having', havingNode.nodeType, 'Expected nodeType to be "having"');
+        Assert.isNotNull(havingNode.left, 'Expected left to be not null');
+        Assert.isNull(havingNode.right, 'Expected right to be null');
 
         Lexer.Node operatorNode = havingNode.left;
-        AssertNode assertOperator = new AssertNodeBuilder()
-            .setNode(operatorNode)
-            .setId('>')
-            .setNodeType('operator')
-            .setIsLeftNull(false)
-            .setIsRightNull(false)
-            .build();
-        assertOperator.doAssert();
+        Assert.areEqual('>', operatorNode.id, 'Expected id to be "operator"');
+        Assert.areEqual('operator', operatorNode.nodeType, 'Expected nodeType to be "operator"');
+        Assert.isNotNull(operatorNode.left, 'Expected left to not be null');
+        Assert.isNotNull(operatorNode.right, 'Expected right to not be null');
 
         Lexer.Node aggregateFunctionNode = operatorNode.left;
-        AssertNode assertAggregateFunction = new AssertNodeBuilder()
-            .setNode(aggregateFunctionNode)
-            .setId('count')
-            .setNodeType('aggregate function')
-            .setIsLeftNull(true)
-            .setIsRightNull(false)
-            .build();
-        assertAggregateFunction.doAssert();
+        Assert.areEqual('count', aggregateFunctionNode.id, 'Expected id to be "count"');
+        Assert.areEqual('aggregate function', aggregateFunctionNode.nodeType, 'Expected nodeType to be "aggregate function"');
+        Assert.isNull(aggregateFunctionNode.left, 'Expected left to be null');
+        Assert.isNotNull(aggregateFunctionNode.right, 'Expected right to be not null');
 
         Lexer.Node idNode3 = aggregateFunctionNode.right;
-        AssertNode assertId3 = new AssertNodeBuilder()
-            .setNode(idNode3)
-            .setId('id')
-            .setNodeType('field')
-            .setIsLeftNull(true)
-            .setIsRightNull(true)
-            .build();
-        assertId3.doAssert();
+        Assert.areEqual('id', idNode3.id, 'Expected id to be "id"');
+        Assert.areEqual('field', idNode3.nodeType, 'Expected nodeType to be "field"');
+        Assert.isNull(idNode3.left, 'Expected left to be null');
+        Assert.isNull(idNode3.right, 'Expected right to be null');
 
         Lexer.Node valueNode = operatorNode.right;
-        AssertNode assertValue = new AssertNodeBuilder()
-            .setNode(valueNode)
-            .setId('0')
-            .setNodeType('number')
-            .setIsLeftNull(true)
-            .setIsRightNull(true)
-            .build();
-        assertValue.doAssert();
+        Assert.areEqual('0', valueNode.id, 'Expected id to be "0"');
+        Assert.areEqual('number', valueNode.nodeType, 'Expected nodeType to be "number"');
+        Assert.isNull(valueNode.left, 'Expected left to be null');
+        Assert.isNull(valueNode.right, 'Expected right to be null');
     }
 
     @IsTest
@@ -521,10 +362,24 @@ public with sharing class LexerTest {
             'max',
             'sum'
         };
+        List<Map<String, Object>> nodes = new List<Map<String, Object>>();
+        Test.startTest();
         for(String func : aggrFuncs) {
             Lexer t = new Lexer();
             Lexer.Node head = t.parse('SELECT ' + func + '(Amount) FROM Opportunity');
-            
+            Map<String, Object> nodeDatum = new Map<String, Object> {
+                'head' => head,
+                'func' => func
+            };
+            nodes.add(nodeDatum);
+        }
+        Test.stopTest();
+
+
+        for(Map<String, Object> nodeData : nodes) { 
+            Lexer.Node head = (Lexer.Node) nodeData.get('head');
+            String func = (String) nodeData.get('func');
+
             // we expect this to come back in a particular order
             Assert.areEqual('select', head.id, 'Expected id to be "select"');
             Assert.areEqual('select', head.nodeType, 'Expected nodeType to be "select"');
@@ -559,8 +414,10 @@ public with sharing class LexerTest {
 
     @IsTest
     public static void testSelectAccount() {
+        Test.startTest();
         Lexer t = new Lexer();
         Lexer.Node head = t.parse('SELECT Id FROM Account');
+        Test.stopTest();
         
         // we expect this to come back in a particular order
         Assert.areEqual('select', head.id, 'Expected id to be "select"');
@@ -589,8 +446,10 @@ public with sharing class LexerTest {
 
     @IsTest
     public static void testSelectWithWhereClause() {
+        Test.startTest();
         Lexer t = new Lexer();
         Lexer.Node head = t.parse('SELECT Id FROM Account WHERE Name = \'Test\'');
+        Test.stopTest();
         
         // we expect this to come back in a particular order
         Assert.areEqual('select', head.id, 'Expected id to be "select"');
@@ -643,8 +502,10 @@ public with sharing class LexerTest {
 
     @IsTest
     public static void testMixedFieldsSubQueries() {
+        Test.startTest();
         Lexer t = new Lexer();
         Lexer.Node head = t.parse('SELECT Id, (SELECT Id FROM Contacts), Name FROM Account');
+        Test.stopTest();
 
         Assert.areEqual('select', head.id, 'Expected id to be "select"');
         Assert.areEqual('select', head.nodeType, 'Expected nodeType to be "select"');
@@ -709,8 +570,10 @@ public with sharing class LexerTest {
 
     @IsTest
     public static void testSubQueryWithSubQueryFirst() {
+        Test.startTest();
         Lexer t = new Lexer();
         Lexer.Node head = t.parse('SELECT (SELECT Id FROM Contacts), Id FROM Account');
+        Test.stopTest();
 
         Assert.areEqual('select', head.id, 'Expected id to be "select"');
         Assert.areEqual('select', head.nodeType, 'Expected nodeType to be "select"');
@@ -751,8 +614,10 @@ public with sharing class LexerTest {
 
     @IsTest
     public static void testSubQueryWithSubQuerySecond() {
+        Test.startTest();
         Lexer t = new Lexer();
         Lexer.Node head = t.parse('SELECT Id, (SELECT Id FROM Contacts) FROM Account');
+        Test.stopTest();
 
         Assert.areEqual('select', head.id, 'Expected id to be "select"');
         Assert.areEqual('select', head.nodeType, 'Expected nodeType to be "select"');
@@ -798,9 +663,10 @@ public with sharing class LexerTest {
 
     @IsTest
     public static void testMultipleSubQueries() {
-
+        Test.startTest();
         Lexer t = new Lexer();
         Lexer.Node head = t.parse('SELECT Id, (SELECT Id FROM Contacts), (SELECT Id FROM Opportunities) FROM Account');
+        Test.stopTest();
 
         Assert.areEqual('select', head.id, 'Expected id to be "select"');
         Assert.areEqual('select', head.nodeType, 'Expected nodeType to be "select"');
@@ -877,8 +743,10 @@ public with sharing class LexerTest {
 
     @IsTest
     public static void testSubQueryWithQueryInWhereClause() {
+        Test.startTest();
         Lexer t = new Lexer();
         Lexer.Node head = t.parse('SELECT Id FROM Account WHERE Id IN (SELECT AccountId FROM Contact)');
+        Test.stopTest();
 
         Assert.areEqual('select', head.id, 'Expected id to be "select"');
         Assert.areEqual('select', head.nodeType, 'Expected nodeType to be "select"');
@@ -954,8 +822,10 @@ public with sharing class LexerTest {
 
     @IsTest
     public static void testSubQueryWithQueryInWhereClause2() {
+        Test.startTest();
         Lexer t = new Lexer();
         Lexer.Node head = t.parse('SELECT Id FROM Account WHERE Id IN (SELECT AccountId FROM Contact WHERE Name = \'Test\')');
+        Test.stopTest();
 
         Assert.areEqual('select', head.id, 'Expected id to be "select"');
         Assert.areEqual('select', head.nodeType, 'Expected nodeType to be "select"');
@@ -1053,8 +923,10 @@ public with sharing class LexerTest {
 
     @IsTest
     public static void testBindVar() {
+        Test.startTest();
         Lexer t = new Lexer();
         Lexer.Node head = t.parse('SELECT Id FROM Account WHERE Id = :id');
+        Test.stopTest();
 
         Assert.areEqual('select', head.id, 'Expected id to be "select"');
         Assert.areEqual('select', head.nodeType, 'Expected nodeType to be "select"');
@@ -1106,9 +978,11 @@ public with sharing class LexerTest {
 
     @IsTest
     public static void testAndStatements() {
+        Test.startTest();
         Lexer t = new Lexer();
         Lexer.Node head = t.parse('SELECT Id FROM Contact WHERE FirstName = \'test\' AND LastName = \'test2\' AND Account.Name = \'testAcct\'');
-        
+        Test.stopTest();
+
         Assert.areEqual('select', head.id, 'Expected id to be "select"');
         Assert.areEqual('select', head.nodeType, 'Expected nodeType to be "select"');
         Assert.isNotNull(head.left, 'Expected left to be not null');
@@ -1207,8 +1081,10 @@ public with sharing class LexerTest {
 
     @IsTest
     public static void testQueryWithOrAnd() {
+        Test.startTest();
         Lexer t = new Lexer();
         Lexer.Node head = t.parse('SELECT Id FROM Contact WHERE FirstName = \'test\' OR LastName = \'test2\' AND Account.Name = \'testAcct\'');
+        Test.stopTest();
 
         Assert.areEqual('select', head.id, 'Expected id to be "select"');
         Assert.areEqual('select', head.nodeType, 'Expected nodeType to be "select"');
@@ -1310,8 +1186,10 @@ public with sharing class LexerTest {
 
     @IsTest
     public static void testNot() {
+        Test.startTest();
         Lexer t = new Lexer();
         Lexer.Node head = t.parse('SELECT Id FROM Contact WHERE NOT FirstName = \'test\'');
+        Test.stopTest();
 
         Assert.areEqual('select', head.id, 'Expected id to be "select"');
         Assert.areEqual('select', head.nodeType, 'Expected nodeType to be "select"');
@@ -1369,8 +1247,10 @@ public with sharing class LexerTest {
 
     @IsTest
     public static void testCorrectsForAndWithOr() {
+        Test.startTest();
         Lexer t = new Lexer();
         Lexer.Node head = t.parse('SELECT Id FROM Contact WHERE FirstName = \'test\' OR LastName = \'test2\' AND Account.Name = \'testAcct\' OR Account.Name = \'testAcct2\'');
+        Test.stopTest();
 
         Assert.areEqual('select', head.id, 'Expected id to be "select"');
         Assert.areEqual('select', head.nodeType, 'Expected nodeType to be "select"');
@@ -1494,8 +1374,10 @@ public with sharing class LexerTest {
 
     @IsTest
     public static void testCorrectsForAndWithOrWithSubExpr() {
+        Test.startTest();
         Lexer t = new Lexer();
         Lexer.Node head = t.parse('SELECT Id FROM Contact WHERE FirstName = \'test\' AND LastName = \'test2\' OR (Account.Name = \'testAcct\' AND Account.Name = \'testAcct2\' OR Account.Name = \'testAcct3\')');
+        Test.stopTest();
 
         Assert.areEqual('select', head.id, 'Expected id to be "select"');
         Assert.areEqual('select', head.nodeType, 'Expected nodeType to be "select"');
@@ -1650,725 +1532,461 @@ public with sharing class LexerTest {
 
     @IsTest
     public static void testAlias() {
+        Test.startTest();
         Lexer t = new Lexer();
         Lexer.Node head = t.parse('SELECT COUNT(Id) cnt1 FROM Account GROUP BY Id');
+        Test.stopTest();
 
-        AssertNode assertSelect = new AssertNodeBuilder()
-            .setNode(head)
-            .setId('select')
-            .setNodeType('select')
-            .setIsLeftNull(false)
-            .setIsRightNull(false)
-            .build();
-        assertSelect.doAssert();
+        Assert.areEqual('select', head.id, 'Expected id to be "select"');
+        Assert.areEqual('select', head.nodeType, 'Expected nodeType to be "select"');
+        Assert.isNotNull(head.left, 'Expected left to be not null');
+        Assert.isNotNull(head.right, 'Expected right to be not null');
 
         Lexer.Node countNode = head.left;
-        AssertNode assertCount = new AssertNodeBuilder()
-            .setNode(countNode)
-            .setId('count')
-            .setNodeType('aggregate function')
-            .setIsLeftNull(true)
-            .setIsRightNull(false)
-            .build();
-        assertCount.doAssert();
+        Assert.areEqual('count', countNode.id, 'Expected id to be "count"');
+        Assert.areEqual('aggregate function', countNode.nodeType, 'Expected nodeType to be "aggregate function"');
+        Assert.isNull(countNode.left, 'Expected left to be null');
+        Assert.isNotNull(countNode.right, 'Expected right to not be null');
 
         Lexer.Node idNode = countNode.right;
-        AssertNode assertId = new AssertNodeBuilder()
-            .setNode(idNode)
-            .setId('id')
-            .setNodeType('field')
-            .setIsLeftNull(false)
-            .setIsRightNull(true)
-            .build();
-        assertId.doAssert();
+        Assert.areEqual('id', idNode.id, 'Expected id to be "id"');
+        Assert.areEqual('field', idNode.nodeType, 'Expected nodeType to be "field"');
+        Assert.isNotNull(idNode.left, 'Expected left to not be null');
+        Assert.isNull(idNode.right, 'Expected right to be null');
 
         Lexer.Node aliasNode = idNode.left;
-        AssertNode assertAlias = new AssertNodeBuilder()
-            .setNode(aliasNode)
-            .setId('cnt1')
-            .setNodeType('alias')
-            .setIsLeftNull(true)
-            .setIsRightNull(true)
-            .build();
-        assertAlias.doAssert();
+        Assert.areEqual('cnt1', aliasNode.id, 'Expected id to be "cnt1"');
+        Assert.areEqual('alias', aliasNode.nodeType, 'Expected nodeType to be "alias"');
+        Assert.isNull(aliasNode.left, 'Expected left to be null');
+        Assert.isNull(aliasNode.right, 'Expected right to be null');
 
         Lexer.Node fromNode = head.right;
-        AssertNode assertFrom = new AssertNodeBuilder()
-            .setNode(fromNode)
-            .setId('from')
-            .setNodeType('from')
-            .setIsLeftNull(false)
-            .setIsRightNull(false)
-            .build();
-        assertFrom.doAssert();
+        Assert.areEqual('from', fromNode.id, 'Expected id to be "from"');
+        Assert.areEqual('from', fromNode.nodeType, 'Expected nodeType to be "from"');
+        Assert.isNotNull(fromNode.left, 'Expected left to be not null');
+        Assert.isNotNull(fromNode.right, 'Expected right to be not null');
 
         Lexer.Node accountNode = fromNode.left;
-        AssertNode assertAccount = new AssertNodeBuilder()
-            .setNode(accountNode)
-            .setId('account')
-            .setNodeType('object')
-            .setIsLeftNull(true)
-            .setIsRightNull(true)
-            .build();
-        assertAccount.doAssert();
+        Assert.areEqual(accountNode.id, 'account', 'Expected id to be "account"');
+        Assert.areEqual(accountNode.nodeType, 'object', 'Expected nodeType to be "object"');
+        Assert.isNull(accountNode.left, 'Expected left to be null');
+        Assert.isNull(accountNode.right, 'Expected right to be null');
 
         Lexer.Node groupByNode = fromNode.right;
-        AssertNode assertGroupBy = new AssertNodeBuilder()
-            .setNode(groupByNode)
-            .setId('group by')
-            .setNodeType('group by')
-            .setIsLeftNull(false)
-            .setIsRightNull(true)
-            .build();
-        assertGroupBy.doAssert();
+        Assert.areEqual('group by', groupByNode.id, 'Expected id to be "group by"');
+        Assert.areEqual('group by', groupByNode.nodeType, 'Expected nodeType to be "group by"');
+        Assert.isNotNull(groupByNode.left, 'Expected left to be not null');
+        Assert.isNull(groupByNode.right, 'Expected right to be null');
 
         Lexer.Node idNode2 = groupByNode.left;
-        AssertNode assertId2 = new AssertNodeBuilder()
-            .setNode(idNode2)
-            .setId('id')
-            .setNodeType('field')
-            .setIsLeftNull(true)
-            .setIsRightNull(true)
-            .build();
-        assertId2.doAssert();
+        Assert.areEqual('id', idNode2.id, 'Expected id to be "id"');
+        Assert.areEqual('field', idNode2.nodeType, 'Expected nodeType to be "field"');
+        Assert.isNull(idNode2.left, 'Expected left to be null');
+        Assert.isNull(idNode2.right, 'Expected right to be null');
     }
 
     @IsTest
     public static void testParseValueList() {
+        Test.startTest();
         Lexer t = new Lexer();
-
         Lexer.Node head = t.parse('SELECT Id FROM Contact WHERE FirstName IN (\'test\', \'test2\')');
-        AssertNode assertSelect = new AssertNodeBuilder()
-            .setNode(head)
-            .setId('select')
-            .setNodeType('select')
-            .setIsLeftNull(false)
-            .setIsRightNull(false)
-            .build();
-        assertSelect.doAssert();
+        Test.stopTest();
+        Assert.areEqual('select', head.id, 'Expected id to be "select"');
+        Assert.areEqual('select', head.nodeType, 'Expected nodeType to be "select"');
+        Assert.isNotNull(head.left, 'Expected left to be not null');
+        Assert.isNotNull(head.right, 'Expected right to be not null');
 
         Lexer.Node idNode = head.left;
-        AssertNode assertId = new AssertNodeBuilder()
-            .setNode(idNode)
-            .setId('id')
-            .setNodeType('field')
-            .setIsLeftNull(true)
-            .setIsRightNull(true)
-            .build();
-        assertId.doAssert();
+        Assert.areEqual(idNode.id, 'id', 'Expected id to be "id"');
+        Assert.areEqual(idNode.nodeType, 'field', 'Expected nodeType to be "field"');
+        Assert.isNull(idNode.left, 'Expected left to be null');
+        Assert.isNull(idNode.right, 'Expected right to be null');
 
         Lexer.Node fromNode = head.right;
-        AssertNode assertFrom = new AssertNodeBuilder()
-            .setNode(fromNode)
-            .setId('from')
-            .setNodeType('from')
-            .setIsLeftNull(false)
-            .setIsRightNull(false)
-            .build();
-        assertFrom.doAssert();
+        Assert.areEqual('from', fromNode.id, 'Expected id to be "from"');
+        Assert.areEqual('from', fromNode.nodeType, 'Expected nodeType to be "from"');
+        Assert.isNotNull(fromNode.left, 'Expected left to be not null');
+        Assert.isNotNull(fromNode.right, 'Expected right to be not null');
 
         Lexer.Node contactNode = fromNode.left;
-        AssertNode assertContact = new AssertNodeBuilder()
-            .setNode(contactNode)
-            .setId('contact')
-            .setNodeType('object')
-            .setIsLeftNull(true)
-            .setIsRightNull(true)
-            .build();
-        assertContact.doAssert();
+        Assert.areEqual('contact', contactNode.id, 'Expected id to be "contact"');
+        Assert.areEqual('object', contactNode.nodeType, 'Expected nodeType to be "object"');
+        Assert.isNull(contactNode.left, 'Expected left to be null');
+        Assert.isNull(contactNode.right, 'Expected right to be null');
 
         Lexer.Node whereNode = fromNode.right;
-        AssertNode assertWhere = new AssertNodeBuilder()
-            .setNode(whereNode)
-            .setId('where')
-            .setNodeType('where')
-            .setIsLeftNull(false)
-            .setIsRightNull(true)
-            .build();
-        assertWhere.doAssert();
+        Assert.areEqual('where', whereNode.id, 'Expected id to be "where"');
+        Assert.areEqual('where', whereNode.nodeType, 'Expected nodeType to be "where"');
+        Assert.isNotNull(whereNode.left, 'Expected left to be not null');
+        Assert.isNull(whereNode.right, 'Expected right to be null');
 
         Lexer.Node inNode = whereNode.left;
-        AssertNode assertIn = new AssertNodeBuilder()
-            .setNode(inNode)
-            .setId('in')
-            .setNodeType('operator')
-            .setIsLeftNull(false)
-            .setIsRightNull(false)
-            .build();
-        assertIn.doAssert();
+        Assert.areEqual('in', inNode.id, 'Expected id to be "in"');
+        Assert.areEqual('operator', inNode.nodeType, 'Expected nodeType to be "operator"');
+        Assert.isNotNull(inNode.left, 'Expected left to not be null');
+        Assert.isNotNull(inNode.right, 'Expected right to not be null');
 
         Lexer.Node firstNameNode = inNode.left;
-        AssertNode assertFirstName = new AssertNodeBuilder()
-            .setNode(firstNameNode)
-            .setId('firstname')
-            .setNodeType('field')
-            .setIsLeftNull(true)
-            .setIsRightNull(true)
-            .build();
-        assertFirstName.doAssert();
+        Assert.areEqual('firstname', firstNameNode.id, 'Expected id to be "firstname"');
+        Assert.areEqual('field', firstNameNode.nodeType, 'Expected nodeType to be "field"');
+        Assert.isNull(firstNameNode.left, 'Expected left to be null');
+        Assert.isNull(firstNameNode.right, 'Expected right to be null');
 
         Lexer.Node valueListNode = inNode.right;
-        AssertNode assertValueList = new AssertNodeBuilder()
-            .setNode(valueListNode)
-            .setId('value list')
-            .setNodeType('value list')
-            .setIsLeftNull(false)
-            .setIsRightNull(true)
-            .build();
-        assertValueList.doAssert();
+        Assert.areEqual('value list', valueListNode.id, 'Expected id to be "value list"');
+        Assert.areEqual('value list', valueListNode.nodeType, 'Expected nodeType to be "value list"');
+        Assert.isNotNull(valueListNode.left, 'Expected left to not be null');
+        Assert.isNull(valueListNode.right, 'Expected right to be null');
 
         Lexer.Node valueNode = valueListNode.left;
-        AssertNode assertValue = new AssertNodeBuilder()
-            .setNode(valueNode)
-            .setId('test')
-            .setNodeType('string')
-            .setIsLeftNull(false)
-            .setIsRightNull(true)
-            .build();
-        assertValue.doAssert();
+        Assert.areEqual('test', valueNode.id, 'Expected id to be "test"');
+        Assert.areEqual('string', valueNode.nodeType, 'Expected nodeType to be "string"');
+        Assert.isNotNull(valueNode.left, 'Expected left to not be null');
+        Assert.isNull(valueNode.right, 'Expected right to be null');
 
         Lexer.Node valueListNode2 = valueNode.left;
-        AssertNode assertValueList2 = new AssertNodeBuilder()
-            .setNode(valueListNode2)
-            .setId('value list')
-            .setNodeType('value list')
-            .setIsLeftNull(false)
-            .setIsRightNull(true)
-            .build();
-        assertValueList2.doAssert();
+        Assert.areEqual('value list', valueListNode2.id, 'Expected id to be "value list"');
+        Assert.areEqual('value list', valueListNode2.nodeType, 'Expected nodeType to be "value list"');
+        Assert.isNotNull(valueListNode2.left, 'Expected left to not be null');
+        Assert.isNull(valueListNode2.right, 'Expected right to be null');
 
         Lexer.Node valueNode2 = valueListNode2.left;
-        AssertNode assertValue2 = new AssertNodeBuilder()
-            .setNode(valueNode2)
-            .setId('test2')
-            .setNodeType('string')
-            .setIsLeftNull(true)
-            .setIsRightNull(true)
-            .build();
-        assertValue2.doAssert();
+        Assert.areEqual('test2', valueNode2.id, 'Expected id to be "test2"');
+        Assert.areEqual('string', valueNode2.nodeType, 'Expected nodeType to be "string"');
+        Assert.isNull(valueNode2.left, 'Expected left to be null');
+        Assert.isNull(valueNode2.right, 'Expected right to be null');
     }
 
     @IsTest
     public static void testSingularCount() {
+        Test.startTest();
         Lexer t = new Lexer();
         Lexer.Node head = t.parse('SELECT COUNT() FROM Account');
-        AssertNode assertSelect = new AssertNodeBuilder()
-            .setNode(head)
-            .setId('select')
-            .setNodeType('select')
-            .setIsLeftNull(false)
-            .setIsRightNull(false)
-            .build();
-        assertSelect.doAssert();
+        Test.stopTest();
+        Assert.areEqual('select', head.id, 'Expected id to be "select"');
+        Assert.areEqual('select', head.nodeType, 'Expected nodeType to be "select"');
+        Assert.isNotNull(head.left, 'Expected left to be not null');
+        Assert.isNotNull(head.right, 'Expected right to be not null');
 
         Lexer.Node countNode = head.left;
-
-        AssertNode assertCount = new AssertNodeBuilder()
-            .setNode(countNode)
-            .setId('count')
-            .setNodeType('aggregate function')
-            .setIsLeftNull(true)
-            .setIsRightNull(true)
-            .build();
-        assertCount.doAssert();
-
+        Assert.areEqual('count', countNode.id, 'Expected id to be "count"');
+        Assert.areEqual('aggregate function', countNode.nodeType, 'Expected nodeType to be "aggregate function"');
+        Assert.isNull(countNode.left, 'Expected left to be null');
+        Assert.isNull(countNode.right, 'Expected right to be null');
+ 
         Lexer.Node fromNode = head.right;
-
-        AssertNode assertFrom = new AssertNodeBuilder()
-            .setNode(fromNode)
-            .setId('from')
-            .setNodeType('from')
-            .setIsLeftNull(false)
-            .setIsRightNull(true)
-            .build();
-        assertFrom.doAssert();
+        Assert.areEqual('from', fromNode.id, 'Expected id to be "from"');
+        Assert.areEqual('from', fromNode.nodeType, 'Expected nodeType to be "from"');
+        Assert.isNotNull(fromNode.left, 'Expected left to be not null');
+        Assert.isNull(fromNode.right, 'Expected right to be null');
 
         Lexer.Node accountNode = fromNode.left;
-        AssertNode assertAccount = new AssertNodeBuilder()
-            .setNode(accountNode)
-            .setId('account')
-            .setNodeType('object')
-            .setIsLeftNull(true)
-            .setIsRightNull(true)
-            .build();
-        assertAccount.doAssert();
+        Assert.areEqual('account', accountNode.id, 'Expected id to be "account"');
+        Assert.areEqual('object', accountNode.nodeType, 'Expected nodeType to be "object"');
+        Assert.isNull(accountNode.left, 'Expected left to be null');
+        Assert.isNull(accountNode.right, 'Expected right to be null');
 
     }
 
     @IsTest
     public static void testSimpleAlias() {
+        Test.startTest();
         Lexer t = new Lexer();
         Lexer.Node head = t.parse('SELECT Id id FROM Account');
-        AssertNode assertSelect = new AssertNodeBuilder()
-            .setNode(head)
-            .setId('select')
-            .setNodeType('select')
-            .setIsLeftNull(false)
-            .setIsRightNull(false)
-            .build();
-        assertSelect.doAssert();
+        Test.stopTest();
+        Assert.areEqual('select', head.id, 'Expected id to be "select"');
+        Assert.areEqual('select', head.nodeType, 'Expected nodeType to be "select"');
+        Assert.isNotNull(head.left, 'Expected left to be not null');
+        Assert.isNotNull(head.right, 'Expected right to be not null');
 
         Lexer.Node idNode = head.left;
-        AssertNode assertId = new AssertNodeBuilder()
-            .setNode(idNode)
-            .setId('id')
-            .setNodeType('field')
-            .setIsLeftNull(true)
-            .setIsRightNull(false)
-            .build();
-        assertId.doAssert();
+        Assert.areEqual('id', idNode.id, 'Expected id to be "id"');
+        Assert.areEqual('field', idNode.nodeType, 'Expected nodeType to be "field"');
+        Assert.isNull(idNode.left, 'Expected left to be null');
+        Assert.isNotNull(idNode.right, 'Expected right to not be null');
 
         Lexer.Node idAliasNode = idNode.right;
-        AssertNode assertIdAlias = new AssertNodeBuilder()
-            .setNode(idAliasNode)
-            .setId('id')
-            .setNodeType('alias')
-            .setIsLeftNull(true)
-            .setIsRightNull(true)
-            .build();
-        assertIdAlias.doAssert();
+        Assert.areEqual('id', idAliasNode.id, 'Expected id to be "id"');
+        Assert.areEqual('alias', idAliasNode.nodeType, 'Expected nodeType to be "alias"');
+        Assert.isNull(idAliasNode.left, 'Expected left to be null');
+        Assert.isNull(idAliasNode.right, 'Expected right to be null');
 
         Lexer.Node fromNode = head.right;
-        AssertNode assertFrom = new AssertNodeBuilder()
-            .setNode(fromNode)
-            .setId('from')
-            .setNodeType('from')
-            .setIsLeftNull(false)
-            .setIsRightNull(true)
-            .build();
-        assertFrom.doAssert();
+        Assert.areEqual('from', fromNode.id, 'Expected id to be "from"');
+        Assert.areEqual('from', fromNode.nodeType, 'Expected nodeType to be "from"');
+        Assert.isNotNull(fromNode.left, 'Expected left to be not null');
+        Assert.isNull(fromNode.right, 'Expected right to be null');
 
         Lexer.Node accountNode = fromNode.left;
-        AssertNode assertAccount = new AssertNodeBuilder()
-            .setNode(accountNode)
-            .setId('account')
-            .setNodeType('object')
-            .setIsLeftNull(true)
-            .setIsRightNull(true)
-            .build();
-        assertAccount.doAssert();
+        Assert.areEqual('account', accountNode.id, 'Expected id to be "account"');
+        Assert.areEqual('object', accountNode.nodeType, 'Expected nodeType to be "object"');
+        Assert.isNull(accountNode.left, 'Expected left to be null');
+        Assert.isNull(accountNode.right, 'Expected right to be null');
     }
 
     @IsTest
     public static void testAliases() {
+        Test.startTest();
         Lexer t = new Lexer();
         Lexer.Node head = t.parse('SELECT Account.Name acctName, Name, COUNT(Id) FROM Contact GROUP BY Name, Account.Name');
-        AssertNode assertSelect = new AssertNodeBuilder()
-            .setNode(head)
-            .setId('select')
-            .setNodeType('select')
-            .setIsLeftNull(false)
-            .setIsRightNull(false)
-            .build();
-        assertSelect.doAssert();
+        Test.stopTest();
+        Assert.areEqual('select', head.id, 'Expected id to be "select"');
+        Assert.areEqual('select', head.nodeType, 'Expected nodeType to be "select"');
+        Assert.isNotNull(head.left, 'Expected left to be not null');
+        Assert.isNotNull(head.right, 'Expected right to be not null');
 
         Lexer.Node accountNameNode = head.left;
-        AssertNode assertAccountName = new AssertNodeBuilder()
-            .setNode(accountNameNode)
-            .setId('account.name')
-            .setNodeType('field')
-            .setIsLeftNull(false)
-            .setIsRightNull(false)
-            .build();
-        assertAccountName.doAssert();
+        Assert.areEqual('account.name', accountNameNode.id, 'Expected id to be "account.name"');
+        Assert.areEqual('field', accountNameNode.nodeType, 'Expected nodeType to be "field"');
+        Assert.isNotNull(accountNameNode.left, 'Expected left to not be null');
+        Assert.isNotNull(accountNameNode.right, 'Expected right to not be null');
 
         Lexer.Node acctNameNode = accountNameNode.right;
-        AssertNode assertAcctName = new AssertNodeBuilder()
-            .setNode(acctNameNode)
-            .setId('acctname')
-            .setNodeType('alias')
-            .setIsLeftNull(true)
-            .setIsRightNull(true)
-            .build();
-        assertAcctName.doAssert();
+        Assert.areEqual('acctname', acctNameNode.id, 'Expected id to be "acctname"');
+        Assert.areEqual('alias', acctNameNode.nodeType, 'Expected nodeType to be "alias"');
+        Assert.isNull(acctNameNode.left, 'Expected left to be null');
+        Assert.isNull(acctNameNode.right, 'Expected right to be null');
 
         Lexer.Node nameNode = accountNameNode.left;
-        AssertNode assertName = new AssertNodeBuilder()
-            .setNode(nameNode)
-            .setId('name')
-            .setNodeType('field')
-            .setIsLeftNull(false)
-            .setIsRightNull(true)
-            .build();
-        assertName.doAssert();
+        Assert.areEqual('name', nameNode.id, 'Expected id to be "name"');
+        Assert.areEqual('field', nameNode.nodeType, 'Expected nodeType to be "field"');
+        Assert.isNotNull(nameNode.left, 'Expected left to not be null');
+        Assert.isNull(nameNode.right, 'Expected right to be null');
 
         Lexer.Node countNode = nameNode.left;
-        AssertNode assertCount = new AssertNodeBuilder()
-            .setNode(countNode)
-            .setId('count')
-            .setNodeType('aggregate function')
-            .setIsLeftNull(true)
-            .setIsRightNull(false)
-            .build();
-        assertCount.doAssert();
+        Assert.areEqual('count', countNode.id, 'Expected id to be "count"');
+        Assert.areEqual('aggregate function', countNode.nodeType, 'Expected nodeType to be "aggregate function"');
+        Assert.isNull(countNode.left, 'Expected left to be null');
+        Assert.isNotNull(countNode.right, 'Expected right to not be null');
 
         Lexer.Node idNode = countNode.right;
-        AssertNode assertId = new AssertNodeBuilder()
-            .setNode(idNode)
-            .setId('id')
-            .setNodeType('field')
-            .setIsLeftNull(true)
-            .setIsRightNull(true)
-            .build();
-        assertId.doAssert();
+        Assert.areEqual('id', idNode.id, 'Expected id to be "id"');
+        Assert.areEqual('field', idNode.nodeType, 'Expected nodeType to be "field"');
+        Assert.isNull(idNode.left, 'Expected left to be null');
+        Assert.isNull(idNode.right, 'Expected right to be null');
 
         Lexer.Node fromNode = head.right;
-        AssertNode assertFrom = new AssertNodeBuilder()
-            .setNode(fromNode)
-            .setId('from')
-            .setNodeType('from')
-            .setIsLeftNull(false)
-            .setIsRightNull(false)
-            .build();
-        assertFrom.doAssert();
+        Assert.areEqual('from', fromNode.id, 'Expected id to be "from"');
+        Assert.areEqual('from', fromNode.nodeType, 'Expected nodeType to be "from"');
+        Assert.isNotNull(fromNode.left, 'Expected left to be not null');
+        Assert.isNotNull(fromNode.right, 'Expected right to be not null');
 
         Lexer.Node contactNode = fromNode.left;
-        AssertNode assertContact = new AssertNodeBuilder()
-            .setNode(contactNode)
-            .setId('contact')
-            .setNodeType('object')
-            .setIsLeftNull(true)
-            .setIsRightNull(true)
-            .build();
-        assertContact.doAssert();
+        Assert.areEqual(contactNode.id, 'contact', 'Expected id to be "contact"');
+        Assert.areEqual(contactNode.nodeType, 'object', 'Expected nodeType to be "object"');
+        Assert.isNull(contactNode.left, 'Expected left to be null');
+        Assert.isNull(contactNode.right, 'Expected right to be null');
 
         Lexer.Node groupByNode = fromNode.right;
-        AssertNode assertGroupBy = new AssertNodeBuilder()
-            .setNode(groupByNode)
-            .setId('group by')
-            .setNodeType('group by')
-            .setIsLeftNull(false)
-            .setIsRightNull(true)
-            .build();
-        assertGroupBy.doAssert();
+        Assert.areEqual(groupByNode.id, 'group by', 'Expected id to be "group by"');
+        Assert.areEqual(groupByNode.nodeType, 'group by', 'Expected nodeType to be "group by"');
+        Assert.isNotNull(groupByNode.left, 'Expected left to be not null');
+        Assert.isNull(groupByNode.right, 'Expected right to be null');
 
         Lexer.Node nameNode2 = groupByNode.left;
-        AssertNode assertName2 = new AssertNodeBuilder()
-            .setNode(nameNode2)
-            .setId('name')
-            .setNodeType('field')
-            .setIsLeftNull(false)
-            .setIsRightNull(true)
-            .build();
-        assertName2.doAssert();
+        Assert.areEqual(nameNode2.id, 'name', 'Expected id to be "name"');
+        Assert.areEqual(nameNode2.nodeType, 'field', 'Expected nodeType to be "field"');
+        Assert.isNotNull(nameNode2.left, 'Expected left to not be null');
+        Assert.isNull(nameNode2.right, 'Expected right to be null');
 
         Lexer.Node accountNameNode2 = nameNode2.left;
-        AssertNode assertAccountName2 = new AssertNodeBuilder()
-            .setNode(accountNameNode2)
-            .setId('account.name')
-            .setNodeType('field')
-            .setIsLeftNull(true)
-            .setIsRightNull(true)
-            .build();
-        assertAccountName2.doAssert();
+        Assert.areEqual(accountNameNode2.id, 'account.name', 'Expected id to be "account.name"');
+        Assert.areEqual(accountNameNode2.nodeType, 'field', 'Expected nodeType to be "field"');
+        Assert.isNull(accountNameNode2.left, 'Expected left to be null');
+        Assert.isNull(accountNameNode2.right, 'Expected right to be null');
     }
 
     @IsTest
     public static void testSubQueryNoAlias() {
+        Test.startTest();
         Lexer t = new Lexer();
         Lexer.Node head = t.parse('SELECT Id, Name, (SELECT Id, FirstName, LastName FROM Contacts) FROM Account');
-        AssertNode assertSelect = new AssertNodeBuilder()
-            .setNode(head)
-            .setId('select')
-            .setNodeType('select')
-            .setIsLeftNull(false)
-            .setIsRightNull(false)
-            .build();
-        assertSelect.doAssert();
+        Test.stopTest();
+        Assert.areEqual('select', head.id, 'Expected id to be "select"');
+        Assert.areEqual('select', head.nodeType, 'Expected nodeType to be "select"');
+        Assert.isNotNull(head.left, 'Expected left to be not null');
+        Assert.isNotNull(head.right, 'Expected right to be not null');
 
         Lexer.Node idNode = head.left;
-        AssertNode assertId = new AssertNodeBuilder()
-            .setNode(idNode)
-            .setId('id')
-            .setNodeType('field')
-            .setIsLeftNull(false)
-            .setIsRightNull(true)
-            .build();
-        assertId.doAssert();
+        Assert.areEqual('id', idNode.id, 'Expected id to be "id"');
+        Assert.areEqual('field', idNode.nodeType, 'Expected nodeType to be "field"');
+        Assert.isNotNull(idNode.left, 'Expected left to not be null');
+        Assert.isNull(idNode.right, 'Expected right to be null');
 
         Lexer.Node nameNode = idNode.left;
-        AssertNode assertName = new AssertNodeBuilder()
-            .setNode(nameNode)
-            .setId('name')
-            .setNodeType('field')
-            .setIsLeftNull(false)
-            .setIsRightNull(true)
-            .build();
-        assertName.doAssert();
+        Assert.areEqual('name', nameNode.id, 'Expected id to be "name"');
+        Assert.areEqual('field', nameNode.nodeType, 'Expected nodeType to be "field"');
+        Assert.isNotNull(nameNode.left, 'Expected left to not be null');
+        Assert.isNull(nameNode.right, 'Expected right to be null');
 
         Lexer.Node subQueryNode = nameNode.left;
-        AssertNode assertSubQuery = new AssertNodeBuilder()
-            .setNode(subQueryNode)
-            .setId('subquery')
-            .setNodeType('subquery')
-            .setIsLeftNull(true)
-            .setIsRightNull(false)
-            .build();
-        assertSubQuery.doAssert();
+        Assert.areEqual('subquery', subQueryNode.id, 'Expected id to be "subquery"');
+        Assert.areEqual('subquery', subQueryNode.nodeType, 'Expected nodeType to be "subquery"');
+        Assert.isNull(subQueryNode.left, 'Expected left to be not null');
+        Assert.isNotNull(subQueryNode.right, 'Expected right to not be null');
 
         Lexer.Node selectNode2 = subQueryNode.right;
-        AssertNode assertSelect2 = new AssertNodeBuilder()
-            .setNode(selectNode2)
-            .setId('select')
-            .setNodeType('select')
-            .setIsLeftNull(false)
-            .setIsRightNull(false)
-            .build();
-        assertSelect2.doAssert();
+        Assert.areEqual('select', selectNode2.id, 'Expected id to be "select"');
+        Assert.areEqual('select', selectNode2.nodeType, 'Expected nodeType to be "select"');
+        Assert.isNotNull(selectNode2.left, 'Expected left to be not null');
+        Assert.isNotNull(selectNode2.right, 'Expected right to be not null');
 
         Lexer.Node idNode2 = selectNode2.left;
-        AssertNode assertId2 = new AssertNodeBuilder()
-            .setNode(idNode2)
-            .setId('id')
-            .setNodeType('field')
-            .setIsLeftNull(false)
-            .setIsRightNull(true)
-            .build();
-        assertId2.doAssert();
+        Assert.areEqual('id', idNode2.id, 'Expected id to be "id"');
+        Assert.areEqual('field', idNode2.nodeType, 'Expected nodeType to be "field"');
+        Assert.isNotNull(idNode2.left, 'Expected left to not be null');
+        Assert.isNull(idNode2.right, 'Expected right to be null');
 
         Lexer.Node firstNameNode = idNode2.left;
-        AssertNode assertFirstName = new AssertNodeBuilder()
-            .setNode(firstNameNode)
-            .setId('firstname')
-            .setNodeType('field')
-            .setIsLeftNull(false)
-            .setIsRightNull(true)
-            .build();
-        assertFirstName.doAssert();
+        Assert.areEqual('firstname', firstNameNode.id, 'Expected id to be "firstname"');
+        Assert.areEqual('field', firstNameNode.nodeType, 'Expected nodeType to be "field"');
+        Assert.isNotNull(firstNameNode.left, 'Expected left to not be null');
+        Assert.isNull(firstNameNode.right, 'Expected right to be null');
 
         Lexer.Node lastNameNode = firstNameNode.left;
-        AssertNode assertLastName = new AssertNodeBuilder()
-            .setNode(lastNameNode)
-            .setId('lastname')
-            .setNodeType('field')
-            .setIsLeftNull(true)
-            .setIsRightNull(true)
-            .build();
-        assertLastName.doAssert();
+        Assert.areEqual('lastname', lastNameNode.id, 'Expected id to be "lastname"');
+        Assert.areEqual('field', lastNameNode.nodeType, 'Expected nodeType to be "field"');
+        Assert.isNull(lastNameNode.left, 'Expected left to be null');
+        Assert.isNull(lastNameNode.right, 'Expected right to be null');
 
         Lexer.Node fromNode = selectNode2.right;
-        AssertNode assertFrom = new AssertNodeBuilder()
-            .setNode(fromNode)
-            .setId('from')
-            .setNodeType('from')
-            .setIsLeftNull(false)
-            .setIsRightNull(true)
-            .build();
-        assertFrom.doAssert();
+        Assert.areEqual('from', fromNode.id, 'Expected id to be "from"');
+        Assert.areEqual('from', fromNode.nodeType, 'Expected nodeType to be "from"');
+        Assert.isNotNull(fromNode.left, 'Expected left to be not null');
+        Assert.isNull(fromNode.right, 'Expected right to be null');
 
         Lexer.Node contactsNode = fromNode.left;
-        AssertNode assertContacts = new AssertNodeBuilder()
-            .setNode(contactsNode)
-            .setId('contacts')
-            .setNodeType('object')
-            .setIsLeftNull(true)
-            .setIsRightNull(true)
-            .build();
-        assertContacts.doAssert();
+        Assert.areEqual('contacts', contactsNode.id, 'Expected id to be "contacts"');
+        Assert.areEqual('object', contactsNode.nodeType, 'Expected nodeType to be "object"');
+        Assert.isNull(contactsNode.left, 'Expected left to be null');
+        Assert.isNull(contactsNode.right, 'Expected right to be null');
 
         Lexer.Node fromNode2 = head.right;
-        AssertNode assertFrom2 = new AssertNodeBuilder()
-            .setNode(fromNode2)
-            .setId('from')
-            .setNodeType('from')
-            .setIsLeftNull(false)
-            .setIsRightNull(true)
-            .build();
-        assertFrom2.doAssert();
+        Assert.areEqual('from', fromNode2.id, 'Expected id to be "from"');
+        Assert.areEqual('from', fromNode2.nodeType, 'Expected nodeType to be "from"');
+        Assert.isNotNull(fromNode2.left, 'Expected left to be not null');
+        Assert.isNull(fromNode2.right, 'Expected right to be null');
 
         Lexer.Node accountNode = fromNode2.left;
-        AssertNode assertAccount = new AssertNodeBuilder()
-            .setNode(accountNode)
-            .setId('account')
-            .setNodeType('object')
-            .setIsLeftNull(true)
-            .setIsRightNull(true)
-            .build();
-        assertAccount.doAssert();
+        Assert.areEqual('account', accountNode.id, 'Expected id to be "account"');
+        Assert.areEqual('object', accountNode.nodeType, 'Expected nodeType to be "object"');
+        Assert.isNull(accountNode.left, 'Expected left to be null');
+        Assert.isNull(accountNode.right, 'Expected right to be null');
     }
 
     @IsTest
     public static void testHavingClauseWithMultipleConditions() {
+        Test.startTest();
         Lexer t = new Lexer();
         Lexer.Node head = t.parse('SELECT Name, COUNT(Id) FROM Account GROUP BY Name HAVING COUNT(Id) > 1 AND COUNT(Id) < 10');
-        AssertNode assertSelect = new AssertNodeBuilder()
-            .setNode(head)
-            .setId('select')
-            .setNodeType('select')
-            .setIsLeftNull(false)
-            .setIsRightNull(false)
-            .build();
-        assertSelect.doAssert();
+        Test.stopTest();
+
+        Assert.areEqual('select', head.id, 'Expected id to be "select"');
+        Assert.areEqual('select', head.nodeType, 'Expected nodeType to be "select"');
+        Assert.isNotNull(head.left, 'Expected left to be not null');
+        Assert.isNotNull(head.right, 'Expected right to be not null');
 
         Lexer.Node nameNode = head.left;
-        AssertNode assertName = new AssertNodeBuilder()
-            .setNode(nameNode)
-            .setId('name')
-            .setNodeType('field')
-            .setIsLeftNull(false)
-            .setIsRightNull(true)
-            .build();
-        assertName.doAssert();
+        Assert.areEqual('name', nameNode.id, 'Expected id to be "name"');
+        Assert.areEqual('field', nameNode.nodeType, 'Expected nodeType to be "field"');
+        Assert.isNotNull(nameNode.left, 'Expected left to not be null');
+        Assert.isNull(nameNode.right, 'Expected right to be null');
 
         Lexer.Node countNode = nameNode.left;
-        AssertNode assertCount = new AssertNodeBuilder()
-            .setNode(countNode)
-            .setId('count')
-            .setNodeType('aggregate function')
-            .setIsLeftNull(true)
-            .setIsRightNull(false)
-            .build();
-        assertCount.doAssert();
+        Assert.areEqual('count', countNode.id, 'Expected id to be "count"');
+        Assert.areEqual('aggregate function', countNode.nodeType, 'Expected nodeType to be "aggregate function"');
+        Assert.isNull(countNode.left, 'Expected left to be null');
+        Assert.isNotNull(countNode.right, 'Expected right to be not null');
 
         Lexer.Node idNode = countNode.right;
-        AssertNode assertId = new AssertNodeBuilder()
-            .setNode(idNode)
-            .setId('id')
-            .setNodeType('field')
-            .setIsLeftNull(true)
-            .setIsRightNull(true)
-            .build();
-        assertId.doAssert();
+        Assert.areEqual('id', idNode.id, 'Expected id to be "id"');
+        Assert.areEqual('field', idNode.nodeType, 'Expected nodeType to be "field"');
+        Assert.isNull(idNode.left, 'Expected left to be null');
+        Assert.isNull(idNode.right, 'Expected right to be null');
 
         Lexer.Node fromNode = head.right;
-        AssertNode assertFrom = new AssertNodeBuilder()
-            .setNode(fromNode)
-            .setId('from')
-            .setNodeType('from')
-            .setIsLeftNull(false)
-            .setIsRightNull(false)
-            .build();
-        assertFrom.doAssert();
+        Assert.areEqual('from', fromNode.id, 'Expected id to be "from"');
+        Assert.areEqual('from', fromNode.nodeType, 'Expected nodeType to be "from"');
+        Assert.isNotNull(fromNode.left, 'Expected left to be not null');
+        Assert.isNotNull(fromNode.right, 'Expected right to be not null');
 
         Lexer.Node accountNode = fromNode.left;
-        AssertNode assertAccount = new AssertNodeBuilder()
-            .setNode(accountNode)
-            .setId('account')
-            .setNodeType('object')
-            .setIsLeftNull(true)
-            .setIsRightNull(true)
-            .build();
-        assertAccount.doAssert();
+        Assert.areEqual('account', accountNode.id, 'Expected id to be "account"');
+        Assert.areEqual('object', accountNode.nodeType, 'Expected nodeType to be "object"');
+        Assert.isNull(accountNode.left, 'Expected left to be null');
+        Assert.isNull(accountNode.right, 'Expected right to be null');
 
         Lexer.Node groupByNode = fromNode.right;
-        AssertNode assertGroupBy = new AssertNodeBuilder()
-            .setNode(groupByNode)
-            .setId('group by')
-            .setNodeType('group by')
-            .setIsLeftNull(false)
-            .setIsRightNull(false)
-            .build();
-        assertGroupBy.doAssert();
+        Assert.areEqual('group by', groupByNode.id, 'Expected id to be "group by"');
+        Assert.areEqual('group by', groupByNode.nodeType, 'Expected nodeType to be "group by"');
+        Assert.isNotNull(groupByNode.left, 'Expected left to be not null');
+        Assert.isNotNull(groupByNode.right, 'Expected right to be not null');
 
         Lexer.Node nameNode2 = groupByNode.left;
-        AssertNode assertName2 = new AssertNodeBuilder()
-            .setNode(nameNode2)
-            .setId('name')
-            .setNodeType('field')
-            .setIsLeftNull(true)
-            .setIsRightNull(true)
-            .build();
-        assertName2.doAssert();
+        Assert.areEqual('name', nameNode2.id, 'Expected id to be "name"');
+        Assert.areEqual('field', nameNode2.nodeType, 'Expected nodeType to be "field"');
+        Assert.isNull(nameNode2.left, 'Expected left to be null');
+        Assert.isNull(nameNode2.right, 'Expected right to be null');
 
         Lexer.Node havingNode = groupByNode.right;
-        AssertNode assertHaving = new AssertNodeBuilder()
-            .setNode(havingNode)
-            .setId('having')
-            .setNodeType('having')
-            .setIsLeftNull(false)
-            .setIsRightNull(true)
-            .build();
-        assertHaving.doAssert();
+        Assert.areEqual('having', havingNode.id, 'Expected id to be "having"');
+        Assert.areEqual('having', havingNode.nodeType, 'Expected nodeType to be "having"');
+        Assert.isNotNull(havingNode.left, 'Expected left to be not null');
+        Assert.isNull(havingNode.right, 'Expected right to be null');
 
         Lexer.Node andNode = havingNode.left;
-        AssertNode assertAnd = new AssertNodeBuilder()
-            .setNode(andNode)
-            .setId('and')
-            .setNodeType('and')
-            .setIsLeftNull(false)
-            .setIsRightNull(false)
-            .build();
-        assertAnd.doAssert();
+        Assert.areEqual('and', andNode.id, 'Expected id to be "and"');
+        Assert.areEqual('and', andNode.nodeType, 'Expected nodeType to be "operator"');
+        Assert.isNotNull(andNode.left, 'Expected left to not be null');
+        Assert.isNotNull(andNode.right, 'Expected right to not be null');
 
         Lexer.Node operatorNode = andNode.left;
-        AssertNode assertOperator = new AssertNodeBuilder()
-            .setNode(operatorNode)
-            .setId('>')
-            .setNodeType('operator')
-            .setIsLeftNull(false)
-            .setIsRightNull(false)
-            .build();
-        assertOperator.doAssert();
+        Assert.areEqual('>', operatorNode.id, 'Expected id to be ">"');
+        Assert.areEqual('operator', operatorNode.nodeType, 'Expected nodeType to be "operator"');
+        Assert.isNotNull(operatorNode.left, 'Expected left to not be null');
+        Assert.isNotNull(operatorNode.right, 'Expected right to not be null');
 
         Lexer.Node countNode2 = operatorNode.left;
-        AssertNode assertCount2 = new AssertNodeBuilder()
-            .setNode(countNode2)
-            .setId('count')
-            .setNodeType('aggregate function')
-            .setIsLeftNull(true)
-            .setIsRightNull(false)
-            .build();
-        assertCount2.doAssert();
+        Assert.areEqual('count', countNode2.id, 'Expected id to be "count"');
+        Assert.areEqual('aggregate function', countNode2.nodeType, 'Expected nodeType to be "aggregate function"');
+        Assert.isNull(countNode2.left, 'Expected left to be null');
+        Assert.isNotNull(countNode2.right, 'Expected right to not be null');
 
         Lexer.Node idNode2 = countNode2.right;
-        AssertNode assertId2 = new AssertNodeBuilder()
-            .setNode(idNode2)
-            .setId('id')
-            .setNodeType('field')
-            .setIsLeftNull(true)
-            .setIsRightNull(true)
-            .build();
-        assertId2.doAssert();
+        Assert.areEqual('id', idNode2.id, 'Expected id to be "id"');
+        Assert.areEqual('field', idNode2.nodeType, 'Expected nodeType to be "field"');
+        Assert.isNull(idNode2.left, 'Expected left to be null');
+        Assert.isNull(idNode2.right, 'Expected right to be null');
 
         Lexer.Node valueNode = operatorNode.right;
-        AssertNode assertValue = new AssertNodeBuilder()
-            .setNode(valueNode)
-            .setId('1')
-            .setNodeType('number')
-            .setIsLeftNull(true)
-            .setIsRightNull(true)
-            .build();
-        assertValue.doAssert();
+        Assert.areEqual('1', valueNode.id, 'Expected id to be "1"');
+        Assert.areEqual('number', valueNode.nodeType, 'Expected nodeType to be "number"');
+        Assert.isNull(valueNode.left, 'Expected left to be null');
+        Assert.isNull(valueNode.right, 'Expected right to be null');
 
         Lexer.Node operatorNode2 = andNode.right;
-        AssertNode assertOperator2 = new AssertNodeBuilder()
-            .setNode(operatorNode2)
-            .setId('<')
-            .setNodeType('operator')
-            .setIsLeftNull(false)
-            .setIsRightNull(false)
-            .build();
-        assertOperator2.doAssert();
+        Assert.areEqual('<', operatorNode2.id, 'Expected id to be "<"');
+        Assert.areEqual('operator', operatorNode2.nodeType, 'Expected nodeType to be "operator"');
+        Assert.isNotNull(operatorNode2.left, 'Expected left to not be null');
+        Assert.isNotNull(operatorNode2.right, 'Expected right to not be null');
 
         Lexer.Node countNode3 = operatorNode2.left;
-        AssertNode assertCount3 = new AssertNodeBuilder()
-            .setNode(countNode3)
-            .setId('count')
-            .setNodeType('aggregate function')
-            .setIsLeftNull(true)
-            .setIsRightNull(false)
-            .build();
-        assertCount3.doAssert();
+        Assert.areEqual('count', countNode3.id, 'Expected id to be "count"');
+        Assert.areEqual('aggregate function', countNode3.nodeType, 'Expected nodeType to be "aggregate function"');
+        Assert.isNull(countNode3.left, 'Expected left to be null');
+        Assert.isNotNull(countNode3.right, 'Expected right to not be null');
 
         Lexer.Node idNode3 = countNode3.right;
-        AssertNode assertId3 = new AssertNodeBuilder()
-            .setNode(idNode3)
-            .setId('id')
-            .setNodeType('field')
-            .setIsLeftNull(true)
-            .setIsRightNull(true)
-            .build();
-        assertId3.doAssert();
+        Assert.areEqual('id', idNode3.id, 'Expected id to be "id"');
+        Assert.areEqual('field', idNode3.nodeType, 'Expected nodeType to be "field"');
+        Assert.isNull(idNode3.left, 'Expected left to be null');
+        Assert.isNull(idNode3.right, 'Expected right to be null');
 
         Lexer.Node valueNode2 = operatorNode2.right;
-        AssertNode assertValue2 = new AssertNodeBuilder()
-            .setNode(valueNode2)
-            .setId('10')
-            .setNodeType('number')
-            .setIsLeftNull(true)
-            .setIsRightNull(true)
-            .build();
-        assertValue2.doAssert();
+        Assert.areEqual('10', valueNode2.id, 'Expected id to be "10"');
+        Assert.areEqual('number', valueNode2.nodeType, 'Expected nodeType to be "number"');
+        Assert.isNull(valueNode2.left, 'Expected left to be null');
+        Assert.isNull(valueNode2.right, 'Expected right to be null');
     }
 
     @IsTest
@@ -2379,220 +1997,138 @@ public with sharing class LexerTest {
         Lexer.Node head = l.parse('SELECT Name, SUM(NumberOfEmployees) FROM Account GROUP BY Name HAVING Name = \'Test2\' OR Name = \'Test1\' AND SUM(NumberOfEmployees) > 10');
         Test.stopTest();
 
-        AssertNode assertSelect = new AssertNodeBuilder()
-            .setNode(head)
-            .setId('select')
-            .setNodeType('select')
-            .setIsLeftNull(false)
-            .setIsRightNull(false)
-            .build();
-        assertSelect.doAssert();
+        Assert.areEqual('select', head.id, 'Expected id to be "select"');
+        Assert.areEqual('select', head.nodeType, 'Expected nodeType to be "select"');
+        Assert.isNotNull(head.left, 'Expected left to be not null');
+        Assert.isNotNull(head.right, 'Expected right to be not null');
 
         Lexer.Node nameNode = head.left;
-        AssertNode assertName = new AssertNodeBuilder()
-            .setNode(nameNode)
-            .setId('name')
-            .setNodeType('field')
-            .setIsLeftNull(false)
-            .setIsRightNull(true)
-            .build();
-        assertName.doAssert();
+        Assert.areEqual('name', nameNode.id, 'Expected id to be "name"');
+        Assert.areEqual('field', nameNode.nodeType, 'Expected nodeType to be "field"');
+        Assert.isNotNull(nameNode.left, 'Expected left to not be null');
+        Assert.isNull(nameNode.right, 'Expected right to be null');
 
         Lexer.Node sumNode = nameNode.left;
-        AssertNode assertSum = new AssertNodeBuilder()
-            .setNode(sumNode)
-            .setId('sum')
-            .setNodeType('aggregate function')
-            .setIsLeftNull(true)
-            .setIsRightNull(false)
-            .build();
-        assertSum.doAssert();
+        Assert.areEqual('sum', sumNode.id, 'Expected id to be "sum"');
+        Assert.areEqual('aggregate function', sumNode.nodeType, 'Expected nodeType to be "aggregate function"');
+        Assert.isNull(sumNode.left, 'Expected left to be null');
+        Assert.isNotNull(sumNode.right, 'Expected right to not be null');
 
         Lexer.Node numberOfEmployeesNode = sumNode.right;
-        AssertNode assertNumberOfEmployees = new AssertNodeBuilder()
-            .setNode(numberOfEmployeesNode)
-            .setId('numberofemployees')
-            .setNodeType('field')
-            .setIsLeftNull(true)
-            .setIsRightNull(true)
-            .build();
-        assertNumberOfEmployees.doAssert();
+        Assert.areEqual('numberofemployees', numberOfEmployeesNode.id, 'Expected id to be "numberofemployees"');
+        Assert.areEqual('field', numberOfEmployeesNode.nodeType, 'Expected nodeType to be "field"');
+        Assert.isNull(numberOfEmployeesNode.left, 'Expected left to be null');
+        Assert.isNull(numberOfEmployeesNode.right, 'Expected right to be null');
 
         Lexer.Node fromNode = head.right;
-        AssertNode assertFrom = new AssertNodeBuilder()
-            .setNode(fromNode)
-            .setId('from')
-            .setNodeType('from')
-            .setIsLeftNull(false)
-            .setIsRightNull(false)
-            .build();
-        assertFrom.doAssert();
+        Assert.areEqual('from', fromNode.id, 'Expected id to be "from"');
+        Assert.areEqual('from', fromNode.nodeType, 'Expected nodeType to be "from"');
+        Assert.isNotNull(fromNode.left, 'Expected left to be not null');
+        Assert.isNotNull(fromNode.right, 'Expected right to be not null');
 
         Lexer.Node accountNode = fromNode.left;
-        AssertNode assertAccount = new AssertNodeBuilder()
-            .setNode(accountNode)
-            .setId('account')
-            .setNodeType('object')
-            .setIsLeftNull(true)
-            .setIsRightNull(true)
-            .build();
-        assertAccount.doAssert();
+        Assert.areEqual('account', accountNode.id, 'Expected id to be "account"');
+        Assert.areEqual('object', accountNode.nodeType, 'Expected nodeType to be "object"');
+        Assert.isNull(accountNode.left, 'Expected left to be null');
+        Assert.isNull(accountNode.right, 'Expected right to be null');
 
         Lexer.Node groupByNode = fromNode.right;
-        AssertNode assertGroupBy = new AssertNodeBuilder()
-            .setNode(groupByNode)
-            .setId('group by')
-            .setNodeType('group by')
-            .setIsLeftNull(false)
-            .setIsRightNull(false)
-            .build();
-        assertGroupBy.doAssert();
+        Assert.areEqual('group by', groupByNode.id, 'Expected id to be "group by"');
+        Assert.areEqual('group by', groupByNode.nodeType, 'Expected nodeType to be "group by"');
+        Assert.isNotNull(groupByNode.left, 'Expected left to be not null');
+        Assert.isNotNull(groupByNode.right, 'Expected right to be not null');
 
         Lexer.Node nameNode2 = groupByNode.left;
-        AssertNode assertName2 = new AssertNodeBuilder()
-            .setNode(nameNode2)
-            .setId('name')
-            .setNodeType('field')
-            .setIsLeftNull(true)
-            .setIsRightNull(true)
-            .build();
-        assertName2.doAssert();
+        Assert.areEqual('name', nameNode2.id, 'Expected id to be "name"');
+        Assert.areEqual('field', nameNode2.nodeType, 'Expected nodeType to be "field"');
+        Assert.isNull(nameNode2.left, 'Expected left to be null');
+        Assert.isNull(nameNode2.right, 'Expected right to be null');
 
         Lexer.Node havingNode = groupByNode.right;
-        AssertNode assertHaving = new AssertNodeBuilder()
-            .setNode(havingNode)
-            .setId('having')
-            .setNodeType('having')
-            .setIsLeftNull(false)
-            .setIsRightNull(true)
-            .build();
-        assertHaving.doAssert();
+        Assert.areEqual('having', havingNode.id, 'Expected id to be "having"');
+        Assert.areEqual('having', havingNode.nodeType, 'Expected nodeType to be "having"');
+        Assert.isNotNull(havingNode.left, 'Expected left to not be null');
+        Assert.isNull(havingNode.right, 'Expected right to be null');
 
         Lexer.Node orNode = havingNode.left;
-        AssertNode assertOr = new AssertNodeBuilder()
-            .setNode(orNode)
-            .setId('or')
-            .setNodeType('or')
-            .setIsLeftNull(false)
-            .setIsRightNull(false)
-            .build();
-        assertOr.doAssert();
+        Assert.areEqual('or', orNode.id, 'Expected id to be "or"');
+        Assert.areEqual('or', orNode.nodeType, 'Expected nodeType to be "or"');
+        Assert.isNotNull(orNode.left, 'Expected left to not be null');
+        Assert.isNotNull(orNode.right, 'Expected right to not be null');
 
         Lexer.Node operatorNode = orNode.left;
-        AssertNode assertOperator = new AssertNodeBuilder()
-            .setNode(operatorNode)
-            .setId('=')
-            .setNodeType('operator')
-            .setIsLeftNull(false)
-            .setIsRightNull(false)
-            .build();
-        assertOperator.doAssert();
+        Assert.areEqual('=', operatorNode.id, 'Expected id to be "="');
+        Assert.areEqual('operator', operatorNode.nodeType, 'Expected nodeType to be "operator"');
+        Assert.isNotNull(operatorNode.left, 'Expected left to not be null');
+        Assert.isNotNull(operatorNode.right, 'Expected right to not be null');
 
         Lexer.Node nameNode3 = operatorNode.left;
-        AssertNode assertName3 = new AssertNodeBuilder()
-            .setNode(nameNode3)
-            .setId('name')
-            .setNodeType('field')
-            .setIsLeftNull(true)
-            .setIsRightNull(true)
-            .build();
-        assertName3.doAssert();
+        Assert.areEqual('name', nameNode3.id, 'Expected id to be "name"');
+        Assert.areEqual('field', nameNode3.nodeType, 'Expected nodeType to be "field"');
+        Assert.isNull(nameNode3.left, 'Expected left to be null');
+        Assert.isNull(nameNode3.right, 'Expected right to be null');
 
         Lexer.Node valueNode = operatorNode.right;
-        AssertNode assertValue = new AssertNodeBuilder()
-            .setNode(valueNode)
-            .setId('test2')
-            .setNodeType('string')
-            .setIsLeftNull(true)
-            .setIsRightNull(true)
-            .build();
-        assertValue.doAssert();
+        Assert.areEqual('test2', valueNode.id, 'Expected id to be "test2"');
+        Assert.areEqual('string', valueNode.nodeType, 'Expected nodeType to be "string"');
+        Assert.isNull(valueNode.left, 'Expected left to be null');
+        Assert.isNull(valueNode.right, 'Expected right to be null');
 
         Lexer.Node andNode = orNode.right;
-        AssertNode assertAnd = new AssertNodeBuilder()
-            .setNode(andNode)
-            .setId('and')
-            .setNodeType('and')
-            .setIsLeftNull(false)
-            .setIsRightNull(false)
-            .build();
-        assertAnd.doAssert();
+        Assert.areEqual('and', andNode.id, 'Expected id to be "and"');
+        Assert.areEqual('and', andNode.nodeType, 'Expected nodeType to be "and"');
+        Assert.isNotNull(andNode.left, 'Expected left to not be null');
+        Assert.isNotNull(andNode.right, 'Expected right to not be null');
 
         Lexer.Node operatorNode2 = andNode.left;
-        AssertNode assertOperator2 = new AssertNodeBuilder()
-            .setNode(operatorNode2)
-            .setId('=')
-            .setNodeType('operator')
-            .setIsLeftNull(false)
-            .setIsRightNull(false)
-            .build();
-        assertOperator2.doAssert();
+        Assert.areEqual('=', operatorNode2.id, 'Expected id to be "="');
+        Assert.areEqual('operator', operatorNode2.nodeType, 'Expected nodeType to be "operator"');
+        Assert.isNotNull(operatorNode2.left, 'Expected left to not be null');
+        Assert.isNotNull(operatorNode2.right, 'Expected right to not be null');
 
         Lexer.Node nameNode4 = operatorNode2.left;
-        AssertNode assertName4 = new AssertNodeBuilder()
-            .setNode(nameNode4)
-            .setId('name')
-            .setNodeType('field')
-            .setIsLeftNull(true)
-            .setIsRightNull(true)
-            .build();
-        assertName4.doAssert();
+        Assert.areEqual('name', nameNode4.id, 'Expected id to be "name"');
+        Assert.areEqual('field', nameNode4.nodeType, 'Expected nodeType to be "field"');
+        Assert.isNull(nameNode4.left, 'Expected left to be null');
+        Assert.isNull(nameNode4.right, 'Expected right to be null');
 
         Lexer.Node valueNode2 = operatorNode2.right;
-        AssertNode assertValue2 = new AssertNodeBuilder()
-            .setNode(valueNode2)
-            .setId('test1')
-            .setNodeType('string')
-            .setIsLeftNull(true)
-            .setIsRightNull(true)
-            .build();
-        assertValue2.doAssert();
+        Assert.areEqual('test1', valueNode2.id, 'Expected id to be "test1"');
+        Assert.areEqual('string', valueNode2.nodeType, 'Expected nodeType to be "string"');
+        Assert.isNull(valueNode2.left, 'Expected left to be null');
+        Assert.isNull(valueNode2.right, 'Expected right to be null');
 
         Lexer.Node operatorNode3 = andNode.right;
-        AssertNode assertOperator3 = new AssertNodeBuilder()
-            .setNode(operatorNode3)
-            .setId('>')
-            .setNodeType('operator')
-            .setIsLeftNull(false)
-            .setIsRightNull(false)
-            .build();
-        assertOperator3.doAssert();
+        Assert.areEqual('>', operatorNode3.id, 'Expected id to be ">"');
+        Assert.areEqual('operator', operatorNode3.nodeType, 'Expected nodeType to be "operator"');
+        Assert.isNotNull(operatorNode3.left, 'Expected left to not be null');
+        Assert.isNotNull(operatorNode3.right, 'Expected right to not be null');
 
         Lexer.Node sumNode2 = operatorNode3.left;
-        AssertNode assertSum2 = new AssertNodeBuilder()
-            .setNode(sumNode2)
-            .setId('sum')
-            .setNodeType('aggregate function')
-            .setIsLeftNull(true)
-            .setIsRightNull(false)
-            .build();
-        assertSum2.doAssert();
+        Assert.areEqual('sum', sumNode2.id, 'Expected id to be "sum"');
+        Assert.areEqual('aggregate function', sumNode2.nodeType, 'Expected nodeType to be "aggregate function"');
+        Assert.isNull(sumNode2.left, 'Expected left to be null');
+        Assert.isNotNull(sumNode2.right, 'Expected right to not be null');
 
         Lexer.Node numberOfEmployeesNode2 = sumNode2.right;
-        AssertNode assertNumberOfEmployees2 = new AssertNodeBuilder()
-            .setNode(numberOfEmployeesNode2)
-            .setId('numberofemployees')
-            .setNodeType('field')
-            .setIsLeftNull(true)
-            .setIsRightNull(true)
-            .build();
-        assertNumberOfEmployees2.doAssert();
+        Assert.areEqual('numberofemployees', numberOfEmployeesNode2.id, 'Expected id to be "numberofemployees"');
+        Assert.areEqual('field', numberOfEmployeesNode2.nodeType, 'Expected nodeType to be "field"');
+        Assert.isNull(numberOfEmployeesNode2.left, 'Expected left to be null');
+        Assert.isNull(numberOfEmployeesNode2.right, 'Expected right to be null');
 
         Lexer.Node valueNode3 = operatorNode3.right;
-        AssertNode assertValue3 = new AssertNodeBuilder()
-            .setNode(valueNode3)
-            .setId('10')
-            .setNodeType('number')
-            .setIsLeftNull(true)
-            .setIsRightNull(true)
-            .build();
-        assertValue3.doAssert();
+        Assert.areEqual('10', valueNode3.id, 'Expected id to be "10"');
+        Assert.areEqual('number', valueNode3.nodeType, 'Expected nodeType to be "number"');
+        Assert.isNull(valueNode3.left, 'Expected left to be null');
+        Assert.isNull(valueNode3.right, 'Expected right to be null');
     }
 
     @IsTest
     public static void testOrderByDesc() {
+        Test.startTest();
         Lexer t = new Lexer();
         Lexer.Node head = t.parse('SELECT Name FROM Account ORDER BY Name DESC');
+        Test.stopTest();
         
         Assert.areEqual('select', head.id, 'Expected id to be "select"');
         Assert.areEqual('select', head.nodeType, 'Expected nodeType to be "select"');
@@ -2638,8 +2174,10 @@ public with sharing class LexerTest {
 
     @IsTest
     public static void testNullsFirst() {
+        Test.startTest();
         Lexer t = new Lexer();
         Lexer.Node head = t.parse('SELECT Name FROM Account ORDER BY Name NULLS FIRST');
+        Test.stopTest();
         
         Assert.areEqual('select', head.id, 'Expected id to be "select"');
         Assert.areEqual('select', head.nodeType, 'Expected nodeType to be "select"');
@@ -2686,8 +2224,10 @@ public with sharing class LexerTest {
 
     @IsTest
     public static void testNullsLast() {
+        Test.startTest();
         Lexer t = new Lexer();
         Lexer.Node head = t.parse('SELECT Name FROM Account ORDER BY Name NULLS LAST');
+        Test.stopTest();
 
         Assert.areEqual('select', head.id, 'Expected id to be "select"');
         Assert.areEqual('select', head.nodeType, 'Expected nodeType to be "select"');
