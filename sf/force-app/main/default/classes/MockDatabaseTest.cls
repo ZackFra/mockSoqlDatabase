@@ -2140,4 +2140,64 @@ public with sharing class MockDatabaseTest {
         Assert.areEqual('Test10', queriedAccts[4].Name, 'Incorrect order');
 
     }
+
+    @IsTest
+    public static void testForUpdate() {
+        Account acct = new Account(Name = 'Test1', NumberOfEmployees = 5, AnnualRevenue = 1000);
+
+        MockDatabase mockDb = new MockDatabase();
+        mockDb.doInsert(acct);
+
+        Test.startTest();
+        List<Account> queriedAccts = (List<Account>) mockDb.query('SELECT Id, Name, NumberOfEmployees, AnnualRevenue FROM Account FOR UPDATE');
+        Test.stopTest();
+
+        Assert.areEqual(1, queriedAccts.size(), 'Incorrect number of accounts queried');
+    }
+
+    @IsTest
+    public static void testForUpdateFailOnGroupBy() {
+        Account acct = new Account(Name = 'Test1', NumberOfEmployees = 5, AnnualRevenue = 1000);
+
+        MockDatabase mockDb = new MockDatabase();
+        mockDb.doInsert(acct);
+
+        String exMessage;
+        Test.startTest();
+        try {
+            mockDb.query('SELECT Name, COUNT(Id) FROM Account GROUP BY Name FOR UPDATE');
+        } catch(Exception e) {
+            exMessage = e.getMessage();
+        }
+        Test.stopTest();
+
+        Assert.isTrue(
+            exMessage != null &&
+            exMessage.contains('FOR UPDATE not allowed in this context'),
+            'Exception should have been thrown with the message "FOR UPDATE not allowed in this context"'
+        );
+    }
+
+    @IsTest
+    public static void testForUpdateFailOnCount() {
+        Account acct = new Account(Name = 'Test1', NumberOfEmployees = 5, AnnualRevenue = 1000);
+
+        MockDatabase mockDb = new MockDatabase();
+        mockDb.doInsert(acct);
+
+        String exMessage;
+        Test.startTest();
+        try {
+            mockDb.query('SELECT COUNT() FROM Account FOR UPDATE');
+        } catch(Exception e) {
+            exMessage = e.getMessage();
+        }
+        Test.stopTest();
+
+        Assert.isTrue(
+            exMessage != null &&
+            exMessage.contains('FOR UPDATE not allowed in this context'),
+            'Exception should have been thrown with the message "FOR UPDATE not allowed in this context"'
+        );
+    }
 }
