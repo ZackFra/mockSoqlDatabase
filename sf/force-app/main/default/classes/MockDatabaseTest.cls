@@ -1988,4 +1988,161 @@ public with sharing class MockDatabaseTest {
         Assert.isNull(queriedAccts[0].NumberOfEmployees, 'NumberOfEmployees should not have been queried');
         Assert.isNull(queriedAccts[0].AnnualRevenue, 'AnnualRevenue should not have been queried');
     }
+
+    @IsTest
+    public static void testOffset() {
+        Account a = new Account(Name = 'Test1', NumberOfEmployees = 5, AnnualRevenue = 1000);
+        Account b = new Account(Name = 'Test2', NumberOfEmployees = 10, AnnualRevenue = 2000);
+        Account c = new Account(Name = 'Test3', NumberOfEmployees = 5, AnnualRevenue = 3000);
+        Account d = new Account(Name = 'Test4', NumberOfEmployees = 20, AnnualRevenue = 4000);
+        Account e = new Account(Name = 'Test5', NumberOfEmployees = 5, AnnualRevenue = 5000);
+        Account f = new Account(Name = 'Test6', NumberOfEmployees = 10, AnnualRevenue = 6000);
+        Account g = new Account(Name = 'Test7', NumberOfEmployees = 15, AnnualRevenue = 7000);
+        Account h = new Account(Name = 'Test8', NumberOfEmployees = 10, AnnualRevenue = 8000);
+        Account i = new Account(Name = 'Test9', NumberOfEmployees = 5, AnnualRevenue = 9000);
+        Account j = new Account(Name = 'Test10', NumberOfEmployees = 10, AnnualRevenue = 10000);
+        Account k = new Account(Name = 'Test11', NumberOfEmployees = 10, AnnualRevenue = 11000);
+        Account l = new Account(Name = 'Test12', NumberOfEmployees = 5, AnnualRevenue = 12000);
+        Account m = new Account(Name = 'Test13', NumberOfEmployees = 5, AnnualRevenue = 13000);
+        Account n = new Account(Name = 'Test14', NumberOfEmployees = 5, AnnualRevenue = 14000);
+        Account o = new Account(Name = 'Test15', NumberOfEmployees = 5, AnnualRevenue = 15000);
+        MockDatabase mockDb = new MockDatabase();
+        List<Account> acctList = new List<Account>{a, b, c, d, e, f, g, h, i, j, k, l, m, n, o};
+        mockDb.doInsert(acctList);
+
+        Test.startTest();
+        List<Account> queriedAccts = (List<Account>) mockDb.query('SELECT Id, Name, NumberOfEmployees, AnnualRevenue FROM Account ORDER BY AnnualRevenue OFFSET 5');
+        Test.stopTest();
+
+        for(Account acct : queriedAccts) {
+            System.debug(acct.Name);
+        }
+
+        Assert.areEqual(10, queriedAccts.size(), 'Incorrect number of accounts queried');
+        Assert.areEqual('Test6', queriedAccts[0].Name, 'Incorrect order');
+        Assert.areEqual('Test7', queriedAccts[1].Name, 'Incorrect order');
+        Assert.areEqual('Test8', queriedAccts[2].Name, 'Incorrect order');
+        Assert.areEqual('Test9', queriedAccts[3].Name, 'Incorrect order');
+        Assert.areEqual('Test10', queriedAccts[4].Name, 'Incorrect order');
+        Assert.areEqual('Test11', queriedAccts[5].Name, 'Incorrect order');
+        Assert.areEqual('Test12', queriedAccts[6].Name, 'Incorrect order');
+        Assert.areEqual('Test13', queriedAccts[7].Name, 'Incorrect order');
+        Assert.areEqual('Test14', queriedAccts[8].Name, 'Incorrect order');
+        Assert.areEqual('Test15', queriedAccts[9].Name, 'Incorrect order');
+
+    }
+
+    @IsTest 
+    public static void testOffsetWithBindVar() {
+        Account a = new Account(Name = 'Test1', NumberOfEmployees = 5, AnnualRevenue = 1000);
+        Account b = new Account(Name = 'Test2', NumberOfEmployees = 10, AnnualRevenue = 2000);
+        Account c = new Account(Name = 'Test3', NumberOfEmployees = 5, AnnualRevenue = 3000);
+        Account d = new Account(Name = 'Test4', NumberOfEmployees = 20, AnnualRevenue = 4000);
+        Account e = new Account(Name = 'Test5', NumberOfEmployees = 5, AnnualRevenue = 5000);
+        Account f = new Account(Name = 'Test6', NumberOfEmployees = 10, AnnualRevenue = 6000);
+        Account g = new Account(Name = 'Test7', NumberOfEmployees = 15, AnnualRevenue = 7000);
+        Account h = new Account(Name = 'Test8', NumberOfEmployees = 10, AnnualRevenue = 8000);
+        Account i = new Account(Name = 'Test9', NumberOfEmployees = 5, AnnualRevenue = 9000);
+        Account j = new Account(Name = 'Test10', NumberOfEmployees = 10, AnnualRevenue = 10000);
+        Account k = new Account(Name = 'Test11', NumberOfEmployees = 10, AnnualRevenue = 11000);
+        Account l = new Account(Name = 'Test12', NumberOfEmployees = 5, AnnualRevenue = 12000);
+        Account m = new Account(Name = 'Test13', NumberOfEmployees = 5, AnnualRevenue = 13000);
+        Account n = new Account(Name = 'Test14', NumberOfEmployees = 5, AnnualRevenue = 14000);
+        Account o = new Account(Name = 'Test15', NumberOfEmployees = 5, AnnualRevenue = 15000);
+        MockDatabase mockDb = new MockDatabase();
+        List<Account> acctList = new List<Account>{a, b, c, d, e, f, g, h, i, j, k, l, m, n, o};
+        mockDb.doInsert(acctList);
+
+        Map<String, Object> binds = new Map<String, Object>{
+            'offset' => 5
+        };
+        Test.startTest();
+        List<Account> queriedAccts = (List<Account>) mockDb.queryWithBinds('SELECT Id, Name, NumberOfEmployees, AnnualRevenue FROM Account ORDER BY AnnualRevenue OFFSET :offset', binds);
+        Test.stopTest();
+
+        for(Account acct : queriedAccts) {
+            System.debug(acct.Name);
+        }
+
+        Assert.areEqual(10, queriedAccts.size(), 'Incorrect number of accounts queried');
+        Assert.areEqual('Test6', queriedAccts[0].Name, 'Incorrect order');
+        Assert.areEqual('Test7', queriedAccts[1].Name, 'Incorrect order');
+        Assert.areEqual('Test8', queriedAccts[2].Name, 'Incorrect order');
+        Assert.areEqual('Test9', queriedAccts[3].Name, 'Incorrect order');
+        Assert.areEqual('Test10', queriedAccts[4].Name, 'Incorrect order');
+        Assert.areEqual('Test11', queriedAccts[5].Name, 'Incorrect order');
+        Assert.areEqual('Test12', queriedAccts[6].Name, 'Incorrect order');
+        Assert.areEqual('Test13', queriedAccts[7].Name, 'Incorrect order');
+        Assert.areEqual('Test14', queriedAccts[8].Name, 'Incorrect order');
+        Assert.areEqual('Test15', queriedAccts[9].Name, 'Incorrect order');       
+    }
+
+    @IsTest
+    public static void testLimitWithBindVar() {
+        Account a = new Account(Name = 'Test1', NumberOfEmployees = 5, AnnualRevenue = 1000);
+        Account b = new Account(Name = 'Test2', NumberOfEmployees = 10, AnnualRevenue = 2000);
+        Account c = new Account(Name = 'Test3', NumberOfEmployees = 5, AnnualRevenue = 3000);
+        Account d = new Account(Name = 'Test4', NumberOfEmployees = 20, AnnualRevenue = 4000);
+        Account e = new Account(Name = 'Test5', NumberOfEmployees = 5, AnnualRevenue = 5000);
+        Account f = new Account(Name = 'Test6', NumberOfEmployees = 10, AnnualRevenue = 6000);
+        Account g = new Account(Name = 'Test7', NumberOfEmployees = 15, AnnualRevenue = 7000);
+        Account h = new Account(Name = 'Test8', NumberOfEmployees = 10, AnnualRevenue = 8000);
+        Account i = new Account(Name = 'Test9', NumberOfEmployees = 5, AnnualRevenue = 9000);
+        Account j = new Account(Name = 'Test10', NumberOfEmployees = 10, AnnualRevenue = 10000);
+        Account k = new Account(Name = 'Test11', NumberOfEmployees = 10, AnnualRevenue = 11000);
+        Account l = new Account(Name = 'Test12', NumberOfEmployees = 5, AnnualRevenue = 12000);
+        Account m = new Account(Name = 'Test13', NumberOfEmployees = 5, AnnualRevenue = 13000);
+        Account n = new Account(Name = 'Test14', NumberOfEmployees = 5, AnnualRevenue = 14000);
+        Account o = new Account(Name = 'Test15', NumberOfEmployees = 5, AnnualRevenue = 15000);
+        MockDatabase mockDb = new MockDatabase();
+        List<Account> acctList = new List<Account>{a, b, c, d, e, f, g, h, i, j, k, l, m, n, o};
+        mockDb.doInsert(acctList);
+
+        Map<String, Object> binds = new Map<String, Object>{
+            'limit' => 5
+        };
+        Test.startTest();
+        List<Account> queriedAccts = (List<Account>) mockDb.queryWithBinds('SELECT Id, Name, NumberOfEmployees, AnnualRevenue FROM Account ORDER BY AnnualRevenue LIMIT :limit', binds);
+        Test.stopTest();
+
+        Assert.areEqual(5, queriedAccts.size(), 'Incorrect number of accounts queried');
+    }
+
+    @IsTest
+    public static void testLimitAndOffsetTogether() {
+        Account a = new Account(Name = 'Test1', NumberOfEmployees = 5, AnnualRevenue = 1000);
+        Account b = new Account(Name = 'Test2', NumberOfEmployees = 10, AnnualRevenue = 2000);
+        Account c = new Account(Name = 'Test3', NumberOfEmployees = 5, AnnualRevenue = 3000);
+        Account d = new Account(Name = 'Test4', NumberOfEmployees = 20, AnnualRevenue = 4000);
+        Account e = new Account(Name = 'Test5', NumberOfEmployees = 5, AnnualRevenue = 5000);
+        Account f = new Account(Name = 'Test6', NumberOfEmployees = 10, AnnualRevenue = 6000);
+        Account g = new Account(Name = 'Test7', NumberOfEmployees = 15, AnnualRevenue = 7000);
+        Account h = new Account(Name = 'Test8', NumberOfEmployees = 10, AnnualRevenue = 8000);
+        Account i = new Account(Name = 'Test9', NumberOfEmployees = 5, AnnualRevenue = 9000);
+        Account j = new Account(Name = 'Test10', NumberOfEmployees = 10, AnnualRevenue = 10000);
+        Account k = new Account(Name = 'Test11', NumberOfEmployees = 10, AnnualRevenue = 11000);
+        Account l = new Account(Name = 'Test12', NumberOfEmployees = 5, AnnualRevenue = 12000);
+        Account m = new Account(Name = 'Test13', NumberOfEmployees = 5, AnnualRevenue = 13000);
+        Account n = new Account(Name = 'Test14', NumberOfEmployees = 5, AnnualRevenue = 14000);
+        Account o = new Account(Name = 'Test15', NumberOfEmployees = 5, AnnualRevenue = 15000);
+        MockDatabase mockDb = new MockDatabase();
+        List<Account> acctList = new List<Account>{a, b, c, d, e, f, g, h, i, j, k, l, m, n, o};
+        mockDb.doInsert(acctList);
+
+        Map<String, Object> binds = new Map<String, Object>{
+            'limit' => 5,
+            'offset' => 5
+        };
+        Test.startTest();
+        List<Account> queriedAccts = (List<Account>) mockDb.queryWithBinds('SELECT Id, Name, NumberOfEmployees, AnnualRevenue FROM Account ORDER BY AnnualRevenue LIMIT :limit OFFSET :offset', binds);
+        Test.stopTest();
+
+        Assert.areEqual(5, queriedAccts.size(), 'Incorrect number of accounts queried');
+        Assert.areEqual('Test6', queriedAccts[0].Name, 'Incorrect order');
+        Assert.areEqual('Test7', queriedAccts[1].Name, 'Incorrect order');
+        Assert.areEqual('Test8', queriedAccts[2].Name, 'Incorrect order');
+        Assert.areEqual('Test9', queriedAccts[3].Name, 'Incorrect order');
+        Assert.areEqual('Test10', queriedAccts[4].Name, 'Incorrect order');
+
+    }
 }

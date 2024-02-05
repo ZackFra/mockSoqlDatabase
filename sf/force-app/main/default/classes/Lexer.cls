@@ -234,6 +234,13 @@ public with sharing class Lexer {
             nextLink.head.right = limitIntermediary.head;
             nextLink = limitIntermediary;
         }
+
+        Intermediary offsetIntermediary = parseOffset(query);
+        if(offsetIntermediary != null) {
+            query = offsetIntermediary.subquery;
+            nextLink.head.right = offsetIntermediary.head;
+            nextLink = offsetIntermediary;
+        }
         
         Intermediary forUpdateIntermediary = parseForUpdate(query);
         if(forUpdateIntermediary != null) {
@@ -248,6 +255,36 @@ public with sharing class Lexer {
             throw new ParsingException(nextLink.subquery, null);
         }
         return selectIntermediary;
+    }
+
+    private Intermediary parseOffset(String query) {
+        query = ParserUtils.skipWhitespace(query);
+        if(query.length() == 0) {
+            return null;
+        }
+        if(lookahead(query, 6) != 'offset') {
+            return null;
+        }
+
+        query = consume(query, 'offset');
+        query = ParserUtils.skipWhitespace(query);
+        Intermediary offsetValue;
+        if(lookahead(query, 1) == ':') {
+            query = consume(query, ':');
+            offsetValue = parseBindVariable(query);
+        } else {
+            offsetValue = parseNum(query);
+        }
+        query = offsetValue.subquery;
+
+        return new Intermediary(
+        	new NodeBuilder()
+            	.setId('offset')
+            	.setNodeType('offset')
+            	.setLeft(offsetValue.head)
+            	.build(),
+            query
+        );
     }
     
     private Intermediary parseSelect(String query) {
@@ -1086,7 +1123,14 @@ public with sharing class Lexer {
         }
         
         query = consume(query, 'limit');
-        Intermediary limitSize = parseNum(query);
+        query = ParserUtils.skipWhitespace(query);
+        Intermediary limitSize;
+        if(lookahead(query, 1) == ':') {
+            query = consume(query, ':');
+            limitSize = parseBindVariable(query);
+        } else {
+            limitSize = parseNum(query);
+        }
         return new Intermediary(
         	new NodeBuilder()
             	.setId('limit')
