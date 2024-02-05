@@ -1,10 +1,10 @@
 public with sharing class MockDatabase {
 
     @TestVisible
-    Map<String, Map<String, sObject>> db;
+    private Map<String, Map<String, sObject>> db;
     
-    Integer sObjnum = 1;
-    public String getFakeId(Schema.SObjectType sot) {
+    private Integer sObjnum = 1;
+    private String getFakeId(Schema.SObjectType sot) {
         String result = String.valueOf(sObjNum++);
         String fakeId = result + sot.getDescribe().getKeyPrefix().rightPad(15 - result.length(), '0');
         return fakeId;
@@ -1308,7 +1308,7 @@ public with sharing class MockDatabase {
      * @param selectNode : the select node
      * @return : the cleaned up aggregate result list
      */
-    private List<Aggregate> handleAggregateQueryPostProcessing(
+    private List<Aggregate> createAggregates(
         List<Map<String, Object>> aggregateResults, 
         Lexer.Node selectNode,
         Map<String, Object> params
@@ -1815,12 +1815,8 @@ public with sharing class MockDatabase {
             aggregateResults = (List<Map<String, Object>>) handleOffsetNode('aggregate', offsetNode, aggregateResults, params);
             aggregateResults = (List<Map<String, Object>>) handleLimitNode('aggregate', limitNode, aggregateResults, params);
 
-            // Remove internal fields from the aggregate results ('__n', '__distinct')
-            List<Aggregate> aggregateResultsList = handleAggregateQueryPostProcessing(
-                aggregateResults, 
-                selectNode,
-                params
-            );
+            // Remove internal fields from the aggregate result proto-records and return the list of aggregates
+            List<Aggregate> aggregateResultsList = createAggregates(aggregateResults, selectNode, params);
             results = aggregateResultsList;
         } else if(isCount) {
             count = (Integer) handleOffsetNode('count', offsetNode, count, params);
