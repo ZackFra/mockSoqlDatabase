@@ -1353,14 +1353,13 @@ public with sharing class MockDatabase {
         Lexer.Node aliasNode = curr.right;
         String fieldApiName;
         String relationshipName;
-
         if(aliasNode != null) {
             fieldApiName = aliasNode.id;
             relationshipName = null;
         } else {
-            Map<String, String> aliasData = getAlias(selectNode, fieldNode);
-            fieldApiName = aliasData.get('fieldApiName');
-            relationshipName = aliasData.get('relationshipName');
+            Map<String, Object> comparables = getComparableDataFromNodes(fieldNode, selectNode);
+            relationshipName = (String) comparables.get('relationshipName');
+            fieldApiName = (String) comparables.get('comparableField');
         }
 
         return new Map<String, String> {
