@@ -845,7 +845,6 @@ public with sharing class MockDatabase {
             Map<String, Object> parentInfo = getParentObjectData(obj, parentField);
 
             parentRecord = (sObject) parentInfo.get('parentRecord');
-            String parentObjApiName = (String) parentInfo.get('parentObjApiName');
             relationshipName += (String) parentInfo.get('fieldRelationshipName') + '.';
             
 
@@ -1046,6 +1045,7 @@ public with sharing class MockDatabase {
         Lexer.Node orderByNode;
         Lexer.Node limitNode;
         Lexer.Node offsetNode;
+        Lexer.Node forUpdateNode;
 
         Lexer.Node curr = fromNode.right;
 
@@ -1079,6 +1079,11 @@ public with sharing class MockDatabase {
             curr = curr.right;
         }
 
+        if(curr != null && curr.nodeType == 'for update') {
+            forUpdateNode = curr;
+            curr = curr.right;
+        }
+
         Map<String, Lexer.Node> topLevelNodes = new Map<String, Lexer.Node> {
             'fromNode' => fromNode,
             'whereNode' => whereNode,
@@ -1086,7 +1091,8 @@ public with sharing class MockDatabase {
             'havingNode' => havingNode,
             'orderByNode' => orderByNode,
             'limitNode' => limitNode,
-            'offsetNode' => offsetNode
+            'offsetNode' => offsetNode,
+            'forUpdateNode' => forUpdateNode
         };
         return topLevelNodes;
     }
@@ -1313,8 +1319,6 @@ public with sharing class MockDatabase {
         List<String> selectFields = aggregateFields.get('selectFields');
 
         Map<String, Lexer.Node> topLevelNodes = getTopLevelNodes(selectNode);
-        Lexer.Node havingNode = topLevelNodes.get('havingNode');
-
 
         List<Aggregate> aggregateResultsList = new List<Aggregate>();
         for(Integer i = 0; i < aggregateResults.size(); i++) {
@@ -1558,7 +1562,52 @@ public with sharing class MockDatabase {
     // if all we're doing is counting, no other aggregate funcs
     private Boolean isSingularCount(Lexer.Node selectNode) {
         return (selectNode.left.id == 'count' && selectNode.left.right == null && selectNode.left.left == null);
-    } 
+    }
+
+    /**
+     * @description : given a select node, validate whether this query can be performed
+     * @param selectNode : the select node
+     * @throws QueryException : if the query is invalid
+     */
+    private void handleValidation(Lexer.Node selectNode) {
+        Map<String, Lexer.Node> topLevelNodes = getTopLevelNodes(selectNode);
+        Lexer.Node groupByNode = topLevelNodes.get('groupByNode');
+        Lexer.Node orderByNode = topLevelNodes.get('orderByNode');
+        Lexer.Node limitNode = topLevelNodes.get('limitNode');
+        Lexer.Node offsetNode = topLevelNodes.get('offsetNode');
+        Lexer.Node forUpdateNode = topLevelNodes.get('forUpdateNode');
+
+        Boolean isAggregateQuery = isAggregateQuery(selectNode);
+        Boolean isCount = isSingularCount(selectNode);
+
+        if(hasDuplicateSubQueries(selectNode)) {
+            throw new QueryException('Cannot follow the same aggregate relationship twice');
+        }
+
+        if(hasDuplicateFields(selectNode)) {
+            throw new QueryException('Duplicate field selected');
+        }
+
+        if(isCount && orderByNode != null) {
+            throw new QueryException('COUNT() and ORDER BY may not be used together');
+        }
+
+        if(isAggregateQuery && groupByNode == null && limitNode != null) {
+            throw new QueryException('Non-grouped query that uses overall aggregate functions cannot also use LIMIT');
+        }
+
+        if(isAggregateQuery && groupByNode == null && offsetNode != null) {
+            throw new QueryException('Non-grouped query that uses overall aggregate functions cannot also use OFFSET');
+        }
+
+        if(isAggregateQuery && forUpdateNode != null) {
+            throw new QueryException('FOR UPDATE not allowed in this context');
+        }
+
+        if(isCount && forUpdateNode != null) {
+            throw new QueryException('FOR UPDATE not allowed in this context');
+        }
+    }
 
     /** DML methods **/
 
@@ -1701,11 +1750,12 @@ public with sharing class MockDatabase {
         Map<String, Lexer.Node> topLevelNodes = getTopLevelNodes(selectNode);
         Lexer.Node fromNode = topLevelNodes.get('fromNode');
         Lexer.Node whereNode = topLevelNodes.get('whereNode');
-        Lexer.Node groupByNode = topLevelNodes.get('groupByNode');
-        Lexer.Node havingNode = topLevelNodes.get('havingNode');
         Lexer.Node orderByNode = topLevelNodes.get('orderByNode');
         Lexer.Node limitNode = topLevelNodes.get('limitNode');
         Lexer.Node offsetNode = topLevelNodes.get('offsetNode');
+
+        // validate the query, throws exception if invalid
+        handleValidation(selectNode);
 
         Lexer.Node objNode = fromNode.left;
         String objName = objNode.id;
@@ -1716,28 +1766,8 @@ public with sharing class MockDatabase {
             return new List<sObject>();
         }
 
-        if(hasDuplicateSubQueries(selectNode)) {
-            throw new QueryException('Cannot follow the same aggregate relationship twice');
-        }
-
-        if(hasDuplicateFields(selectNode)) {
-            throw new QueryException('Duplicate field selected');
-        }
-
         Boolean isAggregateQuery = isAggregateQuery(selectNode);
         Boolean isCount = isSingularCount(selectNode);
-
-        if(isCount && orderByNode != null) {
-            throw new QueryException('COUNT() and ORDER BY may not be used together');
-        }
-
-        if(isAggregateQuery && groupByNode == null && limitNode != null) {
-            throw new QueryException('Non-grouped query that uses overall aggregate functions cannot also use LIMIT');
-        }
-
-        if(isAggregateQuery && groupByNode == null && offsetNode != null) {
-            throw new QueryException('Non-grouped query that uses overall aggregate functions cannot also use OFFSET');
-        }
 
         Object results;
 

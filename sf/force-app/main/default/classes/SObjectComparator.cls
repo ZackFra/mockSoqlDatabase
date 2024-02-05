@@ -47,7 +47,6 @@ public with sharing class SObjectComparator implements Comparator<SObject> {
             nullFirstAdjustment = -1;
         }
 
-        Integer result = null;
         if(isANull && isBNull) {
             return 0;
         } else if(isANull && !isBNull) {

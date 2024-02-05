@@ -51,8 +51,6 @@ public with sharing class MockDatabaseTest {
         mockDb.doInsert(a);
         Test.stopTest();
 
-        Account insertedAcct = (Account) mockDb.db.get('Account').get(a.Id);
-
         Assert.isNotNull(mockDb.db.get('Account').get(a.Id), 'Account was not inserted');
     }
 
@@ -215,7 +213,6 @@ public with sharing class MockDatabaseTest {
 
         Account queriedAcct = queriedAccts[0];
 
-        Map<String, sObject> mockContacts = (Map<String, sObject>) mockDb.db.get('Contact');
 
         Assert.areEqual(1, queriedAccts.size(), 'Incorrect number of accounts queried');
         Assert.areEqual(5, queriedAcct.Contacts.size(), 'Incorrect number of contacts queried');
@@ -330,7 +327,7 @@ public with sharing class MockDatabaseTest {
         String exMessage;
         Test.startTest();
         try {
-            List<Account> queriedAccts = (List<Account>) mockDb.query('SELECT Id, Name, (SELECT Id, FirstName, LastName FROM Contacts), (SELECT Id, Name FROM Opportunities), (SELECT Id, Name FROM Opportunities WHERE Name = \'Test1\') FROM Account');
+            mockDb.query('SELECT Id, Name, (SELECT Id, FirstName, LastName FROM Contacts), (SELECT Id, Name FROM Opportunities), (SELECT Id, Name FROM Opportunities WHERE Name = \'Test1\') FROM Account');
         } catch(QueryException e) {
             exMessage = e.getMessage();
         }
@@ -464,7 +461,7 @@ public with sharing class MockDatabaseTest {
         String exMessage;
         Test.startTest();
         try {
-            List<Contact> queriedAccts = (List<Contact>) mockDb.query('SELECT Id, Name, Name FROM Account');
+            mockDb.query('SELECT Id, Name, Name FROM Account');
         } catch(QueryException e) {
             exMessage = e.getMessage();
         }
@@ -494,8 +491,6 @@ public with sharing class MockDatabaseTest {
         Test.stopTest();
 
         Contact queriedCon = queriedCons[0];
-
-        Map<String, sObject> mockContacts = (Map<String, sObject>) mockDb.db.get('Contact');
 
         Assert.areEqual(5, queriedCons.size(), 'Incorrect number of contacts queried');
         Assert.areEqual('Test', queriedCon.Account.Name, 'Expected account name to be \'Test\'');
@@ -953,7 +948,7 @@ public with sharing class MockDatabaseTest {
         String exMessage;
         Test.startTest();
         try {
-            List<Aggregate> queriedAccts = (List<Aggregate>) mockDb.query('SELECT Name, SUM(NumberOfEmployees) FROM Account GROUP BY NumberOfEmployees');
+            mockDb.query('SELECT Name, SUM(NumberOfEmployees) FROM Account GROUP BY NumberOfEmployees');
         } catch(QueryException e) {
             exMessage = e.getMessage();
         }
@@ -1017,7 +1012,7 @@ public with sharing class MockDatabaseTest {
         String exMessage;
         Test.startTest();
         try {
-            List<Aggregate> queriedAccts = (List<Aggregate>) mockDb.query('SELECT Name, COUNT_DISTINCT(Name) FROM Account GROUP BY Name');
+            mockDb.query('SELECT Name, COUNT_DISTINCT(Name) FROM Account GROUP BY Name');
         } catch(QueryException e) {
             exMessage = e.getMessage();
         }
@@ -1058,7 +1053,7 @@ public with sharing class MockDatabaseTest {
         String exMessage;
         Test.startTest();
         try {
-            List<Aggregate> queriedAccts = (List<Aggregate>) mockDb.query('SELECT Account.Name, Name, COUNT(Id) FROM Contact GROUP BY Name, Account.Name');
+            mockDb.query('SELECT Account.Name, Name, COUNT(Id) FROM Contact GROUP BY Name, Account.Name');
         } catch(QueryException e) {
             exMessage = e.getMessage();
         }
@@ -1114,7 +1109,7 @@ public with sharing class MockDatabaseTest {
         String exMessage;
         Test.startTest();
         try {
-            List<Aggregate> queriedAccts = (List<Aggregate>) mockDb.query('SELECT Account.Name acctName, Name acctName, COUNT(Id) FROM Contact GROUP BY Name, Account.Name');
+            mockDb.query('SELECT Account.Name acctName, Name acctName, COUNT(Id) FROM Contact GROUP BY Name, Account.Name');
         } catch(QueryException e) {
             exMessage = e.getMessage();
         }
@@ -2144,5 +2139,65 @@ public with sharing class MockDatabaseTest {
         Assert.areEqual('Test9', queriedAccts[3].Name, 'Incorrect order');
         Assert.areEqual('Test10', queriedAccts[4].Name, 'Incorrect order');
 
+    }
+
+    @IsTest
+    public static void testForUpdate() {
+        Account acct = new Account(Name = 'Test1', NumberOfEmployees = 5, AnnualRevenue = 1000);
+
+        MockDatabase mockDb = new MockDatabase();
+        mockDb.doInsert(acct);
+
+        Test.startTest();
+        List<Account> queriedAccts = (List<Account>) mockDb.query('SELECT Id, Name, NumberOfEmployees, AnnualRevenue FROM Account FOR UPDATE');
+        Test.stopTest();
+
+        Assert.areEqual(1, queriedAccts.size(), 'Incorrect number of accounts queried');
+    }
+
+    @IsTest
+    public static void testForUpdateFailOnGroupBy() {
+        Account acct = new Account(Name = 'Test1', NumberOfEmployees = 5, AnnualRevenue = 1000);
+
+        MockDatabase mockDb = new MockDatabase();
+        mockDb.doInsert(acct);
+
+        String exMessage;
+        Test.startTest();
+        try {
+            mockDb.query('SELECT Name, COUNT(Id) FROM Account GROUP BY Name FOR UPDATE');
+        } catch(Exception e) {
+            exMessage = e.getMessage();
+        }
+        Test.stopTest();
+
+        Assert.isTrue(
+            exMessage != null &&
+            exMessage.contains('FOR UPDATE not allowed in this context'),
+            'Exception should have been thrown with the message "FOR UPDATE not allowed in this context"'
+        );
+    }
+
+    @IsTest
+    public static void testForUpdateFailOnCount() {
+        Account acct = new Account(Name = 'Test1', NumberOfEmployees = 5, AnnualRevenue = 1000);
+
+        MockDatabase mockDb = new MockDatabase();
+        mockDb.doInsert(acct);
+
+        String exMessage;
+        Test.startTest();
+        try {
+            mockDb.query('SELECT COUNT() FROM Account FOR UPDATE');
+        } catch(Exception e) {
+            exMessage = e.getMessage();
+        }
+        Test.stopTest();
+
+        Assert.isTrue(
+            exMessage != null &&
+            exMessage.contains('FOR UPDATE not allowed in this context'),
+            'Exception should have been thrown with the message "FOR UPDATE not allowed in this context"'
+        );
     }
 }
