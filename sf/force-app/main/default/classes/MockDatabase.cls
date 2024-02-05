@@ -1370,15 +1370,15 @@ public with sharing class MockDatabase {
     private Map<String, String> getAggrFuncAlias(Lexer.Node curr, Integer exprNumber) {
         Lexer.Node aggrFieldNode = curr.right;
         Lexer.Node aliasNode = aggrFieldNode.left;
+        String fieldApiName;
         if(aliasNode != null) {
-            return new Map<String, String> {
-                'fieldApiName' => aliasNode.id,
-                'relationshipName' => null
-            };
+            fieldApiName = aliasNode.id;
+        } else {
+            fieldApiName = 'expr' + exprNumber;
         }
 
         return new Map<String, String> {
-            'fieldApiName' => 'expr' + exprNumber,
+            'fieldApiName' => fieldApiName,
             'relationshipName' => null
         };
     }
