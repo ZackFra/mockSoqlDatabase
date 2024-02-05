@@ -1348,9 +1348,42 @@ public with sharing class MockDatabase {
         }
         return results;
     }
+
+    private Map<String, String> getFieldAlias(Lexer.Node curr, Lexer.Node fieldNode, Lexer.Node selectNode) {
+        Lexer.Node aliasNode = curr.right;
+        if(aliasNode != null) {
+            return new Map<String, String> {
+                'fieldApiName' => aliasNode.id,
+                'relationshipName' => null
+            };
+        }
+
+        Map<String, Object> comparables = getComparableDataFromNodes(fieldNode, selectNode);
+        String relationshipName = (String) comparables.get('relationshipName');
+        String fieldApiName = (String) comparables.get('comparableField');
+        return new Map<String, String> {
+            'fieldApiName' => fieldApiName,
+            'relationshipName' => relationshipName
+        };       
+    }
+
+    private Map<String, String> getAggrFuncAlias(Lexer.Node curr, Integer exprNumber) {
+        Lexer.Node aggrFieldNode = curr.right;
+        Lexer.Node aliasNode = aggrFieldNode.left;
+        if(aliasNode != null) {
+            return new Map<String, String> {
+                'fieldApiName' => aliasNode.id,
+                'relationshipName' => null
+            };
+        }
+
+        return new Map<String, String> {
+            'fieldApiName' => 'expr' + exprNumber,
+            'relationshipName' => null
+        };
+    }
     
     private Map<String, String> getAlias(Lexer.Node selectNode, Lexer.Node fieldNode) {
-        String expr = 'expr';
         Integer exprNumber = 0;
 
         Lexer.Node curr = selectNode.left;
@@ -1362,35 +1395,9 @@ public with sharing class MockDatabase {
             Boolean isSameAggrField = (isAggregateFunc && curr.right.id == fieldNode?.right?.id);
 
             if(isField && isSameId) {
-                Lexer.Node aliasNode = curr.right;
-                if(aliasNode != null) {
-                    return new Map<String, String> {
-                        'fieldApiName' => aliasNode.id,
-                        'relationshipName' => null
-                    };
-                } else {
-                    Map<String, Object> comparables = getComparableDataFromNodes(fieldNode, selectNode);
-                    String relationshipName = (String) comparables.get('relationshipName');
-                    String fieldApiName = (String) comparables.get('comparableField');
-                    return new Map<String, String> {
-                        'fieldApiName' => fieldApiName,
-                        'relationshipName' => relationshipName
-                    };
-                }
+                return getFieldAlias(curr, fieldNode, selectNode);
             } else if(isAggregateFunc && isSameAggrField && isSameId) {
-                Lexer.Node aggrFieldNode = curr.right;
-                Lexer.Node aliasNode = aggrFieldNode.left;
-                if(aliasNode != null) {
-                    return new Map<String, String> {
-                        'fieldApiName' => aliasNode.id,
-                        'relationshipName' => null
-                    };
-                } else {
-                    return new Map<String, String> {
-                        'fieldApiName' => expr + exprNumber,
-                        'relationshipName' => null
-                    };
-                }
+                return getAggrFuncAlias(curr, exprNumber);
             } else if(isAggregateFunc) {
                 exprNumber++;
             }
