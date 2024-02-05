@@ -15,7 +15,5 @@ public with sharing class ParserUtils {
         if(obj == null) {
             throw new IllegalArgumentException(message);
         }
-
-
     }
 }
