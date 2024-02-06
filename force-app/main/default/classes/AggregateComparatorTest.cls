@@ -1,6 +1,5 @@
 @isTest
 private class AggregateComparatorTest {
-    // 
 
     @isTest
     private static void testCompareToEqual() {
