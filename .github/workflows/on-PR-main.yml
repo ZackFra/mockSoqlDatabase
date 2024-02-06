@@ -1,4 +1,4 @@
-name: Validate Push On Main
+name: Validate Pull Request On Main
 
 on:
   pull_request:
