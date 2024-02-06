@@ -232,7 +232,8 @@ public with sharing class MockDatabaseUtils {
                 return sObjString > fieldString;
             } else if(sObjectFieldValue instanceOf Decimal) {
                 // Doubles are 64-bit floating point numbers, Decimals are 128-bit floating point numbers
-                // i.e. it's safe to compare a Decimal to a Double, and all Decimals and Doubles are instances of each other
+                // i.e. it's safe to compare a Decimal to a Double, and all Decimals and Doubles are instances of each other.
+                // i.e. (Double instanceof Decimal) == (Decimal instanceof Double) == true
                 // it's dumb as fuck
                 Decimal fieldDec = Decimal.valueOf((String)fieldValue);
                 Decimal sObjDec = (Decimal) sObjectFieldValue;
