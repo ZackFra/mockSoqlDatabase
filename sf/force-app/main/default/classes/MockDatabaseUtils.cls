@@ -1,5 +1,26 @@
 public with sharing class MockDatabaseUtils {
 
+    /**
+     * @description : Clones a node and all of its children, recursively
+     * @param head : Node, the head of the tree to clone
+     * @return : Node, the cloned tree
+     */
+    public static Lexer.Node cloneNode(Lexer.Node head) {
+        if(head == null) {
+            return null;
+        }
+        Lexer.NodeBuilder nb = new Lexer.NodeBuilder()
+            .setId(head.id)
+            .setNodeType(head.nodeType);
+        if(head.left != null) {
+            nb.setLeft(cloneNode(head.left));
+        }
+        if(head.right != null) {
+            nb.setRight(cloneNode(head.right));
+        }
+        return nb.build();
+    }
+
 
     /** comparison handlers for WHERE and HAVING clauses */
     public interface OperatorHandler {
@@ -83,39 +104,75 @@ public with sharing class MockDatabaseUtils {
         }
     }
 
-    /**
-     * @description : Clones a node and all of its children, recursively
-     * @param head : Node, the head of the tree to clone
-     * @return : Node, the cloned tree
-     */
-    public static Lexer.Node cloneNode(Lexer.Node head) {
-        if(head == null) {
-            return null;
+    private static Time parseTime(String timeString) {
+        Pattern timePattern = Pattern.compile('([0-9]{2}):([0-9]{2}):([0-9]{2})\\.([0-9]{3})Z');
+        Matcher timeMatcher = timePattern.matcher(timeString);
+        if(!timeMatcher.matches()) {
+            throw new QueryException('Invalid time format');
         }
-        Lexer.NodeBuilder nb = new Lexer.NodeBuilder()
-            .setId(head.id)
-            .setNodeType(head.nodeType);
-        if(head.left != null) {
-            nb.setLeft(cloneNode(head.left));
-        }
-        if(head.right != null) {
-            nb.setRight(cloneNode(head.right));
-        }
-        return nb.build();
+        return Time.newInstance( 
+            Integer.valueOf(timeMatcher.group(1)),
+            Integer.valueOf(timeMatcher.group(2)),
+            Integer.valueOf(timeMatcher.group(3)),
+            Integer.valueOf(timeMatcher.group(4))
+        );
     }
 
-    private static Time parseTime(String timeString) {
-        List<String> strTimeSplit = timeString.split(':');
-        String strHour = strTimeSplit[0];
-        String strMin = strTimeSplit[1];
-        String strSec = strTimeSplit[2].substringBefore('.');
-        String strMilliSec = strTimeSplit[2].substringAfter('.').removeEnd('Z');
-        return Time.newInstance( 
-            Integer.valueOf(strHour),
-            Integer.valueOf(strMin),
-            Integer.valueOf(strSec),
-            Integer.valueOf(strMilliSec)
+    private static Date parseDate(String dateString) {
+        Pattern datePattern = Pattern.compile('([0-9]{4})\\-([0-9]{2})\\-([0-9]{2})');
+        Matcher dateMatcher = datePattern.matcher(dateString);
+        if(!dateMatcher.matches()) {
+            throw new QueryException('Invalid date format');
+        }
+        return Date.newInstance(
+            Integer.valueOf(dateMatcher.group(1)),
+            Integer.valueOf(dateMatcher.group(2)),
+            Integer.valueOf(dateMatcher.group(3))
         );
+    }
+
+    private static DateTime parseDateTime(String dateTimeString) {
+        // YYYY-MM-DDThh:mm:ss+hh:mm
+        Pattern datePattern1 = Pattern.compile('([0-9]{4})\\-([0-9]{2})\\-([0-9]{2})T([0-9]{2}):([0-9]{2}):([0-9]{2})\\+([0-9]{2}):([0-9]{2})');
+        Matcher dateMatcher1 = datePattern1.matcher(dateTimeString);
+        if(dateMatcher1.matches()) {
+            Integer year = Integer.valueOf(dateMatcher1.group(1));
+            Integer month = Integer.valueOf(dateMatcher1.group(2));
+            Integer day = Integer.valueOf(dateMatcher1.group(3));
+            Integer hour = Integer.valueOf(dateMatcher1.group(4));
+            Integer min = Integer.valueOf(dateMatcher1.group(5));
+            Integer sec = Integer.valueOf(dateMatcher1.group(6));
+            Integer offsetHour = Integer.valueOf(dateMatcher1.group(7));
+            Integer offsetMin = Integer.valueOf(dateMatcher1.group(8));
+            return DateTime.newInstanceGmt(year, month, day, hour, min, sec);
+        }
+        // YYYY-MM-DDThh:mm:ss-hh:mm
+        Pattern datePattern2 = Pattern.compile('([0-9]{4})\\-([0-9]{2})\\-([0-9]{2})T([0-9]{2}):([0-9]{2}):([0-9]{2})\\-([0-9]{2}):([0-9]{2})');
+        Matcher dateMatcher2 = datePattern2.matcher(dateTimeString);
+        if(dateMatcher2.matches()) {
+            Integer year = Integer.valueOf(dateMatcher2.group(1));
+            Integer month = Integer.valueOf(dateMatcher2.group(2));
+            Integer day = Integer.valueOf(dateMatcher2.group(3));
+            Integer hour = Integer.valueOf(dateMatcher2.group(4));
+            Integer min = Integer.valueOf(dateMatcher2.group(5));
+            Integer offsetHour = Integer.valueOf(dateMatcher2.group(6));
+            Integer offsetMin = Integer.valueOf(dateMatcher2.group(7));
+            return DateTime.newInstanceGmt(year, month, day, hour, min, 0);
+        }
+        // YYYY-MM-DDThh:mm:ssZ
+        Pattern datePattern3 = Pattern.compile('([0-9]{4})\\-([0-9]{2})\\-([0-9]{2})T([0-9]{2}):([0-9]{2}):([0-9]{2})Z');
+        Matcher dateMatcher3 = datePattern3.matcher(dateTimeString);
+        if(dateMatcher3.matches()) {
+            Integer year = Integer.valueOf(dateMatcher3.group(1));
+            Integer month = Integer.valueOf(dateMatcher3.group(2));
+            Integer day = Integer.valueOf(dateMatcher3.group(3));
+            Integer hour = Integer.valueOf(dateMatcher3.group(4));
+            Integer min = Integer.valueOf(dateMatcher3.group(5));
+            Integer sec = Integer.valueOf(dateMatcher3.group(6));
+            return DateTime.newInstanceGmt(year, month, day, hour, min, sec);
+        }
+
+        throw new QueryException('Invalid date time format');
     }
 
     public class GreaterThanHandler implements OperatorHandler {
@@ -125,11 +182,11 @@ public with sharing class MockDatabaseUtils {
             }
 
             if(sObjectFieldValue instanceOf Date) {
-                Date fieldDate = Date.parse((String) fieldValue);
+                Date fieldDate = parseDate((String) fieldValue);
                 Date sObjDate = (Date) sObjectFieldValue;
                 return sObjDate > fieldDate;
             } else if(sObjectFieldValue instanceOf DateTime) {
-                DateTime fieldDateTime = DateTime.parse((String) fieldValue);
+                DateTime fieldDateTime = parseDateTime((String) fieldValue);
                 DateTime sObjDateTime = (DateTime) sObjectFieldValue;
                 return sObjDateTime > fieldDateTime;
             } else if(sObjectFieldValue instanceOf Time) {
@@ -310,6 +367,9 @@ public with sharing class MockDatabaseUtils {
                 when '=' {
                     return new EqualityHandler();
                 }
+                when '<>' {
+                    return new InequalityHandler();
+                } 
                 when '!=' {
                     return new InequalityHandler();
                 }
