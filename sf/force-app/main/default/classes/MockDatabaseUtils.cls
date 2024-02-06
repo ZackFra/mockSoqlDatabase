@@ -37,6 +37,17 @@ public with sharing class MockDatabaseUtils {
                 return false;
             }
 
+            if(sObjectFieldValue instanceof Date) {
+                fieldValue = parseDate((String) fieldValue);
+                return fieldValue == (Date) sObjectFieldValue;
+            } else if(SObjectFieldValue instanceof DateTime) {
+                fieldValue = parseDateTime((String) fieldValue);
+                return fieldValue == (DateTime) sObjectFieldValue;
+            } else if(SObjectFieldValue instanceof Time) {
+                fieldValue = parseTime((String) fieldValue);
+                return fieldValue == (Time) sObjectFieldValue;
+            }
+
             return (String.valueOf(sObjectFieldValue).toLowerCase() == ((String)fieldValue).toLowerCase());
         }
     }
@@ -45,11 +56,21 @@ public with sharing class MockDatabaseUtils {
         public Boolean handle(Object sObjectFieldValue, Object fieldValue) {
             Boolean isSObjNull = (sObjectFieldValue == null);
             Boolean isFieldNull = (fieldValue == null);
+
             if(isSObjNull && isFieldNull) {
                 return false;
             } else if(isSObjNull || isFieldNull) {
                 return true;
             }
+
+            if(sObjectFieldValue instanceof Date) {
+                fieldValue = (Object) parseDate((String) fieldValue).toString();
+            } else if(SObjectFieldValue instanceof DateTime) {
+                fieldValue = (Object) parseDateTime((String) fieldValue).toString();
+            } else if(SObjectFieldValue instanceof Time) {
+                fieldValue = (Object) parseTime((String) fieldValue).toString();
+            }
+
             return (String.valueOf(sObjectFieldValue).toLowerCase() != ((String)fieldValue).toLowerCase());
         }
     }
@@ -144,7 +165,9 @@ public with sharing class MockDatabaseUtils {
             Integer sec = Integer.valueOf(dateMatcher1.group(6));
             Integer offsetHour = Integer.valueOf(dateMatcher1.group(7));
             Integer offsetMin = Integer.valueOf(dateMatcher1.group(8));
-            return DateTime.newInstanceGmt(year, month, day, hour, min, sec);
+            return DateTime.newInstanceGmt(year, month, day, hour, min, sec)
+                .addHours(offsetHour)
+                .addMinutes(offsetMin);
         }
         // YYYY-MM-DDThh:mm:ss-hh:mm
         Pattern datePattern2 = Pattern.compile('([0-9]{4})\\-([0-9]{2})\\-([0-9]{2})T([0-9]{2}):([0-9]{2}):([0-9]{2})\\-([0-9]{2}):([0-9]{2})');
@@ -155,9 +178,12 @@ public with sharing class MockDatabaseUtils {
             Integer day = Integer.valueOf(dateMatcher2.group(3));
             Integer hour = Integer.valueOf(dateMatcher2.group(4));
             Integer min = Integer.valueOf(dateMatcher2.group(5));
-            Integer offsetHour = Integer.valueOf(dateMatcher2.group(6));
-            Integer offsetMin = Integer.valueOf(dateMatcher2.group(7));
-            return DateTime.newInstanceGmt(year, month, day, hour, min, 0);
+            Integer sec = Integer.valueOf(dateMatcher2.group(6));
+            Integer offsetHour = Integer.valueOf(dateMatcher2.group(7));
+            Integer offsetMin = Integer.valueOf(dateMatcher2.group(8));
+            return DateTime.newInstanceGmt(year, month, day, hour, min, sec)
+                .addHours(-offsetHour)
+                .addMinutes(-offsetMin);
         }
         // YYYY-MM-DDThh:mm:ssZ
         Pattern datePattern3 = Pattern.compile('([0-9]{4})\\-([0-9]{2})\\-([0-9]{2})T([0-9]{2}):([0-9]{2}):([0-9]{2})Z');
@@ -196,15 +222,7 @@ public with sharing class MockDatabaseUtils {
                 Integer fieldInt = Integer.valueOf((String)fieldValue);
                 Integer sObjInt = (Integer) sObjectFieldValue;
                 return sObjInt > fieldInt;
-            } else if(sObjectFieldValue instanceOf Decimal) {
-                Decimal fieldDec = Decimal.valueOf((String)fieldValue);
-                Decimal sObjDec = (Decimal) sObjectFieldValue;
-                return sObjDec > fieldDec;
-            } else if(sObjectFieldValue instanceOf Double) {
-                Double fieldDouble = Double.valueOf((String)fieldValue);
-                Double sObjDouble = (Double) sObjectFieldValue;
-                return sObjDouble > fieldDouble;
-            } else if(sObjectFieldValue instanceOf Long) {
+            }  else if(sObjectFieldValue instanceOf Long) {
                 Long fieldLong = Long.valueOf((String) fieldValue);
                 Long sObjLong = (Long) sObjectFieldValue;
                 return sObjLong > fieldLong;
@@ -212,6 +230,13 @@ public with sharing class MockDatabaseUtils {
                 String fieldString = ((String) fieldValue).toLowerCase();
                 String sObjString = ((String) sObjectFieldValue).toLowerCase();
                 return sObjString > fieldString;
+            } else if(sObjectFieldValue instanceOf Decimal) {
+                // Doubles are 64-bit floating point numbers, Decimals are 128-bit floating point numbers
+                // i.e. it's safe to compare a Decimal to a Double, and all Decimals and Doubles are instances of each other
+                // it's dumb as fuck
+                Decimal fieldDec = Decimal.valueOf((String)fieldValue);
+                Decimal sObjDec = (Decimal) sObjectFieldValue;
+                return sObjDec > fieldDec;
             } else {
                 throw new QueryException('Invalid field type');
             }
@@ -225,11 +250,11 @@ public with sharing class MockDatabaseUtils {
             }
 
             if(sObjectFieldValue instanceOf Date) {
-                Date fieldDate = Date.valueOf((String) fieldValue);
+                Date fieldDate = parseDate((String) fieldValue);
                 Date sObjDate = (Date) sObjectFieldValue;
                 return sObjDate < fieldDate;
             } else if(sObjectFieldValue instanceOf DateTime) {
-                DateTime fieldDateTime = DateTime.valueOf((String) fieldValue);
+                DateTime fieldDateTime = parseDateTime((String) fieldValue);
                 DateTime sObjDateTime = (DateTime) sObjectFieldValue;
                 return sObjDateTime < fieldDateTime;
             } else if(sObjectFieldValue instanceOf Time) {
@@ -239,15 +264,7 @@ public with sharing class MockDatabaseUtils {
                 Integer fieldInt = Integer.valueOf((String)fieldValue);
                 Integer sObjInt = (Integer) sObjectFieldValue;
                 return sObjInt < fieldInt;
-            } else if(sObjectFieldValue instanceOf Decimal) {
-                Decimal fieldDec = Decimal.valueOf((String)fieldValue);
-                Decimal sObjDec = (Decimal) sObjectFieldValue;
-                return sObjDec < fieldDec;
-            } else if(sObjectFieldValue instanceOf Double) {
-                Double fieldDouble = Double.valueOf((String)fieldValue);
-                Double sObjDouble = (Double) sObjectFieldValue;
-                return sObjDouble < fieldDouble;
-            } else if(sObjectFieldValue instanceOf Long) {
+            }  else if(sObjectFieldValue instanceOf Long) {
                 Long fieldLong = Long.valueOf((String) fieldValue);
                 Long sObjLong = (Long) sObjectFieldValue;
                 return sObjLong < fieldLong;
@@ -255,6 +272,10 @@ public with sharing class MockDatabaseUtils {
                 String fieldString = ((String) fieldValue).toLowerCase();
                 String sObjString = ((String) sObjectFieldValue).toLowerCase();
                 return sObjString < fieldString;
+            } else if(sObjectFieldValue instanceOf Decimal) {
+                Decimal fieldDec = Decimal.valueOf((String)fieldValue);
+                Decimal sObjDec = (Decimal) sObjectFieldValue;
+                return sObjDec < fieldDec;
             } else {
                 throw new QueryException('Invalid field type');
             }
@@ -268,11 +289,11 @@ public with sharing class MockDatabaseUtils {
             }
 
             if(sObjectFieldValue instanceOf Date) {
-                Date fieldDate = Date.valueOf((String) fieldValue);
+                Date fieldDate = parseDate((String) fieldValue);
                 Date sObjDate = (Date) sObjectFieldValue;
                 return sObjDate >= fieldDate;
             } else if(sObjectFieldValue instanceOf DateTime) {
-                DateTime fieldDateTime = DateTime.valueOf((String) fieldValue);
+                DateTime fieldDateTime = parseDateTime((String) fieldValue);
                 DateTime sObjDateTime = (DateTime) sObjectFieldValue;
                 return sObjDateTime >= fieldDateTime;
             } else if(sObjectFieldValue instanceOf Time) {
@@ -282,15 +303,7 @@ public with sharing class MockDatabaseUtils {
                 Integer fieldInt = Integer.valueOf((String)fieldValue);
                 Integer sObjInt = (Integer) sObjectFieldValue;
                 return sObjInt >= fieldInt;
-            } else if(sObjectFieldValue instanceOf Decimal) {
-                Decimal fieldDec = Decimal.valueOf((String)fieldValue);
-                Decimal sObjDec = (Decimal) sObjectFieldValue;
-                return sObjDec >= fieldDec;
-            } else if(sObjectFieldValue instanceOf Double) {
-                Double fieldDouble = Double.valueOf((String)fieldValue);
-                Double sObjDouble = (Double) sObjectFieldValue;
-                return sObjDouble >= fieldDouble;
-            } else if(sObjectFieldValue instanceOf Long) {
+            }  else if(sObjectFieldValue instanceOf Long) {
                 Long fieldLong = Long.valueOf((String) fieldValue);
                 Long sObjLong = (Long) sObjectFieldValue;
                 return sObjLong >= fieldLong;
@@ -298,6 +311,10 @@ public with sharing class MockDatabaseUtils {
                 String fieldString = ((String) fieldValue).toLowerCase();
                 String sObjString = ((String) sObjectFieldValue).toLowerCase();
                 return sObjString >= fieldString;
+            } else if(sObjectFieldValue instanceOf Decimal) {
+                Decimal fieldDec = Decimal.valueOf((String)fieldValue);
+                Decimal sObjDec = (Decimal) sObjectFieldValue;
+                return sObjDec >= fieldDec;
             } else {
                 throw new QueryException('Invalid field type');
             }
@@ -311,11 +328,11 @@ public with sharing class MockDatabaseUtils {
             }
 
             if(sObjectFieldValue instanceOf Date) {
-                Date fieldDate = Date.valueOf((String) fieldValue);
+                Date fieldDate = parseDate((String) fieldValue);
                 Date sObjDate = (Date) sObjectFieldValue;
                 return sObjDate <= fieldDate;
             } else if(sObjectFieldValue instanceOf DateTime) {
-                DateTime fieldDateTime = DateTime.valueOf((String) fieldValue);
+                DateTime fieldDateTime = parseDateTime((String) fieldValue);
                 DateTime sObjDateTime = (DateTime) sObjectFieldValue;
                 return sObjDateTime <= fieldDateTime;
             } else if(sObjectFieldValue instanceOf Time) {
@@ -325,15 +342,7 @@ public with sharing class MockDatabaseUtils {
                 Integer fieldInt = Integer.valueOf((String)fieldValue);
                 Integer sObjInt = (Integer) sObjectFieldValue;
                 return sObjInt <= fieldInt;
-            } else if(sObjectFieldValue instanceOf Decimal) {
-                Decimal fieldDec = Decimal.valueOf((String)fieldValue);
-                Decimal sObjDec = (Decimal) sObjectFieldValue;
-                return sObjDec <= fieldDec;
-            } else if(sObjectFieldValue instanceOf Double) {
-                Double fieldDouble = Double.valueOf((String)fieldValue);
-                Double sObjDouble = (Double) sObjectFieldValue;
-                return sObjDouble <= fieldDouble;
-            } else if(sObjectFieldValue instanceOf Long) {
+            }  else if(sObjectFieldValue instanceOf Long) {
                 Long fieldLong = Long.valueOf((String) fieldValue);
                 Long sObjLong = (Long) sObjectFieldValue;
                 return sObjLong <= fieldLong;
@@ -341,6 +350,10 @@ public with sharing class MockDatabaseUtils {
                 String fieldString = ((String) fieldValue).toLowerCase();
                 String sObjString = ((String) sObjectFieldValue).toLowerCase();
                 return sObjString <= fieldString;
+            } else if(sObjectFieldValue instanceOf Decimal) {
+                Decimal fieldDec = Decimal.valueOf((String)fieldValue);
+                Decimal sObjDec = (Decimal) sObjectFieldValue;
+                return sObjDec <= fieldDec;
             } else {
                 throw new QueryException('Invalid field type');
             }
