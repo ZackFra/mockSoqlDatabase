@@ -12,7 +12,7 @@ for(const warning of codeScanFile) {
         message = message.replaceAll('\r','').replaceAll('\n','');
 
         errors.push({ severity: violation.severity, message });
-    };
+    }
 }
 
 // sort errors by severity, we want the high severity errors to be at the top
