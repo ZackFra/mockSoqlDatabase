@@ -3,6 +3,11 @@ public with sharing class MockDatabase {
     @TestVisible
     private Map<String, Map<String, sObject>> db;
     
+    /**
+     * @description the top-level nodes of an inbound query, saved here for re-use
+     */
+    private Map<String, Lexer.Node> topLevelNodes;
+    
     private Integer sObjnum = 1;
     private String getFakeId(Schema.SObjectType sot) {
         String result = String.valueOf(sObjNum++);
@@ -1038,6 +1043,9 @@ public with sharing class MockDatabase {
     }
 
     private Map<String, Lexer.Node> getTopLevelNodes(Lexer.Node selectNode) {
+        if(this.topLevelNodes != null) {
+            return this.topLevelNodes;
+        }
         Lexer.Node fromNode = selectNode.right;
         Lexer.Node whereNode;
         Lexer.Node groupByNode;
@@ -1829,6 +1837,7 @@ public with sharing class MockDatabase {
             results = sObjects;
         }
 
+        this.topLevelNodes = null;
         return results;
     }
 }
