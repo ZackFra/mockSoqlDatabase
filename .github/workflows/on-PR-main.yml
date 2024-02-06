@@ -40,7 +40,7 @@ jobs:
           echo y | sf plugins install sfdx-git-delta
       - name: Generate Manifest
         run: |
-          sf sgd:source:delta --to "HEAD" --from main --output ".\sf"
+          sf sgd:source:delta -f HEAD^ --output ".\sf"
       - name: Log In To Org
         run: |
           cd sf
