@@ -15,6 +15,62 @@ private with sharing class MockDatabaseUtilsTest {
     }
 
     @IsTest
+    static void testEqualityHandlerInteger() {
+        MockDatabaseUtils.OperatorHandlerFactory opHandlerFactory = new MockDatabaseUtils.OperatorHandlerFactory();
+        MockDatabaseUtils.OperatorHandler handler = opHandlerFactory.getHandler('=');
+        Test.startTest();
+        Boolean isEqual = handler.handle(1, '1');
+        Test.stopTest();
+
+        Assert.isTrue(
+            isEqual,
+            'Expected values to be equal'
+        );
+    }
+
+    @IsTest
+    static void testEqualityHandlerString() {
+        MockDatabaseUtils.OperatorHandlerFactory opHandlerFactory = new MockDatabaseUtils.OperatorHandlerFactory();
+        MockDatabaseUtils.OperatorHandler handler = opHandlerFactory.getHandler('=');
+        Test.startTest();
+        Boolean isEqual = handler.handle('test', 'test');
+        Test.stopTest();
+
+        Assert.isTrue(
+            isEqual,
+            'Expected values to be equal'
+        );
+    }
+
+    @IsTest
+    static void testEqualityHandlerBoolean() {
+        MockDatabaseUtils.OperatorHandlerFactory opHandlerFactory = new MockDatabaseUtils.OperatorHandlerFactory();
+        MockDatabaseUtils.OperatorHandler handler = opHandlerFactory.getHandler('=');
+        Test.startTest();
+        Boolean isEqual = handler.handle(true, 'true');
+        Test.stopTest();
+
+        Assert.isTrue(
+            isEqual,
+            'Expected values to be equal'
+        );
+    }
+
+    @IsTest
+    static void testEqualityHandlerNull() {
+        MockDatabaseUtils.OperatorHandlerFactory opHandlerFactory = new MockDatabaseUtils.OperatorHandlerFactory();
+        MockDatabaseUtils.OperatorHandler handler = opHandlerFactory.getHandler('=');
+        Test.startTest();
+        Boolean isEqual = handler.handle(null, null);
+        Test.stopTest();
+
+        Assert.isTrue(
+            isEqual,
+            'Expected values to be equal'
+        );
+    }
+
+    @IsTest
     static void testEqualityHandlerDate() {
         MockDatabaseUtils.OperatorHandlerFactory opHandlerFactory = new MockDatabaseUtils.OperatorHandlerFactory();
         MockDatabaseUtils.OperatorHandler handler = opHandlerFactory.getHandler('=');
