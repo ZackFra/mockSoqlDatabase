@@ -1,10 +1,15 @@
 public with sharing class MockDatabase {
 
     @TestVisible
-    Map<String, Map<String, sObject>> db;
+    private Map<String, Map<String, sObject>> db;
     
-    Integer sObjnum = 1;
-    public String getFakeId(Schema.SObjectType sot) {
+    /**
+     * @description the top-level nodes of an inbound query, saved here for re-use
+     */
+    private Map<String, Lexer.Node> topLevelNodes;
+    
+    private Integer sObjnum = 1;
+    private String getFakeId(Schema.SObjectType sot) {
         String result = String.valueOf(sObjNum++);
         String fakeId = result + sot.getDescribe().getKeyPrefix().rightPad(15 - result.length(), '0');
         return fakeId;
@@ -1038,6 +1043,9 @@ public with sharing class MockDatabase {
     }
 
     private Map<String, Lexer.Node> getTopLevelNodes(Lexer.Node selectNode) {
+        if(this.topLevelNodes != null) {
+            return this.topLevelNodes;
+        }
         Lexer.Node fromNode = selectNode.right;
         Lexer.Node whereNode;
         Lexer.Node groupByNode;
@@ -1308,7 +1316,7 @@ public with sharing class MockDatabase {
      * @param selectNode : the select node
      * @return : the cleaned up aggregate result list
      */
-    private List<Aggregate> handleAggregateQueryPostProcessing(
+    private List<Aggregate> createAggregates(
         List<Map<String, Object>> aggregateResults, 
         Lexer.Node selectNode,
         Map<String, Object> params
@@ -1317,8 +1325,6 @@ public with sharing class MockDatabase {
         Map<String, List<String>> aggregateFields = getAggregateFields(selectNode);
         List<String> groupByFields = aggregateFields.get('groupByFields');
         List<String> selectFields = aggregateFields.get('selectFields');
-
-        Map<String, Lexer.Node> topLevelNodes = getTopLevelNodes(selectNode);
 
         List<Aggregate> aggregateResultsList = new List<Aggregate>();
         for(Integer i = 0; i < aggregateResults.size(); i++) {
@@ -1350,9 +1356,43 @@ public with sharing class MockDatabase {
         }
         return results;
     }
+
+    private Map<String, String> getFieldAlias(Lexer.Node curr, Lexer.Node fieldNode, Lexer.Node selectNode) {
+        Lexer.Node aliasNode = curr.right;
+        String fieldApiName;
+        String relationshipName;
+        if(aliasNode != null) {
+            fieldApiName = aliasNode.id;
+            relationshipName = null;
+        } else {
+            Map<String, Object> comparables = getComparableDataFromNodes(fieldNode, selectNode);
+            relationshipName = (String) comparables.get('relationshipName');
+            fieldApiName = (String) comparables.get('comparableField');
+        }
+
+        return new Map<String, String> {
+            'fieldApiName' => fieldApiName,
+            'relationshipName' => relationshipName
+        };       
+    }
+
+    private Map<String, String> getAggrFuncAlias(Lexer.Node curr, Integer exprNumber) {
+        Lexer.Node aggrFieldNode = curr.right;
+        Lexer.Node aliasNode = aggrFieldNode.left;
+        String fieldApiName;
+        if(aliasNode != null) {
+            fieldApiName = aliasNode.id;
+        } else {
+            fieldApiName = 'expr' + exprNumber;
+        }
+
+        return new Map<String, String> {
+            'fieldApiName' => fieldApiName,
+            'relationshipName' => null
+        };
+    }
     
     private Map<String, String> getAlias(Lexer.Node selectNode, Lexer.Node fieldNode) {
-        String expr = 'expr';
         Integer exprNumber = 0;
 
         Lexer.Node curr = selectNode.left;
@@ -1364,35 +1404,9 @@ public with sharing class MockDatabase {
             Boolean isSameAggrField = (isAggregateFunc && curr.right.id == fieldNode?.right?.id);
 
             if(isField && isSameId) {
-                Lexer.Node aliasNode = curr.right;
-                if(aliasNode != null) {
-                    return new Map<String, String> {
-                        'fieldApiName' => aliasNode.id,
-                        'relationshipName' => null
-                    };
-                } else {
-                    Map<String, Object> comparables = getComparableDataFromNodes(fieldNode, selectNode);
-                    String relationshipName = (String) comparables.get('relationshipName');
-                    String fieldApiName = (String) comparables.get('comparableField');
-                    return new Map<String, String> {
-                        'fieldApiName' => fieldApiName,
-                        'relationshipName' => relationshipName
-                    };
-                }
+                return getFieldAlias(curr, fieldNode, selectNode);
             } else if(isAggregateFunc && isSameAggrField && isSameId) {
-                Lexer.Node aggrFieldNode = curr.right;
-                Lexer.Node aliasNode = aggrFieldNode.left;
-                if(aliasNode != null) {
-                    return new Map<String, String> {
-                        'fieldApiName' => aliasNode.id,
-                        'relationshipName' => null
-                    };
-                } else {
-                    return new Map<String, String> {
-                        'fieldApiName' => expr + exprNumber,
-                        'relationshipName' => null
-                    };
-                }
+                return getAggrFuncAlias(curr, exprNumber);
             } else if(isAggregateFunc) {
                 exprNumber++;
             }
@@ -1789,7 +1803,8 @@ public with sharing class MockDatabase {
 
             // handle fields
             if(!isAggregateQuery) {
-                sObjects.add(copyWithFields(obj, selectNode, params));
+                SObject sObj = copyWithFields(obj, selectNode, params);
+                sObjects.add(sObj);
                 continue;
             }
 
@@ -1808,12 +1823,8 @@ public with sharing class MockDatabase {
             aggregateResults = (List<Map<String, Object>>) handleOffsetNode('aggregate', offsetNode, aggregateResults, params);
             aggregateResults = (List<Map<String, Object>>) handleLimitNode('aggregate', limitNode, aggregateResults, params);
 
-            // Remove internal fields from the aggregate results ('__n', '__distinct')
-            List<Aggregate> aggregateResultsList = handleAggregateQueryPostProcessing(
-                aggregateResults, 
-                selectNode,
-                params
-            );
+            // Remove internal fields from the aggregate result proto-records and return the list of aggregates
+            List<Aggregate> aggregateResultsList = createAggregates(aggregateResults, selectNode, params);
             results = aggregateResultsList;
         } else if(isCount) {
             count = (Integer) handleOffsetNode('count', offsetNode, count, params);
@@ -1826,6 +1837,7 @@ public with sharing class MockDatabase {
             results = sObjects;
         }
 
+        this.topLevelNodes = null;
         return results;
     }
 }

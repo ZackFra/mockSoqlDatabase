@@ -18,10 +18,14 @@ public with sharing class SObjectComparator implements Comparator<SObject> {
 
         Object fieldValue;
         if(relationshipName != null) {
-            List<String> fieldParts = fieldApiName.split('\\.');
-            for(String part : fieldParts) {
-                fieldValue = sObj.get(part);
+            List<String> fieldParts = relationshipName.split('\\.');
+            String field = fieldParts[fieldParts.size()-1];
+            SObject parentRecord = sObj;
+            for(Integer i = 0; i < fieldParts.size()-1; i++) {
+                String part = fieldParts[i];
+                parentRecord = parentRecord.getSObject(part);
             }
+            fieldValue = parentRecord.get(field);
         } else {
             fieldValue = sObj.get(fieldApiName);
         }
