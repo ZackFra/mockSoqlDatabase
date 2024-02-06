@@ -5,8 +5,8 @@ on:
     branches:
       - main
     paths:
-      - 'sf/force-app/main/default/**'
-      - 'sf/scripts/js/**'
+      - 'force-app/main/default/**'
+      - 'scripts/js/**'
 
 jobs:
   run-test-classes:
