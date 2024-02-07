@@ -671,9 +671,14 @@ public with sharing class Lexer {
         Intermediary operatorIntermediary = parseOperator(query);
         query = operatorIntermediary.subquery;
         query = ParserUtils.skipWhitespace(query);
+
         Boolean isIn = operatorIntermediary.head.id == 'in';
         Boolean isNotIn = operatorIntermediary.head.id == 'not in';
-        if((isIn || isNotIn) && lookahead(query, 1) == '(') {
+        Boolean isIncludes = operatorIntermediary.head.id == 'includes';
+        Boolean isExcludes = operatorIntermediary.head.id == 'excludes';
+        
+        Boolean isExpectingList = (isIn || isNotIn || isIncludes || isExcludes);
+        if(isExpectingList && lookahead(query, 1) == '(') {
             query = consume(query, '(');
             Intermediary listOrQuery;
             if(lookahead(query, 6) == 'select') {
@@ -922,6 +927,8 @@ public with sharing class Lexer {
         NodeBuilder nb = new NodeBuilder()
             .setNodeType('operator');
         List<String> opTokens = new List<String> {
+            'includes',
+            'excludes',
             'like',
             '!=',
             '<>',
@@ -931,9 +938,7 @@ public with sharing class Lexer {
             'not in',
             '=',
             '>',
-            '<',
-            'includes',
-            'excludes'
+            '<'
         };
         for(String token : opTokens) {
             if(query.length() >= token.length() && lookahead(query, token.length()) == token) {

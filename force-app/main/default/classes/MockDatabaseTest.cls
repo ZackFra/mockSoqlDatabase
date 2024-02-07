@@ -2192,4 +2192,54 @@ private with sharing class MockDatabaseTest {
             'Exception should have been thrown with the message "FOR UPDATE not allowed in this context"'
         );
     }
+
+    @IsTest
+    static void testIncludes() {
+        MockDatabase mockDb = new MockDatabase();
+
+        QuickText qt1 = new QuickText(
+            Name = 'Test1',
+            Channel = 'Email;Phone;'
+        );
+
+        QuickText qt2 = new QuickText(
+            Name = 'Test2',
+            Channel = 'Phone;'
+        );
+
+        List<QuickText> qtList = new List<QuickText>{qt1, qt2};
+
+        mockDb.doInsert(qtList);
+
+        Test.startTest();
+        List<QuickText> queriedQTs = (List<QuickText>) mockDb.query('SELECT Name, Channel FROM QuickText WHERE Channel INCLUDES (\'Email\')');
+        Test.stopTest();
+
+        Assert.areEqual(1, queriedQTs.size(), 'Incorrect number of quick texts queried');
+    }
+
+    @IsTest
+    static void testExcludes() {
+        MockDatabase mockDb = new MockDatabase();
+
+        QuickText qt1 = new QuickText(
+            Name = 'Test1',
+            Channel = 'Email;Phone;'
+        );
+
+        QuickText qt2 = new QuickText(
+            Name = 'Test2',
+            Channel = 'Phone;'
+        );
+
+        List<QuickText> qtList = new List<QuickText>{qt1, qt2};
+
+        mockDb.doInsert(qtList);
+
+        Test.startTest();
+        List<QuickText> queriedQTs = (List<QuickText>) mockDb.query('SELECT Name, Channel FROM QuickText WHERE Channel EXCLUDES (\'Email\')');
+        Test.stopTest();
+
+        Assert.areEqual(1, queriedQTs.size(), 'Incorrect number of quick texts queried');
+    }
 }
