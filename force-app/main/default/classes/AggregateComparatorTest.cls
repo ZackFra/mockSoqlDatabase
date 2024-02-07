@@ -35,11 +35,6 @@ private class AggregateComparatorTest {
 
         AggregateComparator comparator = new AggregateComparator(fields);
 
-        List<Map<String, Object>> aggregates = new List<Map<String, Object>> {
-            protoAggr1,
-            protoAggr2
-        };
-
         Test.startTest();
         Integer result = comparator.compare(protoAggr1, protoAggr2);
         Test.stopTest();
@@ -84,11 +79,6 @@ private class AggregateComparatorTest {
 
         AggregateComparator comparator = new AggregateComparator(fields);
 
-        List<Map<String, Object>> aggregates = new List<Map<String, Object>> {
-            protoAggr1,
-            protoAggr2
-        };
-
         Test.startTest();
         Integer result = comparator.compare(protoAggr1, protoAggr2);
         Test.stopTest();
@@ -131,11 +121,6 @@ private class AggregateComparatorTest {
         };
 
         AggregateComparator comparator = new AggregateComparator(fields);
-
-        List<Map<String, Object>> aggregates = new List<Map<String, Object>> {
-            protoAggr1,
-            protoAggr2
-        };
 
         Test.startTest();
         Integer result = comparator.compare(protoAggr1, protoAggr2);
@@ -180,11 +165,6 @@ private class AggregateComparatorTest {
 
         AggregateComparator comparator = new AggregateComparator(fields);
 
-        List<Map<String, Object>> aggregates = new List<Map<String, Object>> {
-            protoAggr1,
-            protoAggr2
-        };
-
         Test.startTest();
         Integer result = comparator.compare(protoAggr1, protoAggr2);
         Test.stopTest();
@@ -227,12 +207,6 @@ private class AggregateComparatorTest {
         };
 
         AggregateComparator comparator = new AggregateComparator(fields);
-
-        List<Map<String, Object>> aggregates = new List<Map<String, Object>> {
-            protoAggr1,
-            protoAggr2
-        };
-
         Test.startTest();
         Integer result = comparator.compare(protoAggr1, protoAggr2);
         Test.stopTest();
@@ -276,11 +250,6 @@ private class AggregateComparatorTest {
 
         AggregateComparator comparator = new AggregateComparator(fields);
 
-        List<Map<String, Object>> aggregates = new List<Map<String, Object>> {
-            protoAggr1,
-            protoAggr2
-        };
-
         Test.startTest();
         Integer result = comparator.compare(protoAggr1, protoAggr2);
         Test.stopTest();
@@ -323,11 +292,6 @@ private class AggregateComparatorTest {
         };
 
         AggregateComparator comparator = new AggregateComparator(fields);
-
-        List<Map<String, Object>> aggregates = new List<Map<String, Object>> {
-            protoAggr1,
-            protoAggr2
-        };
 
         Test.startTest();
         Integer result = comparator.compare(protoAggr1, protoAggr2);
