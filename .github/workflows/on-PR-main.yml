@@ -1,12 +1,12 @@
-name: Validate Push On Main
+name: Validate Pull Request On Main
 
 on:
   pull_request:
     branches:
       - main
     paths:
-      - 'sf/force-app/main/default/**'
-      - 'sf/scripts/js/**'
+      - 'force-app/main/default/**'
+      - 'scripts/js/**'
 
 jobs:
   run-test-classes:
@@ -24,6 +24,9 @@ jobs:
         run: |
           npm i -g @salesforce/cli
           sf --version
+      - name: Install sfdx-git-delta
+        run: |
+          echo y | sf plugins install sfdx-git-delta
       - name: Install Code Scanner
         run: |
           sf plugins install @salesforce/sfdx-scanner
@@ -33,12 +36,9 @@ jobs:
       - name: Raise Warnings
         run: |
           node scripts/js/raise-warnings.js
-      - name: Install sfdx-git-delta
-        run: |
-          echo y | sf plugins install sfdx-git-delta
       - name: Generate Manifest
         run: |
-          sf sgd:source:delta -t HEAD -f $(git merge-base HEAD origin/main) --output ".\sf"
+          sf sgd:source:delta -t HEAD -f $(git merge-base HEAD origin/main) --output .
       - name: Log In To Org
         run: |
           echo "${{ secrets.SERVER_KEY }}" > server.key

@@ -1,20 +1,16 @@
-String dateTimeString = '2020-01-01T01:01:01-00:00';
-Pattern datePattern1 = Pattern.compile('([0-9]{4})\\-([0-9]{2})\\-([0-9]{2})T([0-9]{2}):([0-9]{2}):([0-9]{2})\\-([0-9]{2}):([0-9]{2})');
-Matcher dateMatcher1 = datePattern1.matcher(dateTimeString);
-dateMatcher1.matches();
-Integer year = Integer.valueOf(dateMatcher1.group(1));
-Integer month = Integer.valueOf(dateMatcher1.group(2));
-Integer day = Integer.valueOf(dateMatcher1.group(3));
-Integer hour = Integer.valueOf(dateMatcher1.group(4));
-Integer min = Integer.valueOf(dateMatcher1.group(5));
-Integer sec = Integer.valueOf(dateMatcher1.group(6));
-Integer offsetHour = Integer.valueOf(dateMatcher1.group(7));
-Integer offsetMin = Integer.valueOf(dateMatcher1.group(8));
-DateTime comparable1 = DateTime.newInstanceGmt(year, month, day, hour, min, sec)
-                .addHours(offsetHour)
-                .addMinutes(offsetMin);
+Map<String,String> objectMap = new Map<String,String>();
+Map<String, String> objToFieldMap = new Map<String, String>();
 
-DateTime comparable2 = DateTime.newInstanceGmt(2020, 1, 1, 1, 1, 1);
-
-System.debug(comparable1);
-System.debug(comparable2);
+for(Schema.SObjectType objTyp : Schema.getGlobalDescribe().Values()){
+    Schema.DescribeSObjectResult dsor = objTyp.getDescribe();
+    Map<String,Schema.SObjectField> fieldMap = dsor.fields.getMap();
+    for(String fld : fieldMap.keySet()){
+        Schema.SObjectField fldObj = fieldMap.get(fld);
+        Schema.DescribeFieldResult dfr = fldObj.getDescribe();
+        if(dfr.getType() == Schema.DisplayType.MULTIPICKLIST) {
+            String objName = objTyp.getDescribe().getName();
+            objToFieldMap.put(objName, fld);
+        }
+    }
+}
+System.debug(objToFieldMap);

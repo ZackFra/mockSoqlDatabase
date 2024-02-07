@@ -402,6 +402,16 @@ public with sharing class MockDatabase {
         );
     }
 
+    private Schema.DisplayType getFieldType(SObject sObj, String fieldName) {
+        Schema.SObjectType sObjType = sObj.getSObjectType();
+        Schema.DescribeSObjectResult dsor = sObjType.getDescribe();
+        Schema.SObjectField field = dsor.fields.getMap().get(fieldName);
+        if(field == null) {
+            throw new QueryException('Invalid field name: ' + fieldName);
+        }
+        return field.getDescribe().getType();
+    }
+
 
     private Boolean isWhereCompareConditionMet(Lexer.Node operatorNode, sObject sObj, Map<String, Object> params) {
         Lexer.Node fieldNode = operatorNode.left;
@@ -413,15 +423,20 @@ public with sharing class MockDatabase {
         Object sObjectFieldValue;
 
         Boolean isParentField = fieldName.contains('.');
+
+        // if the field is a parent field, we need to get the parent record
+        // further down, we can't say for sure whether the field is a parent field or not
+        // so we'll need to store our object and field name in a variable
+        sObject parentRecord = sObj;
+        String finalField = fieldName;
         if(!isParentField) {
             sObjectFieldValue = sObj.get(fieldName);
         } else {
             List<String> fieldParts = fieldName.split('\\.');
-            String finalField = fieldParts[fieldParts.size()-1];
+            finalField = fieldParts[fieldParts.size()-1];
             fieldParts.remove(fieldParts.size()-1);
             
             Map<String, Object> parentInfo;
-            sObject parentRecord = sObj;
             String parentObjApiName;
             do {
                 String field = fieldParts[0];
@@ -435,7 +450,21 @@ public with sharing class MockDatabase {
         }
 
         MockDatabaseUtils.OperatorHandlerFactory handlerFactory = new MockDatabaseUtils.OperatorHandlerFactory();
+
+        Schema.DisplayType fieldType = getFieldType(parentRecord, finalField);
         MockDatabaseUtils.OperatorHandler handler = handlerFactory.getHandler(operatorNode.id);
+        if(handler instanceof MockDatabaseUtils.IncludesHandler) {
+            if(fieldType != Schema.DisplayType.MULTIPICKLIST) {
+                throw new QueryException('Invalid field type for INCLUDES operator');
+            }
+        }
+
+        if(handler instanceof MockDatabaseUtils.ExcludesHandler) {
+            if(fieldType != Schema.DisplayType.MULTIPICKLIST) {
+                throw new QueryException('Invalid field type for EXCLUDES operator');
+            }
+        }
+
         return handler.handle(sObjectFieldValue, fieldValue);
     }
 
