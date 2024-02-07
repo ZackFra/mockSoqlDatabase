@@ -428,11 +428,12 @@ public with sharing class MockDatabase {
         // further down, we can't say for sure whether the field is a parent field or not
         // so we'll need to store our object and field name in a variable
         sObject parentRecord = sObj;
+        String finalField = fieldName;
         if(!isParentField) {
             sObjectFieldValue = sObj.get(fieldName);
         } else {
             List<String> fieldParts = fieldName.split('\\.');
-            String finalField = fieldParts[fieldParts.size()-1];
+            finalField = fieldParts[fieldParts.size()-1];
             fieldParts.remove(fieldParts.size()-1);
             
             Map<String, Object> parentInfo;
@@ -449,7 +450,8 @@ public with sharing class MockDatabase {
         }
 
         MockDatabaseUtils.OperatorHandlerFactory handlerFactory = new MockDatabaseUtils.OperatorHandlerFactory();
-        Schema.DisplayType fieldType = getFieldType(parentRecord, fieldName);
+
+        Schema.DisplayType fieldType = getFieldType(parentRecord, finalField);
         MockDatabaseUtils.OperatorHandler handler = handlerFactory.getHandler(operatorNode.id);
         if(handler instanceof MockDatabaseUtils.IncludesHandler) {
             if(fieldType != Schema.DisplayType.MULTIPICKLIST) {
