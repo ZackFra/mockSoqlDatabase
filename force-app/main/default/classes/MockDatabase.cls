@@ -4,9 +4,9 @@ public with sharing class MockDatabase {
     private Map<String, Map<String, sObject>> db;
     
     /**
-     * @description the top-level nodes of an inbound query, saved here for re-use
+     * @description map of the top-level nodes of select nodes, is a map to account for subqueries
      */
-    private Map<String, Lexer.Node> topLevelNodes;
+    private final Map<Lexer.Node, TopLevelNodes> topLevelNodes = new Map<Lexer.Node, TopLevelNodes>();
     
     private Integer sObjnum = 1;
     private String getFakeId(Schema.SObjectType sot) {
@@ -1003,8 +1003,8 @@ public with sharing class MockDatabase {
      * @return : a map with the fields to group by and the fields to select
      */
     Map<String, List<String>> getAggregateFields(Lexer.Node selectNode) {
-        Map<String, Lexer.Node> topLevelNodes = getTopLevelNodes(selectNode);
-        Lexer.Node groupByNode = topLevelNodes.get('groupByNode');
+        TopLevelNodes topLevelNodes = getTopLevelNodes(selectNode);
+        Lexer.Node groupByNode = topLevelNodes.groupByNode;
 
         if(groupByNode == null) {
             return new Map<String, List<String>> {
@@ -1071,67 +1071,14 @@ public with sharing class MockDatabase {
         return aggregateFields;
     }
 
-    private Map<String, Lexer.Node> getTopLevelNodes(Lexer.Node selectNode) {
-        if(this.topLevelNodes != null) {
-            return this.topLevelNodes;
+    private TopLevelNodes getTopLevelNodes(Lexer.Node selectNode) {
+        TopLevelNodes topLevelNodes = this.topLevelNodes.get(selectNode);
+        if(topLevelNodes == null) {
+            topLevelNodes = new TopLevelNodes(selectNode);
+            this.topLevelNodes.put(selectNode, topLevelNodes);
+            return topLevelNodes;
         }
-        Lexer.Node fromNode = selectNode.right;
-        Lexer.Node whereNode;
-        Lexer.Node groupByNode;
-        Lexer.Node havingNode;
-        Lexer.Node orderByNode;
-        Lexer.Node limitNode;
-        Lexer.Node offsetNode;
-        Lexer.Node forUpdateNode;
-
-        Lexer.Node curr = fromNode.right;
-
-        if(curr != null && curr.nodeType == 'where') {
-            whereNode = curr;
-            curr = curr.right;
-        }
-
-        if(curr != null && curr.nodeType == 'group by') {
-            groupByNode = curr;
-            curr = curr.right;
-            // can only have a HAVING node if there's a group by node
-            if(curr != null && groupByNode != null && curr.nodeType == 'having') {
-                havingNode = curr;
-                curr = curr.right;
-            }
-        }
-
-        if(curr != null && curr.nodeType == 'order by') {
-            orderByNode = curr;
-            curr = curr.right;
-        }
-
-        if(curr != null && curr.nodeType == 'limit') {
-            limitNode = curr;
-            curr = curr.right;
-        }
-
-        if(curr != null && curr.nodeType == 'offset') {
-            offsetNode = curr;
-            curr = curr.right;
-        }
-
-        if(curr != null && curr.nodeType == 'for update') {
-            forUpdateNode = curr;
-            curr = curr.right;
-        }
-
-        Map<String, Lexer.Node> topLevelNodes = new Map<String, Lexer.Node> {
-            'fromNode' => fromNode,
-            'whereNode' => whereNode,
-            'groupByNode' => groupByNode,
-            'havingNode' => havingNode,
-            'orderByNode' => orderByNode,
-            'limitNode' => limitNode,
-            'offsetNode' => offsetNode,
-            'forUpdateNode' => forUpdateNode
-        };
-        return topLevelNodes;
+        return this.topLevelNodes.get(selectNode);
     }
 
     private Map<String, Object> handleAggregateQuery(
@@ -1371,8 +1318,8 @@ public with sharing class MockDatabase {
         Lexer.Node selectNode, 
         Map<String, Object> params
     ) {
-        Map<String, Lexer.Node> topLevelNodes = getTopLevelNodes(selectNode);
-        Lexer.Node havingNode = topLevelNodes.get('havingNode');
+        TopLevelNodes topLevelNodes = getTopLevelNodes(selectNode);
+        Lexer.Node havingNode = topLevelNodes.havingNode;
         if(havingNode == null) {
             return aggregateResults;
         }
@@ -1613,12 +1560,12 @@ public with sharing class MockDatabase {
      * @throws QueryException : if the query is invalid
      */
     private void handleValidation(Lexer.Node selectNode) {
-        Map<String, Lexer.Node> topLevelNodes = getTopLevelNodes(selectNode);
-        Lexer.Node groupByNode = topLevelNodes.get('groupByNode');
-        Lexer.Node orderByNode = topLevelNodes.get('orderByNode');
-        Lexer.Node limitNode = topLevelNodes.get('limitNode');
-        Lexer.Node offsetNode = topLevelNodes.get('offsetNode');
-        Lexer.Node forUpdateNode = topLevelNodes.get('forUpdateNode');
+        TopLevelNodes topLevelNodes = getTopLevelNodes(selectNode);
+        Lexer.Node groupByNode = topLevelNodes.groupByNode;
+        Lexer.Node orderByNode = topLevelNodes.orderByNode;
+        Lexer.Node limitNode = topLevelNodes.limitNode;
+        Lexer.Node offsetNode = topLevelNodes.offsetNode;
+        Lexer.Node forUpdateNode = topLevelNodes.forUpdateNode;
 
         Boolean isAggregateQuery = isAggregateQuery(selectNode);
         Boolean isCount = isSingularCount(selectNode);
@@ -1790,12 +1737,12 @@ public with sharing class MockDatabase {
     }
 
     private Object doQuery(Lexer.Node selectNode, Map<String, Object> params) {
-        Map<String, Lexer.Node> topLevelNodes = getTopLevelNodes(selectNode);
-        Lexer.Node fromNode = topLevelNodes.get('fromNode');
-        Lexer.Node whereNode = topLevelNodes.get('whereNode');
-        Lexer.Node orderByNode = topLevelNodes.get('orderByNode');
-        Lexer.Node limitNode = topLevelNodes.get('limitNode');
-        Lexer.Node offsetNode = topLevelNodes.get('offsetNode');
+        TopLevelNodes topLevelNodes = getTopLevelNodes(selectNode);
+        Lexer.Node fromNode = topLevelNodes.fromNode;
+        Lexer.Node whereNode = topLevelNodes.whereNode;
+        Lexer.Node orderByNode = topLevelNodes.orderByNode;
+        Lexer.Node limitNode = topLevelNodes.limitNode;
+        Lexer.Node offsetNode = topLevelNodes.offsetNode;
 
         // validate the query, throws exception if invalid
         handleValidation(selectNode);
@@ -1865,8 +1812,7 @@ public with sharing class MockDatabase {
             sObjects = (List<SObject>) handleLimitNode('sObject', limitNode, sObjects, params);
             results = sObjects;
         }
-
-        this.topLevelNodes = null;
+        this.topLevelNodes.remove(selectNode);
         return results;
     }
 }
