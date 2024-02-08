@@ -1,15 +1,8 @@
 <?xml version="1.0" encoding="UTF-8" standalone="yes"?>
 <Package xmlns="http://soap.sforce.com/2006/04/metadata">
 	<types>
-		<members>ParserUtils</members>
-		<members>Selector</members>
-		<members>MockProvider</members>
 		<members>MockDatabase</members>
-		<members>MockDatabaseTest</members>
-		<members>Lexer</members>
-		<members>LexerTest</members>
 		<members>MockDatabaseUtils</members>
-		<members>TopLevelNodes</members>
 		<name>ApexClass</name>
 	</types>
 	<version>58.0</version>
