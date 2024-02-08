@@ -3,9 +3,9 @@ private with sharing class MockDatabaseUtilsTest {
     @IsTest
     static void testClone() {
         Lexer t = new Lexer();
-        Lexer.Node head = t.parse('SELECT Id FROM Account');
+        Node head = t.parse('SELECT Id FROM Account');
         Test.startTest();
-        Lexer.Node clone = MockDatabaseUtils.cloneNode(head);
+        Node clone = MockDatabaseUtils.cloneNode(head);
         Test.stopTest();
         Assert.areEqual(
             head.toString(),
