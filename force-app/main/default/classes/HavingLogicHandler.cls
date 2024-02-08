@@ -1,3 +1,6 @@
+/**
+ * @description This class is used to handle the having clause logic
+ */
 public with sharing class HavingLogicHandler extends BooleanLogicHandler {
     private Node selectNode;
 
@@ -6,6 +9,13 @@ public with sharing class HavingLogicHandler extends BooleanLogicHandler {
         this.selectNode = selectNode;
     }
 
+    /**
+     * @description This method is used to check if the having condition is met
+     * @param operatorNode The operator node
+     * @return Boolean
+     * @throws Exception
+     * @see MockDatabaseUtils.OperatorHandlerFactory
+     */
     public override Boolean isCompareConditionMet(Node operatorNode) {
         Map<String, Object> aggr = (Map<String, Object>) this.obj;
 
