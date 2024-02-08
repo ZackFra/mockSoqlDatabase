@@ -1081,7 +1081,6 @@ public with sharing class Lexer {
 
     private Intermediary parseWhenList(String query) {
         query = ParserUtils.skipWhitespace(query);
-        System.debug(isWhen(query));
         if(!isWhen(query)) {
             return null;
         }
@@ -1100,7 +1099,6 @@ public with sharing class Lexer {
                 }
                 curr.right = whenExpr.head;
             }
-            System.debug(query);
         }
 
         if(isElse(query)) {
@@ -1114,7 +1112,6 @@ public with sharing class Lexer {
         }
 
         whenList.subquery = query;
-        System.debug(whenList);
         return whenList;
     }
 
