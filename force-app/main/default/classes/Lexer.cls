@@ -203,12 +203,18 @@ public with sharing class Lexer {
         );
         
     }
+
+    private Boolean isTypeOf(String query) {
+        return query.length() >= 6 && lookahead(query, 6) == 'typeof';
+    }
     
     private Intermediary parseSelectExpr(String query) {
         query = ParserUtils.skipWhitespace(query);
         Intermediary selectExpr;
-
-        if(isAggregateFunction(query)) {
+        if(isTypeOf(query)) {
+            selectExpr = parseTypeOf(query);
+            query = selectExpr.subquery;
+        } else if(isAggregateFunction(query)) {
             selectExpr = parseAggregateFunc(query);
             query = selectExpr.subquery;
         } else if(lookahead(query, 1) == '(') {
@@ -1043,6 +1049,133 @@ public with sharing class Lexer {
             	.setLeft(limitSize.head)
             	.build(),
             limitSize.subquery
+        );
+    }
+
+    private Boolean isElse(String query) {
+        return query.length() >= 4 && lookahead(query, 4) == 'else';
+    }
+
+    private Boolean isWhen(String query) {
+        return query.length() >= 4 && lookahead(query, 4) == 'when';
+    }
+    
+    private Intermediary parseElse(String query) {
+        query = ParserUtils.skipWhitespace(query);
+        if(query.length() == 0 || !isElse(query)) {
+            return null;
+        }
+        query = consume(query, 'else');
+        query = consume(query, ' ');
+        query = ParserUtils.skipWhitespace(query);
+        Intermediary fieldList = parseFieldList(query);
+        return new Intermediary(
+        	new NodeBuilder()
+            	.setId('else')
+            	.setNodeType('else')
+            	.setRight(fieldList.head)
+            	.build(),
+            fieldList.subquery
+        );
+    }
+
+    private Intermediary parseWhenList(String query) {
+        query = ParserUtils.skipWhitespace(query);
+        System.debug(isWhen(query));
+        if(!isWhen(query)) {
+            return null;
+        }
+
+        Intermediary whenList;
+        while(isWhen(query)) {
+            Intermediary whenExpr = parseWhen(query);
+            query = whenExpr.subquery;
+            query = ParserUtils.skipWhitespace(query);
+            if(whenList == null) {
+                whenList = whenExpr;
+            } else {
+                Node curr = whenList.head;
+                while(curr.right != null) {
+                    curr = curr.right;
+                }
+                curr.right = whenExpr.head;
+            }
+            System.debug(query);
+        }
+
+        if(isElse(query)) {
+            Intermediary elseExpr = parseElse(query);
+            query = elseExpr.subquery;
+            Node curr = whenList.head;
+            while(curr.right != null) {
+                curr = curr.right;
+            }
+            curr.right = elseExpr.head;
+        }
+
+        whenList.subquery = query;
+        System.debug(whenList);
+        return whenList;
+    }
+
+    private Intermediary parseWhen(String query) {
+        query = ParserUtils.skipWhitespace(query);
+        if(query.length() < 4 || lookahead(query, 4) != 'when') {
+            return null;
+        }
+
+        query = consume(query, 'when');
+        query = consume(query, ' ');
+        query = ParserUtils.skipWhitespace(query);
+        Intermediary obj = parseObj(query);
+        query = obj.subquery;
+        query = consume(query, ' ');
+        query = ParserUtils.skipWhitespace(query);
+
+        query = consume(query, 'then');
+        query = consume(query, ' ');
+        query = ParserUtils.skipWhitespace(query);
+        Intermediary thenExpr = parseFieldList(query);
+        query = thenExpr.subquery;
+        return new Intermediary(
+        	new NodeBuilder()
+            	.setId('when')
+            	.setNodeType('when')
+            	.setLeft(obj.head)
+            	.setRight(thenExpr.head)
+            	.build(),
+            query
+        );
+    }
+
+    private Intermediary parseTypeOf(String query) {
+        query = ParserUtils.skipWhitespace(query);
+        if(query.length() < 6 || lookahead(query, 6) != 'typeof') {
+            return null;
+        }
+
+        query = consume(query, 'typeof');
+        query = consume(query, ' ');
+        query = ParserUtils.skipWhitespace(query);
+        Intermediary field = parseField(query);
+        query = field.subquery;
+        query = ParserUtils.skipWhitespace(query);
+
+        Intermediary whenExpr = parseWhenList(query);
+        query = whenExpr.subquery;
+        query = consume(query, ' ');
+        query = ParserUtils.skipWhitespace(query);
+        query = consume(query, 'end');
+        query = consume(query, ' ');
+
+        return new Intermediary(
+        	new NodeBuilder()
+            	.setId('typeof')
+            	.setNodeType('typeof')
+            	.setLeft(field.head)
+            	.setRight(whenExpr.head)
+            	.build(),
+            query
         );
     }
     

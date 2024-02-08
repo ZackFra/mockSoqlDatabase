@@ -2314,4 +2314,91 @@ private with sharing class LexerTest {
         Assert.isNull(valueNode.right, 'Expected right to be null');
         
     }
+
+    @IsTest
+    private static void testTypeOf() {
+        Test.startTest();
+        Lexer t = new Lexer();
+        Node head = t.parse('SELECT TYPEOF What WHEN Account THEN Name WHEN Opportunity THEN Amount ELSE Name END FROM Event');
+        Test.stopTest();
+
+        Assert.areEqual('select', head.id, 'Expected id to be "select"');
+        Assert.areEqual('select', head.nodeType, 'Expected nodeType to be "select"');
+        Assert.isNotNull(head.left, 'Expected left to not be null');
+        Assert.isNotNull(head.right, 'Expected right to not be null');
+
+        Node typeofNode = head.left;
+        Assert.areEqual('typeof', typeofNode.id, 'Expected id to be "typeof"');
+        Assert.areEqual('typeof', typeofNode.nodeType, 'Expected nodeType to be "typeof"');
+        Assert.isNotNull(typeofNode.left, 'Expected left to not be null');
+        Assert.isNotNull(typeofNode.right, 'Expected right to not be null');
+
+        Node whatNode = typeofNode.left;
+        Assert.areEqual('what', whatNode.id, 'Expected id to be "what"');
+        Assert.areEqual('field', whatNode.nodeType, 'Expected nodeType to be "field"');
+        Assert.isNull(whatNode.left, 'Expected left to be null');
+        Assert.isNull(whatNode.right, 'Expected right to be null');
+
+        Node whenNode = typeofNode.right;
+        Assert.areEqual('when', whenNode.id, 'Expected id to be "when"');
+        Assert.areEqual('when', whenNode.nodeType, 'Expected nodeType to be "when"');
+        Assert.isNotNull(whenNode.left, 'Expected left to not be null');
+        Assert.isNotNull(whenNode.right, 'Expected right to not be null');
+
+        Node accountNode = whenNode.left;
+        Assert.areEqual('account', accountNode.id, 'Expected id to be "account"');
+        Assert.areEqual('object', accountNode.nodeType, 'Expected nodeType to be "object"');
+        Assert.isNull(accountNode.left, 'Expected left to be null');
+        Assert.isNull(accountNode.right, 'Expected right to be null');
+
+        Node nameNode = whenNode.right;
+        Assert.areEqual('name', nameNode.id, 'Expected id to be "when"');
+        Assert.areEqual('field', nameNode.nodeType, 'Expected nodeType to be "when"');
+        Assert.isNull(nameNode.left, 'Expected left to be null');
+        Assert.isNotNull(nameNode.right, 'Expected right to not be null');
+
+        Node whenNode2 = nameNode.right;
+        Assert.areEqual('when', whenNode2.id, 'Expected id to be "when"');
+        Assert.areEqual('when', whenNode2.nodeType, 'Expected nodeType to be "when"');
+        Assert.isNotNull(whenNode2.left, 'Expected left to not be null');
+        Assert.isNotNull(whenNode2.right, 'Expected right to not be null');
+
+
+        Node opportunityNode = whenNode2.left;
+        Assert.areEqual('opportunity', opportunityNode.id, 'Expected id to be "opportunity"');
+        Assert.areEqual('object', opportunityNode.nodeType, 'Expected nodeType to be "object"');
+        Assert.isNull(opportunityNode.left, 'Expected left to be null');
+        Assert.isNull(opportunityNode.right, 'Expected right to be null');
+
+        Node amountNode = whenNode2.right;
+        Assert.areEqual('amount', amountNode.id, 'Expected id to be "amount"');
+        Assert.areEqual('field', amountNode.nodeType, 'Expected nodeType to be "field"');
+        Assert.isNull(amountNode.left, 'Expected left to be null');
+        Assert.isNotNull(amountNode.right, 'Expected right to not be null');
+
+        Node elseNode = amountNode.right;
+        Assert.areEqual('else', elseNode.id, 'Expected id to be "else"');
+        Assert.areEqual('else', elseNode.nodeType, 'Expected nodeType to be "else"');
+        Assert.isNull(elseNode.left, 'Expected left to not be null');
+        Assert.isNotNull(elseNode.right, 'Expected right to be null');
+
+        Node nameNode2 = elseNode.right;
+        Assert.areEqual('name', nameNode2.id, 'Expected id to be "name"');
+        Assert.areEqual('field', nameNode2.nodeType, 'Expected nodeType to be "field"');
+        Assert.isNull(nameNode2.left, 'Expected left to be null');
+        Assert.isNull(nameNode2.right, 'Expected right to be null');
+
+        Node fromNode = head.right;
+        Assert.areEqual('from', fromNode.id, 'Expected id to be "from"');
+        Assert.areEqual('from', fromNode.nodeType, 'Expected nodeType to be "from"');
+        Assert.isNotNull(fromNode.left, 'Expected left to not be null');
+        Assert.isNull(fromNode.right, 'Expected right to be null');
+
+        Node eventNode = fromNode.left;
+        Assert.areEqual('event', eventNode.id, 'Expected id to be "event"');
+        Assert.areEqual('object', eventNode.nodeType, 'Expected nodeType to be "object"');
+        Assert.isNull(eventNode.left, 'Expected left to be null');
+        Assert.isNull(eventNode.right, 'Expected right to be null');
+
+    }
 }
