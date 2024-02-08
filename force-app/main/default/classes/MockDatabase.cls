@@ -858,7 +858,7 @@ public with sharing class MockDatabase {
         return (selectNode.left.id == 'count' && selectNode.left.right == null && selectNode.left.left == null);
     }
 
-    private isTypeOfQuery(Node selectNode) {
+    private Boolean isTypeOfQuery(Node selectNode) {
         Node curr = selectNode;
         while(curr !== null) {
             if(curr.nodeType == 'typeof') {
