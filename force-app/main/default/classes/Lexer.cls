@@ -450,8 +450,8 @@ public with sharing class Lexer {
     private Boolean isNextTokenFieldOrObject(String query) {
         return ParserUtils.validCharForFieldOrObject(lookahead(query, 1));
     }
-    
-    private Intermediary parseField(String query) {
+
+    private Map<String, String> getFieldName(String query) {
         query = ParserUtils.skipWhitespace(query);
         String fieldName = '';
         while(query.length() != 0 && 
@@ -470,6 +470,19 @@ public with sharing class Lexer {
         if(fieldName.isNumeric()) {
             throw new ParsingException(fieldName, 'field name');
         }
+
+        Map<String, String> dataMap = new Map<String, String> {
+            'fieldName' => fieldName,
+            'subquery' => query
+        };
+        return dataMap;
+    }
+    
+    private Intermediary parseField(String query) {
+        query = ParserUtils.skipWhitespace(query);
+        Map<String, String> dataMap = getFieldName(query);
+        String fieldName = dataMap.get('fieldName');
+        query = dataMap.get('subquery');
         
         Node head = new NodeBuilder()
             .setId(fieldName)
@@ -1154,8 +1167,10 @@ public with sharing class Lexer {
         query = consume(query, 'typeof');
         query = consume(query, ' ');
         query = ParserUtils.skipWhitespace(query);
-        Intermediary field = parseField(query);
-        query = field.subquery;
+        Map<String, String> dataMap = getFieldName(query);
+        String fieldName = dataMap.get('fieldName');
+        query = dataMap.get('subquery');
+        query = consume(query, ' ');
         query = ParserUtils.skipWhitespace(query);
 
         Intermediary whenExpr = parseWhenList(query);
@@ -1167,9 +1182,8 @@ public with sharing class Lexer {
 
         return new Intermediary(
         	new NodeBuilder()
-            	.setId('typeof')
+            	.setId(fieldName)
             	.setNodeType('typeof')
-            	.setLeft(field.head)
             	.setRight(whenExpr.head)
             	.build(),
             query

@@ -2328,16 +2328,10 @@ private with sharing class LexerTest {
         Assert.isNotNull(head.right, 'Expected right to not be null');
 
         Node typeofNode = head.left;
-        Assert.areEqual('typeof', typeofNode.id, 'Expected id to be "typeof"');
+        Assert.areEqual('what', typeofNode.id, 'Expected id to be "typeof"');
         Assert.areEqual('typeof', typeofNode.nodeType, 'Expected nodeType to be "typeof"');
         Assert.isNotNull(typeofNode.left, 'Expected left to not be null');
         Assert.isNotNull(typeofNode.right, 'Expected right to not be null');
-
-        Node whatNode = typeofNode.left;
-        Assert.areEqual('what', whatNode.id, 'Expected id to be "what"');
-        Assert.areEqual('field', whatNode.nodeType, 'Expected nodeType to be "field"');
-        Assert.isNull(whatNode.left, 'Expected left to be null');
-        Assert.isNull(whatNode.right, 'Expected right to be null');
 
         Node whenNode = typeofNode.right;
         Assert.areEqual('when', whenNode.id, 'Expected id to be "when"');
@@ -2414,16 +2408,10 @@ private with sharing class LexerTest {
         Assert.isNotNull(head.right, 'Expected right to not be null');
 
         Node typeofNode = head.left;
-        Assert.areEqual('typeof', typeofNode.id, 'Expected id to be "typeof"');
+        Assert.areEqual('what', typeofNode.id, 'Expected id to be "typeof"');
         Assert.areEqual('typeof', typeofNode.nodeType, 'Expected nodeType to be "typeof"');
         Assert.isNotNull(typeofNode.left, 'Expected left to not be null');
         Assert.isNotNull(typeofNode.right, 'Expected right to not be null');
-
-        Node whatNode = typeofNode.left;
-        Assert.areEqual('what', whatNode.id, 'Expected id to be "what"');
-        Assert.areEqual('field', whatNode.nodeType, 'Expected nodeType to be "field"');
-        Assert.isNull(whatNode.left, 'Expected left to be null');
-        Assert.isNull(whatNode.right, 'Expected right to be null');
 
         Node whenNode = typeofNode.right;
         Assert.areEqual('when', whenNode.id, 'Expected id to be "when"');

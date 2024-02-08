@@ -858,6 +858,17 @@ public with sharing class MockDatabase {
         return (selectNode.left.id == 'count' && selectNode.left.right == null && selectNode.left.left == null);
     }
 
+    private isTypeOfQuery(Node selectNode) {
+        Node curr = selectNode;
+        while(curr !== null) {
+            if(curr.nodeType == 'typeof') {
+                return true;
+            }
+            curr = curr.left;
+        }
+        return false;
+    }
+
     /**
      * @description : given a select node, validate whether this query can be performed
      * @param selectNode : the select node
