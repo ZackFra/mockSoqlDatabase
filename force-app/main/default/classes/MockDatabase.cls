@@ -860,7 +860,7 @@ public with sharing class MockDatabase {
 
     private Boolean isTypeOfQuery(Node selectNode) {
         Node curr = selectNode;
-        while(curr !== null) {
+        while(curr != null) {
             if(curr.nodeType == 'typeof') {
                 return true;
             }
