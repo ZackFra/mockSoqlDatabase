@@ -9,11 +9,4 @@ public with sharing class ParserUtils {
     public static Boolean validCharForFieldOrObject(String character) {
         return character.isAlpha() || character == '_' || character.isNumeric();
     }
-
-    // @description: ensures that a parameter is not null
-    public static void nullCheck(Object obj, String message) {
-        if(obj == null) {
-            throw new IllegalArgumentException(message);
-        }
-    }
 }

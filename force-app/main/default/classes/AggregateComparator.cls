@@ -85,7 +85,7 @@ public with sharing class AggregateComparator implements Comparator<Map<String, 
             Object bFieldValue = getFieldValue(b, fieldData);
 
             if (aFieldValue != bFieldValue) {
-                ObjectComparator comparator = new ObjectComparator(aFieldValue);
+                ObjectComparator comparator = new ObjectComparator();
                 
                 Integer result = checkForNull(aFieldValue, bFieldValue, nullDir);
                 if(result != null && result != 0) {
@@ -94,7 +94,7 @@ public with sharing class AggregateComparator implements Comparator<Map<String, 
                     continue;
                 }
                 
-                result = comparator.compareTo(bFieldValue);
+                result = comparator.compare(aFieldValue, bFieldValue);
                 if(result == 0) {
                     continue;
                 }
