@@ -2328,9 +2328,9 @@ private with sharing class LexerTest {
         Assert.isNotNull(head.right, 'Expected right to not be null');
 
         Node typeofNode = head.left;
-        Assert.areEqual('what', typeofNode.id, 'Expected id to be "typeof"');
+        Assert.areEqual('what', typeofNode.id, 'Expected id to be "what"');
         Assert.areEqual('typeof', typeofNode.nodeType, 'Expected nodeType to be "typeof"');
-        Assert.isNotNull(typeofNode.left, 'Expected left to not be null');
+        Assert.isNull(typeofNode.left, 'Expected left to be null');
         Assert.isNotNull(typeofNode.right, 'Expected right to not be null');
 
         Node whenNode = typeofNode.right;
@@ -2410,7 +2410,7 @@ private with sharing class LexerTest {
         Node typeofNode = head.left;
         Assert.areEqual('what', typeofNode.id, 'Expected id to be "typeof"');
         Assert.areEqual('typeof', typeofNode.nodeType, 'Expected nodeType to be "typeof"');
-        Assert.isNotNull(typeofNode.left, 'Expected left to not be null');
+        Assert.isNull(typeofNode.left, 'Expected left to be null');
         Assert.isNotNull(typeofNode.right, 'Expected right to not be null');
 
         Node whenNode = typeofNode.right;
