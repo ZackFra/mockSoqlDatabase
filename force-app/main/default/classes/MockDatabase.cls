@@ -24,121 +24,13 @@ public with sharing class MockDatabase {
         return havingLogicHandler.evaluate();
     }
 
-    private Object getFieldNodeValue(Node valueNode, sObject sObj, Map<String, Object> params) {
-
-        Boolean isBindVar = (valueNode.nodeType == 'bind variable');
-        Boolean isParamsNull = (params == null);
-        Boolean isValueInParams = (!isParamsNull && params.containsKey(valueNode.id));
-        
-
-        if(isBindVar && isParamsNull || isBindVar && !isValueInParams) {
-            throw new QueryException('Missing bind variable: ' + valueNode.id);
-        }
-
-        if(isBindVar) {
-            return params.get(valueNode.id);
-        }
-
-        if(valueNode.nodeType == 'value list') {
-            List<Object> values = new List<Object>();
-            Node valueListNode = valueNode.left;
-            while(valueListNode != null) {
-                values.add(getFieldNodeValue(valueListNode, sObj, params));
-                valueListNode = valueListNode.left;
-            }
-            return values;
-        }
-
-        if(valueNode.nodeType == 'subquery') {
-            Node subquerySelectNode = valueNode.right;
-            Node subqueryFieldNode = subquerySelectNode.left;
-            Integer fieldsList = 0;
-
-            Node curr = subqueryFieldNode;
-            while(curr != null) {
-                fieldsList++;
-                curr = curr.left;
-            }
-            if(fieldsList > 1) {
-                throw new QueryException('Subquery must select only one field');
-            }
-
-            Node subqueryFromNode = subquerySelectNode.right;
-            Node subqueryObjNode = subqueryFromNode.left;
-
-            String fieldName = subqueryFieldNode.id;
-            String objName = subqueryObjNode.id;
-            String objApiName = this.utils.getSObjectApiName(objName);
-            Type t = type.forName(objApiName);
-            if(t == null) {
-                throw new QueryException('Invalid object name: ' + objName);
-            }
-            sObject childObj = ((SObject)t.newInstance()).getSObjectType().newSObject();
-            if(childObj == null) {
-                throw new QueryException('Invalid object name: ' + objName);
-            }
-            Schema.DescribeSObjectResult fieldDsor = childObj.getSObjectType().getDescribe();
-            String fieldApiName = null;
-            for(Schema.SObjectField field : fieldDsor.fields.getMap().values()) {
-                if(field.getDescribe().getName() == fieldName) {
-                    fieldApiName = field.getDescribe().getName();
-                    break;
-                }
-            }
-            if(fieldApiName == null) {
-                throw new QueryException('Invalid field name: ' + fieldName);
-            }
-
-            Schema.SObjectField childObjField = childObj.getSObjectType().getDescribe().fields.getMap().get(fieldApiName);
-            if(childObjField == null) {
-                throw new QueryException('Invalid field name: ' + fieldName);
-            }
-
-
-
-            Schema.DisplayType childObjFieldType = childObjField.getDescribe().getType();
-
-            if(childObjFieldType != Schema.DisplayType.REFERENCE && childObjFieldType != Schema.DisplayType.ID) {
-                throw new QueryException('Subquery must select an ID field');
-            }
-            String parentFieldApiName = this.utils.getFieldApiName(childObj.getSObjectType(), fieldName);
-            Schema.SObjectField parentField = childObj.getSObjectType().getDescribe().fields.getMap().get(parentFieldApiName);
-            if(parentField == null) {
-                throw new QueryException('Invalid field name: ' + fieldName);
-            }
-            
-            String childObjFieldName = childObjField.getDescribe().getName();
-            String childObjApiName = childObj.getSObjectType().getDescribe().getName();
-            Boolean isSameType = this.utils.idsReferenceSameSObject(objApiName, fieldName, childObjApiName, childObjfieldName);
-
-            if(!isSameType) {
-                throw new QueryException('Subquery must select a field of the same type as the parent object');
-            }
-
-            List<sObject> subQueryObjects = (List<sObject>) doQuery(subquerySelectNode, params);
-            List<Id> subQueryIds = new List<Id>();
-            for(sObject subQueryObj : subQueryObjects) {
-                subQueryIds.add((Id) subQueryObj.get(fieldApiName));
-            }
-            return subQueryIds;
-        }
-
-        return valueNode.Id;
-    }
-
-    private Boolean checkWhereCondition(sObject sObj, Node whereNode, Map<String, Object> params) {
+    private Boolean checkWhereCondition(
+        sObject sObj, 
+        Node whereNode, 
+        Map<String, Object> params
+    ) {
         WhereLogicHandler whereLogicHandler = new WhereLogicHandler(this, whereNode, sObj, params);
         return whereLogicHandler.evaluate();
-    }
-
-    private sObject sObjectFromMap(Map<String, Object> sObjMap, String sObjApiName) {
-        sObject sObj = (sObject) JSON.deserialize(JSON.serialize(sObjMap), Type.forName(sObjApiName));
-        return sObj;
-    }
-
-    private Map<String, Object> mapFromSObject(sObject sObj) {
-        Map<String, Object> sObjMap = (Map<String, Object>) JSON.deserializeUntyped(JSON.serialize(sObj));
-        return sObjMap;
     }
 
     private sObject buildObjWithRelations(sObject sObj, List<String> fieldParts, String finalField) {
@@ -151,12 +43,12 @@ public with sharing class MockDatabase {
         String fieldRelationshipName = (String) parentInfo.get('fieldRelationshipName');
         String objApiName = (String) parentInfo.get('objApiName');
 
-        Map<String, Object> sObjClone = mapFromSObject(sObj);
+        Map<String, Object> sObjClone = this.utils.mapFromSObject(sObj);
         String parentRecordApiName = (String) parentInfo.get('parentObjApiName');
         fieldParts.remove(0);
         if(!fieldParts.isEmpty()) {
             if(sObjClone.containsKey(fieldRelationshipName)) {
-                parentRecord = sObjectFromMap((Map<String, Object>)sObjClone.get(fieldRelationshipName), parentRecordApiName);
+                parentRecord = this.utils.sObjectFromMap((Map<String, Object>)sObjClone.get(fieldRelationshipName), parentRecordApiName);
             }
             sObject nextParent = buildObjWithRelations(parentRecord, fieldParts, finalField);
             sObjClone.put(fieldApiName, nextParent.Id);
@@ -165,14 +57,14 @@ public with sharing class MockDatabase {
             Map<String, sObject> mockRecords = this.db.get(parentRecordApiName);
             String finalFieldApiName = this.utils.getFieldApiName(parentRecord.getSObjectType(), finalField);
             if(sObjClone.containsKey(fieldRelationshipName)) {
-                parentRecord = sObjectFromMap((Map<String, Object>)sObjClone.get(fieldRelationshipName), parentRecordApiName);
+                parentRecord = this.utils.sObjectFromMap((Map<String, Object>)sObjClone.get(fieldRelationshipName), parentRecordApiName);
             }
 
             parentRecord.put(finalFieldApiName, mockRecords.get(parentRecord.Id).get(finalFieldApiName));
             sObjClone.put(fieldApiName, parentRecord.Id);
             sObjClone.put(fieldRelationshipName, parentRecord);
         }
-        return sObjectFromMap(sObjClone, objApiName);
+        return this.utils.sObjectFromMap(sObjClone, objApiName);
     }
 
     private sObject handleParentSubQuery(sObject sObj, String sObjApiName, Node field, Map<String, Object> params) {
@@ -363,131 +255,6 @@ public with sharing class MockDatabase {
         return false;
     }
 
-    /** 
-     * @description : given a field node and a select node, return a map with the comparable sObject data, 
-     *                the field api name, and the relationship name, builds on getComparables
-     * @param fieldNode : the field node
-     * @param selectNode : the select node
-     * @return : a map with the comparable sObject, the field api name, and the relationship name
-     * @throws QueryException : if the field name is invalid
-     * @see getComparables
-     */
-    private Map<String, Object> getComparableDataFromNodes(Node fieldNode, Node selectNode) {
-        String fieldName = fieldNode.id;
-        Node fromNode = selectNode.right;
-        Node objNode = fromNode.left;
-        String objName = objNode.id;
-
-        String objApiName = this.utils.getSObjectApiName(objName);
-        Type t = type.forName(objApiName);
-        if(t == null) {
-            throw new QueryException('Invalid object name: ' + objName);
-        }
-        sObject sObj = (sObject) t.newInstance();
-        return getComparableData(sObj, fieldName);
-    }
-
-    /**
-     * @description : getComparables, except we don't return the comparable sObject, we return a blank sObject of that type
-     * @param obj : the sObject
-     * @param field : the field name
-     * @return : a map with the comparable sObject, the field api name, and the relationship name
-     * @throws QueryException : if the field name is invalid
-     */
-    private Map<String, Object> getComparableData(sObject obj, String field) {
-        sObject comparableRecord = obj;
-        String comparableField = field;
-        if(!comparableField.contains('.')) {
-            comparableField = this.utils.getFieldApiName(comparableRecord.getSObjectType(), comparableField);
-            return new Map<String, Object> {
-                'comparableRecord' => comparableRecord,
-                'comparableField' => comparableField,
-                'relationshipName' => comparableField
-            };
-        }
-
-        List<String> fieldParts = comparableField.split('\\.');
-        String finalField = fieldParts[fieldParts.size()-1];
-        fieldParts.remove(fieldParts.size()-1);
-        String parentField = fieldParts[0];
-        sObject parentRecord;
-        String relationshipName = '';
-        while(!fieldParts.isEmpty()) {
-            Map<String, Object> parentInfo = this.utils.getParentObjectData(obj, parentField);
-
-            parentRecord = (sObject) parentInfo.get('parentRecord');
-            relationshipName += (String) parentInfo.get('fieldRelationshipName') + '.';
-            
-
-            fieldParts.remove(0);
-            if(!fieldParts.isEmpty()) {
-                parentField = fieldParts[0];
-            }
-        }
-        comparableRecord = parentRecord;
-        comparableField = this.utils.getFieldApiName(comparableRecord.getSObjectType(), finalField);
-        relationshipName += comparableField;
-
-        return new Map<String, Object> {
-            'comparableRecord' => comparableRecord,
-            'comparableField' => comparableField,
-            'relationshipName' => relationshipName
-        };
-    }
-
-    /**
-     * @description : given an sObject and a field name (which may be a relationon i.e. Account.Name),
-     *              : return a map with the comparable sObject (i.e. the parent), the field api name of that object, 
-     *              : and the relationship name
-     * @param obj : the sObject
-     * @param field : the field name
-     * @return : a map with the comparable sObject, the field api name, and the relationship name
-     * @throws QueryException : if the field name is invalid
-     */
-    private Map<String, Object> getComparables(sObject obj, String field) {
-        sObject comparableRecord = obj;
-        String comparableField = field;
-        if(!comparableField.contains('.')) {
-            comparableField = this.utils.getFieldApiName(comparableRecord.getSObjectType(), comparableField);
-            return new Map<String, Object> {
-                'comparableRecord' => comparableRecord,
-                'comparableField' => comparableField,
-                'relationshipName' => comparableField
-            };
-        }
-
-        List<String> fieldParts = comparableField.split('\\.');
-        String finalField = fieldParts[fieldParts.size()-1];
-        fieldParts.remove(fieldParts.size()-1);
-        String parentField = fieldParts[0];
-        sObject parentRecord;
-        String relationshipName = '';
-        while(!fieldParts.isEmpty()) {
-            Map<String, Object> parentInfo = this.utils.getParentObject(obj, parentField);
-
-            parentRecord = (sObject) parentInfo.get('parentRecord');
-            String parentObjApiName = (String) parentInfo.get('parentObjApiName');
-            relationshipName += (String) parentInfo.get('fieldRelationshipName') + '.';
-            
-            parentRecord = this.db.get(parentObjApiName).get(parentRecord.Id);
-            
-
-            fieldParts.remove(0);
-            if(!fieldParts.isEmpty()) {
-                parentField = fieldParts[0];
-            }
-        }
-        comparableRecord = parentRecord;
-        comparableField = this.utils.getFieldApiName(comparableRecord.getSObjectType(), finalField);
-        relationshipName += comparableField;
-
-        return new Map<String, Object> {
-            'comparableRecord' => comparableRecord,
-            'comparableField' => comparableField,
-            'relationshipName' => relationshipName
-        };
-    }
-
     private Object handleLimitNode(String typeOfQuery, Node limitNode, Object results, Map<String, Object> params) {
         if(limitNode == null) {
             return results;
@@ -633,7 +400,7 @@ public with sharing class MockDatabase {
         for(Map<String, Object> ar : aggregateResults) {
             Boolean isSame = true;
             for(String groupByField : groupByFields) {
-                Map<String, Object> comparableInfo = getComparables(obj, groupByField);
+                Map<String, Object> comparableInfo = this.utils.getComparables(obj, groupByField);
                 sObject comparableRecord = (sObject) comparableInfo.get('comparableRecord');
                 String comparableField = (String) comparableInfo.get('comparableField');
                 isSame = (isSame && (comparableRecord.get(comparableField) == ar.get(comparableField)));
@@ -647,7 +414,7 @@ public with sharing class MockDatabase {
         if(aggregateResult == null) {
             aggregateResult = new Map<String, Object>();
             for(String groupByField : groupByFields) {
-                Map<String, Object> comparableInfo = getComparables(obj, groupByField);
+                Map<String, Object> comparableInfo = this.utils.getComparables(obj, groupByField);
                 sObject comparableRecord = (sObject) comparableInfo.get('comparableRecord');
                 String comparableField = (String) comparableInfo.get('comparableField');
 
@@ -678,7 +445,7 @@ public with sharing class MockDatabase {
             Node aliasNode = fieldNode.left;
             String fieldName = fieldNode.id;
 
-            Map<String, Object> comparableInfo = getComparables(obj, fieldName);
+            Map<String, Object> comparableInfo = this.utils.getComparables(obj, fieldName);
             sObject comparableRecord = (sObject) comparableInfo.get('comparableRecord');
             String comparableField = (String) comparableInfo.get('comparableField');
 
@@ -878,7 +645,7 @@ public with sharing class MockDatabase {
             fieldApiName = aliasNode.id;
             relationshipName = null;
         } else {
-            Map<String, Object> comparables = getComparableDataFromNodes(fieldNode, selectNode);
+            Map<String, Object> comparables = this.utils.getComparableDataFromNodes(fieldNode, selectNode);
             relationshipName = (String) comparables.get('relationshipName');
             fieldApiName = (String) comparables.get('comparableField');
         }
@@ -1055,7 +822,7 @@ public with sharing class MockDatabase {
         Map<String, Map<String, String>> fields = new Map<String, Map<String, String>>();
         while(orderByField != null) {
             String fieldName = orderByField.id;
-            Map<String, Object> comparables = getComparableDataFromNodes(orderByField, selectNode);
+            Map<String, Object> comparables = this.utils.getComparableDataFromNodes(orderByField, selectNode);
             String relationshipName = (String) comparables.get('relationshipName');
             String fieldApiName = (String) comparables.get('comparableField');
 

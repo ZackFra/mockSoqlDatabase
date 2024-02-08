@@ -17,64 +17,56 @@ public with sharing class MockDatabaseUtils {
         return fakeId;
     }
 
-
-    public Map<String, Object> getAggrNodeValue(Node aggrNode, Node selectNode) {
-
-        if(aggrNode.nodeType == 'field') {
-            Map<String, Object> aggrNodeValue = new Map<String, Object> {
-                'field' => aggrNode.id
+    /**
+     * @description : given an sObject and a field name (which may be a relationon i.e. Account.Name),
+     *              : return a map with the comparable sObject (i.e. the parent), the field api name of that object, 
+     *              : and the relationship name
+     * @param obj : the sObject
+     * @param field : the field name
+     * @return : a map with the comparable sObject, the field api name, and the relationship name
+     * @throws QueryException : if the field name is invalid
+     */
+    public Map<String, Object> getComparables(sObject obj, String field) {
+        sObject comparableRecord = obj;
+        String comparableField = field;
+        if(!comparableField.contains('.')) {
+            comparableField = getFieldApiName(comparableRecord.getSObjectType(), comparableField);
+            return new Map<String, Object> {
+                'comparableRecord' => comparableRecord,
+                'comparableField' => comparableField,
+                'relationshipName' => comparableField
             };
-
-            if(aggrNode.right == null) {
-                Map<String, Object> comparables = getComparableDataFromNodes(aggrNode, selectNode);
-                String comparableField = (String) comparables.get('comparableField');
-                aggrNodeValue.put('alias', comparableField);
-            } else {
-                String alias = aggrNode.right.id;
-                aggrNodeValue.put('alias', alias);
-            }
-            return aggrNodeValue;
         }
 
+        List<String> fieldParts = comparableField.split('\\.');
+        String finalField = fieldParts[fieldParts.size()-1];
+        fieldParts.remove(fieldParts.size()-1);
+        String parentField = fieldParts[0];
+        sObject parentRecord;
+        String relationshipName = '';
+        while(!fieldParts.isEmpty()) {
+            Map<String, Object> parentInfo = getParentObject(obj, parentField);
 
-        Integer exprNumber = 0;
-        String alias = 'expr' + exprNumber;
-        
-        Node curr = selectNode;
-        while(curr != null) {
-            if(curr.nodeType != 'aggregate function') {
-                curr = curr.left;
-                continue;
-            }
-
-            if(curr.id != aggrNode.id) {
-                exprNumber++;
-                curr = curr.left;
-                continue;
-            }
-
-            Node foundFieldNode = curr.right;
-            Node aliasNode = foundFieldNode.left;
-
-            if(aliasNode == null) {
-                exprNumber++;
-                curr = curr.left;
-                continue;
-            }
+            parentRecord = (sObject) parentInfo.get('parentRecord');
+            String parentObjApiName = (String) parentInfo.get('parentObjApiName');
+            relationshipName += (String) parentInfo.get('fieldRelationshipName') + '.';
             
-            alias = aliasNode.id;
-            break;
-        }
+            parentRecord = this.db.get(parentObjApiName).get(parentRecord.Id);
+            
 
-        // if we're here, we should have an alias
-        if(alias == null) {
-            throw new QueryException('Invalid alias');
+            fieldParts.remove(0);
+            if(!fieldParts.isEmpty()) {
+                parentField = fieldParts[0];
+            }
         }
+        comparableRecord = parentRecord;
+        comparableField = getFieldApiName(comparableRecord.getSObjectType(), finalField);
+        relationshipName += comparableField;
 
-        Node fieldNode = aggrNode.right;
         return new Map<String, Object> {
-            'field' => fieldNode.id,
-            'alias' => alias
+            'comparableRecord' => comparableRecord,
+            'comparableField' => comparableField,
+            'relationshipName' => relationshipName
         };
     }
 
@@ -149,6 +141,78 @@ public with sharing class MockDatabaseUtils {
             'relationshipName' => relationshipName
         };
     }
+
+
+    public Map<String, Object> getAggrNodeValue(Node aggrNode, Node selectNode) {
+
+        if(aggrNode.nodeType == 'field') {
+            Map<String, Object> aggrNodeValue = new Map<String, Object> {
+                'field' => aggrNode.id
+            };
+
+            if(aggrNode.right == null) {
+                Map<String, Object> comparables = getComparableDataFromNodes(aggrNode, selectNode);
+                String comparableField = (String) comparables.get('comparableField');
+                aggrNodeValue.put('alias', comparableField);
+            } else {
+                String alias = aggrNode.right.id;
+                aggrNodeValue.put('alias', alias);
+            }
+            return aggrNodeValue;
+        }
+
+
+        Integer exprNumber = 0;
+        String alias = 'expr' + exprNumber;
+        
+        Node curr = selectNode;
+        while(curr != null) {
+            if(curr.nodeType != 'aggregate function') {
+                curr = curr.left;
+                continue;
+            }
+
+            if(curr.id != aggrNode.id) {
+                exprNumber++;
+                curr = curr.left;
+                continue;
+            }
+
+            Node foundFieldNode = curr.right;
+            Node aliasNode = foundFieldNode.left;
+
+            if(aliasNode == null) {
+                exprNumber++;
+                curr = curr.left;
+                continue;
+            }
+            
+            alias = aliasNode.id;
+            break;
+        }
+
+        // if we're here, we should have an alias
+        if(alias == null) {
+            throw new QueryException('Invalid alias');
+        }
+
+        Node fieldNode = aggrNode.right;
+        return new Map<String, Object> {
+            'field' => fieldNode.id,
+            'alias' => alias
+        };
+    }
+
+    public sObject sObjectFromMap(Map<String, Object> sObjMap, String sObjApiName) {
+        sObject sObj = (sObject) JSON.deserialize(JSON.serialize(sObjMap), Type.forName(sObjApiName));
+        return sObj;
+    }
+
+    public Map<String, Object> mapFromSObject(sObject sObj) {
+        Map<String, Object> sObjMap = (Map<String, Object>) JSON.deserializeUntyped(JSON.serialize(sObj));
+        return sObjMap;
+    }
+
 
     public Object getFieldNodeValue(Node valueNode, sObject sObj, Map<String, Object> params) {
 

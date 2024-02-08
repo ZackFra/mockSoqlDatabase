@@ -5,7 +5,7 @@ private with sharing class MockDatabaseUtilsTest {
         Lexer t = new Lexer();
         Node head = t.parse('SELECT Id FROM Account');
         Test.startTest();
-        Node clone = MockDatabaseUtils.cloneNode(head);
+        Node clone = head.deepClone();
         Test.stopTest();
         Assert.areEqual(
             head.toString(),
