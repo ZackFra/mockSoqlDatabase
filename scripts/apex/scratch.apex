@@ -1,2 +1,16 @@
-String jsonString = '{"Id":"200T00000000000", "Subject":"Test", "What":{"Id":"100100000000000AAA", "Name":"Test", "attributes": { "type":"Account", "url": "/services/data/v60.0/sobjects/Account/100100000000000AAA"}}, "WhatId":"100100000000000AAA", "attributes":{"type":"Task", "url":"/services/data/v60.0/sobjects/Task/200T00000000000"}}';
-System.debug( ((Task) JSON.deserialize(jsonString, Task.class)).What);
+MockDatabase mockDb = new MockDatabase();
+Account acct = new Account(
+    Name = 'Test'
+);
+mockDb.doInsert(acct);
+Task t = new Task(
+    Subject = 'Test',
+    WhatId = acct.Id
+);
+mockDb.doInsert(t);
+Lexer l = new Lexer();
+l.parse('SELECT Id, Subject, TYPEOF What WHEN Account THEN Name ELSE Id END FROM Task');
+List<Task> queriedTaskList = (List<Task>) mockDb.query('SELECT Id, Subject, TYPEOF What WHEN Account THEN Name ELSE Id END FROM Task');
+
+Task queriedTask = queriedTaskList[0];
+System.debug(queriedTask.What);
