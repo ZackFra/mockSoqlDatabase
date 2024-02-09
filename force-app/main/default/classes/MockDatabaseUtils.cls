@@ -1,24 +1,604 @@
+/**
+ * @description : utilities for a MockDatabase, contains methods that don't mutate the database
+ */
 public with sharing class MockDatabaseUtils {
 
+    private MockDatabase db;
+    public MockDatabaseUtils(MockDatabase db) {
+        this.db = db;
+    }
+
+    private Integer sObjnum = 1;
     /**
-     * @description : Clones a node and all of its children, recursively
-     * @param head : Node, the head of the tree to clone
-     * @return : Node, the cloned tree
+     * @description : given a schema sObjectType, return a fake id
+     * @param sot : the schema sObjectType
+     * @return : a fake id
      */
-    public static Lexer.Node cloneNode(Lexer.Node head) {
-        if(head == null) {
-            return null;
+    public String getFakeId(Schema.SObjectType sot) {
+        String result = String.valueOf(sObjNum++);
+        String fakeId = result + sot.getDescribe().getKeyPrefix().rightPad(15 - result.length(), '0');
+        return fakeId;
+    }
+
+    /**
+     * @description : given an sObject and a field name (which may be a relationon i.e. Account.Name),
+     *              : return a map with the comparable sObject (i.e. the parent), the field api name of that object, 
+     *              : and the relationship name
+     * @param obj : the sObject
+     * @param field : the field name
+     * @return : a map with the comparable sObject, the field api name, and the relationship name
+     * @throws QueryException : if the field name is invalid
+     */
+    public Map<String, Object> getComparables(sObject obj, String field) {
+        sObject comparableRecord = obj;
+        String comparableField = field;
+        if(!comparableField.contains('.')) {
+            comparableField = getFieldApiName(comparableRecord.getSObjectType(), comparableField);
+            return new Map<String, Object> {
+                'comparableRecord' => comparableRecord,
+                'comparableField' => comparableField,
+                'relationshipName' => comparableField
+            };
         }
-        Lexer.NodeBuilder nb = new Lexer.NodeBuilder()
-            .setId(head.id)
-            .setNodeType(head.nodeType);
-        if(head.left != null) {
-            nb.setLeft(cloneNode(head.left));
+
+        List<String> fieldParts = comparableField.split('\\.');
+        String finalField = fieldParts[fieldParts.size()-1];
+        fieldParts.remove(fieldParts.size()-1);
+        String parentField = fieldParts[0];
+        sObject parentRecord;
+        String relationshipName = '';
+        while(!fieldParts.isEmpty()) {
+            Map<String, Object> parentInfo = getParentObject(obj, parentField);
+
+            parentRecord = (sObject) parentInfo.get('parentRecord');
+            String parentObjApiName = (String) parentInfo.get('parentObjApiName');
+            relationshipName += (String) parentInfo.get('fieldRelationshipName') + '.';
+            
+            parentRecord = this.db.get(parentObjApiName).get(parentRecord.Id);
+            
+
+            fieldParts.remove(0);
+            if(!fieldParts.isEmpty()) {
+                parentField = fieldParts[0];
+            }
         }
-        if(head.right != null) {
-            nb.setRight(cloneNode(head.right));
+        comparableRecord = parentRecord;
+        comparableField = getFieldApiName(comparableRecord.getSObjectType(), finalField);
+        relationshipName += comparableField;
+
+        return new Map<String, Object> {
+            'comparableRecord' => comparableRecord,
+            'comparableField' => comparableField,
+            'relationshipName' => relationshipName
+        };
+    }
+
+    /** 
+     * @description : given a field node and a select node, return a map with the comparable sObject data, 
+     *                the field api name, and the relationship name, builds on getComparables
+     * @param fieldNode : the field node
+     * @param selectNode : the select node
+     * @return : a map with the comparable sObject, the field api name, and the relationship name
+     * @throws QueryException : if the field name is invalid
+     * @see getComparables
+     */
+    public Map<String, Object> getComparableDataFromNodes(Node fieldNode, Node selectNode) {
+        String fieldName = fieldNode.id;
+        Node fromNode = selectNode.right;
+        Node objNode = fromNode.left;
+        String objName = objNode.id;
+
+        String objApiName = getSObjectApiName(objName);
+        Type t = type.forName(objApiName);
+        if(t == null) {
+            throw new QueryException('Invalid object name: ' + objName);
         }
-        return nb.build();
+        sObject sObj = (sObject) t.newInstance();
+        return getComparableData(sObj, fieldName);
+    }
+
+    /**
+     * @description : getComparables, except we don't return the comparable sObject, we return a blank sObject of that type
+     * @param obj : the sObject
+     * @param field : the field name
+     * @return : a map with the comparable sObject, the field api name, and the relationship name
+     * @throws QueryException : if the field name is invalid
+     */
+    public Map<String, Object> getComparableData(sObject obj, String field) {
+        sObject comparableRecord = obj;
+        String comparableField = field;
+        if(!comparableField.contains('.')) {
+            comparableField = getFieldApiName(comparableRecord.getSObjectType(), comparableField);
+            return new Map<String, Object> {
+                'comparableRecord' => comparableRecord,
+                'comparableField' => comparableField,
+                'relationshipName' => comparableField
+            };
+        }
+
+        List<String> fieldParts = comparableField.split('\\.');
+        String finalField = fieldParts[fieldParts.size()-1];
+        fieldParts.remove(fieldParts.size()-1);
+        String parentField = fieldParts[0];
+        sObject parentRecord;
+        String relationshipName = '';
+        while(!fieldParts.isEmpty()) {
+            Map<String, Object> parentInfo = getParentObjectData(obj, parentField);
+
+            parentRecord = (sObject) parentInfo.get('parentRecord');
+            relationshipName += (String) parentInfo.get('fieldRelationshipName') + '.';
+            
+
+            fieldParts.remove(0);
+            if(!fieldParts.isEmpty()) {
+                parentField = fieldParts[0];
+            }
+        }
+        comparableRecord = parentRecord;
+        comparableField = getFieldApiName(comparableRecord.getSObjectType(), finalField);
+        relationshipName += comparableField;
+
+        return new Map<String, Object> {
+            'comparableRecord' => comparableRecord,
+            'comparableField' => comparableField,
+            'relationshipName' => relationshipName
+        };
+    }
+
+    /**
+     * @description : given a field node return whether it is numeric or not
+     * @param fieldType : the field type
+     * @return : whether the field is numeric or not
+     */
+    public Boolean isFieldNumeric(Schema.DisplayType fieldType) {
+        Boolean isCurrency = (fieldType == Schema.DisplayType.CURRENCY);
+        Boolean isDouble = (fieldType == Schema.DisplayType.DOUBLE);
+        Boolean isInteger = (fieldType == Schema.DisplayType.INTEGER);
+        Boolean isPercent = (fieldType == Schema.DisplayType.PERCENT);
+        
+        return (isCurrency || isDouble || isInteger || isPercent);
+    }
+
+
+    public Map<String, Object> getAggrNodeValue(Node aggrNode, Node selectNode) {
+
+        if(aggrNode.nodeType == 'field') {
+            Map<String, Object> aggrNodeValue = new Map<String, Object> {
+                'field' => aggrNode.id
+            };
+
+            if(aggrNode.right == null) {
+                Map<String, Object> comparables = getComparableDataFromNodes(aggrNode, selectNode);
+                String comparableField = (String) comparables.get('comparableField');
+                aggrNodeValue.put('alias', comparableField);
+            } else {
+                String alias = aggrNode.right.id;
+                aggrNodeValue.put('alias', alias);
+            }
+            return aggrNodeValue;
+        }
+
+
+        Integer exprNumber = 0;
+        String alias = 'expr' + exprNumber;
+        
+        Node curr = selectNode;
+        while(curr != null) {
+            if(curr.nodeType != 'aggregate function') {
+                curr = curr.left;
+                continue;
+            }
+
+            if(curr.id != aggrNode.id) {
+                exprNumber++;
+                curr = curr.left;
+                continue;
+            }
+
+            Node foundFieldNode = curr.right;
+            Node aliasNode = foundFieldNode.left;
+
+            if(aliasNode == null) {
+                exprNumber++;
+                curr = curr.left;
+                continue;
+            }
+            
+            alias = aliasNode.id;
+            break;
+        }
+
+        // if we're here, we should have an alias
+        if(alias == null) {
+            throw new QueryException('Invalid alias');
+        }
+
+        Node fieldNode = aggrNode.right;
+        return new Map<String, Object> {
+            'field' => fieldNode.id,
+            'alias' => alias
+        };
+    }
+
+    public sObject sObjectFromMap(Map<String, Object> sObjMap, String sObjApiName) {
+        sObject sObj = (sObject) JSON.deserialize(JSON.serialize(sObjMap), Type.forName(sObjApiName));
+        return sObj;
+    }
+
+    public Map<String, Object> mapFromSObject(sObject sObj) {
+        Map<String, Object> sObjMap = (Map<String, Object>) JSON.deserializeUntyped(JSON.serialize(sObj));
+        return sObjMap;
+    }
+
+
+    public Object getFieldNodeValue(Node valueNode, sObject sObj, Map<String, Object> params) {
+
+        Boolean isBindVar = (valueNode.nodeType == 'bind variable');
+        Boolean isParamsNull = (params == null);
+        Boolean isValueInParams = (!isParamsNull && params.containsKey(valueNode.id));
+        
+
+        if(isBindVar && isParamsNull || isBindVar && !isValueInParams) {
+            throw new QueryException('Missing bind variable: ' + valueNode.id);
+        }
+
+        if(isBindVar) {
+            return params.get(valueNode.id);
+        }
+
+        if(valueNode.nodeType == 'value list') {
+            List<Object> values = new List<Object>();
+            Node valueListNode = valueNode.left;
+            while(valueListNode != null) {
+                values.add(getFieldNodeValue(valueListNode, sObj, params));
+                valueListNode = valueListNode.left;
+            }
+            return values;
+        }
+
+        if(valueNode.nodeType == 'subquery') {
+            Node subquerySelectNode = valueNode.right;
+            Node subqueryFieldNode = subquerySelectNode.left;
+            Integer fieldsList = 0;
+
+            Node curr = subqueryFieldNode;
+            while(curr != null) {
+                fieldsList++;
+                curr = curr.left;
+            }
+            if(fieldsList > 1) {
+                throw new QueryException('Subquery must select only one field');
+            }
+
+            Node subqueryFromNode = subquerySelectNode.right;
+            Node subqueryObjNode = subqueryFromNode.left;
+
+            String fieldName = subqueryFieldNode.id;
+            String objName = subqueryObjNode.id;
+            String objApiName = getSObjectApiName(objName);
+            Type t = type.forName(objApiName);
+            if(t == null) {
+                throw new QueryException('Invalid object name: ' + objName);
+            }
+            sObject childObj = ((SObject)t.newInstance()).getSObjectType().newSObject();
+            if(childObj == null) {
+                throw new QueryException('Invalid object name: ' + objName);
+            }
+            Schema.DescribeSObjectResult fieldDsor = childObj.getSObjectType().getDescribe();
+            String fieldApiName = null;
+            for(Schema.SObjectField field : fieldDsor.fields.getMap().values()) {
+                if(field.getDescribe().getName() == fieldName) {
+                    fieldApiName = field.getDescribe().getName();
+                    break;
+                }
+            }
+            if(fieldApiName == null) {
+                throw new QueryException('Invalid field name: ' + fieldName);
+            }
+
+            Schema.SObjectField childObjField = childObj.getSObjectType().getDescribe().fields.getMap().get(fieldApiName);
+            if(childObjField == null) {
+                throw new QueryException('Invalid field name: ' + fieldName);
+            }
+
+
+
+            Schema.DisplayType childObjFieldType = childObjField.getDescribe().getType();
+
+            if(childObjFieldType != Schema.DisplayType.REFERENCE && childObjFieldType != Schema.DisplayType.ID) {
+                throw new QueryException('Subquery must select an ID field');
+            }
+            String parentFieldApiName = getFieldApiName(childObj.getSObjectType(), fieldName);
+            Schema.SObjectField parentField = childObj.getSObjectType().getDescribe().fields.getMap().get(parentFieldApiName);
+            if(parentField == null) {
+                throw new QueryException('Invalid field name: ' + fieldName);
+            }
+            
+            String childObjFieldName = childObjField.getDescribe().getName();
+            String childObjApiName = childObj.getSObjectType().getDescribe().getName();
+            Boolean isSameType = idsReferenceSameSObject(objApiName, fieldName, childObjApiName, childObjfieldName);
+
+            if(!isSameType) {
+                throw new QueryException('Subquery must select a field of the same type as the parent object');
+            }
+
+            List<SObject> subQueryObjects = (List<SObject>) this.db.doQuery(subquerySelectNode, params);
+            List<Id> subQueryIds = new List<Id>();
+            for(sObject subQueryObj : subQueryObjects) {
+                subQueryIds.add((Id) subQueryObj.get(fieldApiName));
+            }
+            return subQueryIds;
+        }
+
+        return valueNode.Id;
+    }
+
+    /**
+     * @description given an object name, return the api name of the object
+     * @param objName : the name of the object
+     */
+    public String getSObjectApiName(String objName) {
+        objName = objName.toLowerCase();
+        Type t = type.forName(objName);
+        if(t == null) {
+            throw new QueryException('Invalid object name: ' + objName);
+        }
+        DescribeSObjectResult dsor = (((SObject)t.newInstance()).getSObjectType()).getDescribe();
+        String objApiName = dsor.getName();
+        return objApiName;
+    }
+
+    public Schema.DisplayType getFieldType(SObject sObj, String fieldName) {
+        Schema.SObjectType sObjType = sObj.getSObjectType();
+        Schema.DescribeSObjectResult dsor = sObjType.getDescribe();
+        Schema.SObjectField field = dsor.fields.getMap().get(fieldName);
+        if(field == null) {
+            throw new QueryException('Invalid field name: ' + fieldName);
+        }
+        return field.getDescribe().getType();
+    }
+
+    public String getFieldApiName(Schema.SObjectType sObjType, String fieldName) {
+        Schema.DescribeSObjectResult fieldDsor = sObjType.getDescribe();
+        for(Schema.SObjectField field : fieldDsor.fields.getMap().values()) {
+            if(field.getDescribe().getName().toLowerCase() == fieldName) {
+                return field.getDescribe().getName();
+            }
+        }
+
+        throw new QueryException('Invalid field name: ' + fieldName);
+    }
+
+    public Boolean idsReferenceSameSObject(String sObj1ApiName, String field1, String sObj2ApiName, String field2) {
+
+        Type t1 = type.forName(sObj1ApiName);
+        Type t2 = type.forName(sObj2ApiName);
+
+        if(t1 == null || t2 == null) {
+            throw new QueryException('Invalid object name');
+        }
+
+        sObject sObj1Instance = (sObject) t1.newInstance();
+        sObject sObj2Instance = (sObject) t2.newInstance();
+
+        Schema.DescribeSObjectResult sObj1Dsor = sObj1Instance.getSObjectType().getDescribe();
+        Schema.DescribeSObjectResult sObj2Dsor = sObj2Instance.getSObjectType().getDescribe();
+
+        Schema.SObjectField sObj1Field = sObj1Dsor.fields.getMap().get(field1);
+        Schema.SObjectField sObj2Field = sObj2Dsor.fields.getMap().get(field2);
+
+        if(sObj1Field == null || sObj2Field == null) {
+            throw new QueryException('Invalid field name');
+        }
+
+        Schema.DisplayType sObj1FieldType = sObj1Field.getDescribe().getType();
+        Schema.DisplayType sObj2FieldType = sObj2Field.getDescribe().getType();
+
+        List<Schema.DisplayType> validTypes = new List<Schema.DisplayType> {
+            Schema.DisplayType.REFERENCE,
+            Schema.DisplayType.ID
+        };
+
+        if(!validTypes.contains(sObj1FieldType) || !validTypes.contains(sObj2FieldType)) {
+            throw new QueryException('Invalid field type');
+        }
+
+        // if both are IDs, check that they refer to the same object type
+        if(sObj1FieldType == Schema.DisplayType.ID && sObj2FieldType == Schema.DisplayType.ID) {
+            // NOTE: as the code exists now, we shouldn't get here, but I'm leaving this here in case we change the code
+            // a query where both fields are IDs should throw an exception before getting here
+            return sObj1Instance.getSObjectType() == sObj2Instance.getSObjectType();
+        }
+
+        // if one is a reference and the other is an ID, check that the ID is a reference to the reference's object type
+        if(sObj1FieldType == Schema.DisplayType.REFERENCE && sObj2FieldType == Schema.DisplayType.ID) {
+            List<Schema.sObjectType> sObj1FieldRefs = sObj1Field.getDescribe().getReferenceTo();
+            for(Schema.SObjectType ref : sObj1FieldRefs) {
+                if(ref == sObj2Instance.getSObjectType()) {
+                    return true;
+                }
+            }
+            return false;
+        }
+
+        // check that for the other way around too
+        if(sObj1FieldType == Schema.DisplayType.ID && sObj2FieldType == Schema.DisplayType.REFERENCE) {
+            List<Schema.sObjectType> sObj2FieldRefs = sObj2Field.getDescribe().getReferenceTo();
+            for(Schema.SObjectType ref : sObj2FieldRefs) {
+                if(ref == sObj1Instance.getSObjectType()) {
+                    return true;
+                }
+            }
+            return false;
+        }
+
+        // if they're both references then check that they can refer to the same object type
+        if(sObj1FieldType == Schema.DisplayType.REFERENCE && sObj2FieldType == Schema.DisplayType.REFERENCE) {
+            List<Schema.sObjectType> sObj1FieldRefs = sObj1Field.getDescribe().getReferenceTo();
+            List<Schema.sObjectType> sObj2FieldRefs = sObj2Field.getDescribe().getReferenceTo();
+
+            for(Schema.SObjectType ref1 : sObj1FieldRefs) {
+                for(Schema.SObjectType ref2 : sObj2FieldRefs) {
+                    if(ref1 == ref2) {
+                        return true;
+                    }
+                }
+            }
+            return false;
+        }
+
+        return false;
+    }
+
+    // @description : return a parent sObject from a field name and a child sObject
+    // @param sObj : the child sObject
+    // @param fieldName : the field name of the parent sObject from the child
+    //                  : ex. OpportunityLineItem, the field is Opportunity
+    public Map<String, Object> getParentObject(sObject sObj, String fieldName) {
+        // api name of the child sObject
+        String objApiName = sObj.getSObjectType().getDescribe().getName();
+        // api name of the id object on the child (i.e. OpportunityId)
+        String fieldApiName;
+        // api name of the relationship field on the child (i.e. Opportunity)
+        String fieldRelationshipName;
+        // api name of the parent sObject
+        String parentObjApiName;
+
+
+        String sObjApiName = sObj.getSObjectType().getDescribe().getName();
+        SObjectType t = ((SObject)Type.forName(sObjApiName).newInstance()).getSObjectType();
+        for (SObjectField f : t.getDescribe().fields.getMap().values()) {
+            if (f.getDescribe().getType() == DisplayType.Reference && f.getDescribe().getRelationshipName().toLowerCase() == fieldName) {
+                List<Schema.sObjectType> objTypeList = f.getDescribe().getReferenceTo();
+            
+                if(objTypeList.size() == 1) {
+                    parentObjApiName = objTypeList[0].getDescribe().getName();
+                } else {
+                    // TODO: handle polymorphic
+                }
+
+                fieldApiName = f.getDescribe().getName();
+                fieldRelationshipName = f.getDescribe().getRelationshipName();
+
+                sObject parentRecord = ((sObject) Type.forName(parentObjApiName).newInstance()).getSObjectType().newSObject();
+                
+                Map<String, sObject> mockRecordsChild = this.db.get(objApiName);
+                Id parentId = (Id) mockRecordsChild.get(sObj.Id).get(fieldApiName);
+
+                parentRecord.put('Id', parentId);
+                Map<String, Object> objInfo = new Map<String, Object> {
+                    'fieldApiName' => fieldApiName,
+                    'fieldRelationshipName' => fieldRelationshipName,
+                    'parentObjApiName' => parentObjApiName,
+                    'objApiName' => objApiName,
+                    'parentRecord' => parentRecord
+                };
+                return objInfo;
+            }
+        }
+
+        throw new QueryException('Invalid relationship name: ' + fieldName);
+    }
+
+    /**
+     * @description : given an sObject and a relationship name, return the field api name
+     * @param sObj : the sObject
+     * @param relName : the relationship name
+     * @return : the field api name
+     * @throws QueryException : if the relationship name is invalid
+     */
+    public String getFieldApiNameFromRel(SObject sObj, String relName) {
+        SObjectType t = ((SObject)Type.forName(sObj.getSObjectType().getDescribe().getName()).newInstance()).getSObjectType();
+        for (SObjectField f : t.getDescribe().fields.getMap().values()) {
+            if (f.getDescribe().getType() == DisplayType.Reference && f.getDescribe().getRelationshipName().toLowerCase() == relName) {
+                return f.getDescribe().getName();
+            }
+        }
+        throw new QueryException('Invalid relationship name: ' + relName);
+    }
+
+    public Boolean isFieldPolymorphic(String objApiName, String fieldApiName) {
+        /**
+         * 1. If relationshipName is not null, the field is a relationship field. 
+         * 2. If, in addition, namePointing is true, polymorphicForeignKey is true, 
+         *    and referenceTo has more than one referenced object type, then the field is polymorphic.
+         */
+        Map<String, Object> fieldData = getFieldData(objApiName, fieldApiName);
+        Boolean isNamePointing = (Boolean) fieldData.get('isNamePointing');
+        List<Schema.sObjectType> referenceTo = (List<Schema.sObjectType>) fieldData.get('referenceTo');
+        return isNamePointing && referenceTo.size() > 1;
+    }
+
+    /**
+     * @description This method is used primarily to discover if a field is polymorphic, 
+     * @param objApiName : the api name of the sObject
+     * @param fieldApiName : the api name of the field
+     * @return : a map with the field data
+     */
+    public Map<String, Object> getFieldData(String objApiName, String fieldApiName) {
+        Schema.DescribeFieldResult dfr = (
+                (SObject) Type.forName(objApiName)
+                .newInstance()
+            )
+            .getSObjectType()
+            .getDescribe()
+            .fields
+            .getMap()
+            .get(fieldApiName)
+            .getDescribe();
+        Map<String, Object> fieldData = new Map<String, Object> {
+            'name' => dfr.getName(),
+            'isNamePointing' => dfr.isNamePointing(),
+            'relationshipName' => dfr.getRelationshipName(),
+            'referenceTo' => dfr.getReferenceTo()
+        };
+        return fieldData;
+    }
+
+    // @description : return a parent sObject from a field name and a child sObject
+    // @param sObj : the child sObject
+    // @param fieldName : the field name of the parent sObject from the child
+    //                  : ex. OpportunityLineItem, the field is Opportunity
+    public Map<String, Object> getParentObjectData(sObject sObj, String fieldName) {
+        // api name of the child sObject
+        String objApiName = sObj.getSObjectType().getDescribe().getName();
+        // api name of the id object on the child (i.e. OpportunityId)
+        String fieldApiName;
+        // api name of the relationship field on the child (i.e. Opportunity)
+        String fieldRelationshipName;
+        // api name of the parent sObject
+        String parentObjApiName;
+
+
+        String sObjApiName = sObj.getSObjectType().getDescribe().getName();
+        SObjectType t = ((SObject)Type.forName(sObjApiName).newInstance()).getSObjectType();
+        for (SObjectField f : t.getDescribe().fields.getMap().values()) {
+            if (f.getDescribe().getType() == DisplayType.Reference && f.getDescribe().getRelationshipName().toLowerCase() == fieldName) {
+                List<Schema.sObjectType> objTypeList = f.getDescribe().getReferenceTo();
+            
+                if(objTypeList.size() == 1) {
+                    parentObjApiName = objTypeList[0].getDescribe().getName();
+                } else {
+                    // TODO: handle polymorphic
+                }
+
+                fieldApiName = f.getDescribe().getName();
+                fieldRelationshipName = f.getDescribe().getRelationshipName();
+
+                sObject parentRecord = ((sObject) Type.forName(parentObjApiName).newInstance()).getSObjectType().newSObject();
+                
+                Map<String, Object> objInfo = new Map<String, Object> {
+                    'fieldApiName' => fieldApiName,
+                    'fieldRelationshipName' => fieldRelationshipName,
+                    'parentObjApiName' => parentObjApiName,
+                    'objApiName' => objApiName,
+                    'parentRecord' => parentRecord
+                };
+                return objInfo;
+            }
+        }
+
+        throw new QueryException('Invalid relationship name: ' + fieldName);
     }
 
 

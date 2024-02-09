@@ -2242,4 +2242,195 @@ private with sharing class MockDatabaseTest {
 
         Assert.areEqual(1, queriedQTs.size(), 'Incorrect number of quick texts queried');
     }
+
+    @IsTest
+    static void testTypeOf() {
+        MockDatabase mockDb = new MockDatabase();
+        Account acct = new Account(
+            Name = 'Test'
+        );
+        mockDb.doInsert(acct);
+        Task t = new Task(
+            Subject = 'Test',
+            WhatId = acct.Id
+        );
+        mockDb.doInsert(t);
+
+        Test.startTest();
+        List<Task> queriedTaskList = (List<Task>) mockDb.query('SELECT TYPEOF What WHEN Account THEN Name ELSE Id END FROM Task');
+        Test.stopTest();
+
+        Task queriedTask = queriedTaskList[0];
+
+        Assert.areEqual(acct.Name, queriedTask.What.Name, 'Incorrect Name');
+    }
+
+    @IsTest
+    static void testTypeOfWithOtherFields() {
+        MockDatabase mockDb = new MockDatabase();
+        Account acct = new Account(
+            Name = 'Test'
+        );
+        mockDb.doInsert(acct);
+        Task t = new Task(
+            Subject = 'Test',
+            WhatId = acct.Id
+        );
+        mockDb.doInsert(t);
+
+        Test.startTest();
+        List<Task> queriedTaskList = (List<Task>) mockDb.query('SELECT Id, Subject, TYPEOF What WHEN Account THEN Name ELSE Id END FROM Task');
+        Test.stopTest();
+
+        Task queriedTask = queriedTaskList[0];
+
+        Assert.areEqual(acct.Name, queriedTask.What.Name, 'Incorrect Name');
+        Assert.areEqual(queriedTask.Subject, 'Test', 'Incorrect Subject');
+    }
+
+    @IsTest
+    static void testTypeOfNoElse() {
+        MockDatabase mockDb = new MockDatabase();
+        Account acct = new Account(
+            Name = 'Test'
+        );
+        mockDb.doInsert(acct);
+        Task t = new Task(
+            Subject = 'Test',
+            WhatId = acct.Id
+        );
+        mockDb.doInsert(t);
+
+        Test.startTest();
+        List<Task> queriedTaskList = (List<Task>) mockDb.query('SELECT TYPEOF What WHEN Account THEN Name END FROM Task');
+        Test.stopTest();
+
+        Task queriedTask = queriedTaskList[0];
+
+        Assert.areEqual('Test', queriedTask.What.Name, 'Should be null');
+    }
+
+    @IsTest
+    static void testTypeOfNoCaseMet() {
+        MockDatabase mockDb = new MockDatabase();
+        Account acct = new Account(
+            Name = 'Test'
+        );
+        mockDb.doInsert(acct);
+        Task t = new Task(
+            Subject = 'Test',
+            WhatId = acct.Id
+        );
+        mockDb.doInsert(t);
+
+        Test.startTest();
+        List<Task> queriedTaskList = (List<Task>) mockDb.query('SELECT TYPEOF What WHEN Opportunity THEN Name END FROM Task');
+        Test.stopTest();
+
+        Task queriedTask = queriedTaskList[0];
+
+        Assert.isNull(queriedTask.What, 'Should be null');
+    }
+
+    @IsTest
+    static void testTypeOfWithMultipleCases() {
+        MockDatabase mockDb = new MockDatabase();
+        Account acct = new Account(
+            Name = 'Test'
+        );
+        mockDb.doInsert(acct);
+        Task t = new Task(
+            Subject = 'Test',
+            WhatId = acct.Id
+        );
+        mockDb.doInsert(t);
+
+        Test.startTest();
+        List<Task> queriedTaskList = (List<Task>) mockDb.query('SELECT TYPEOF What WHEN Opportunity THEN Name WHEN Account THEN Name ELSE Id END FROM Task');
+        Test.stopTest();
+
+        Task queriedTask = queriedTaskList[0];
+
+        Assert.areEqual('Test', queriedTask.What.Name, 'Incorrect Name');
+    }
+
+    @IsTest
+    static void testTypeOfWithOwner() {
+        MockDatabase mockDb = new MockDatabase();
+
+        User u = new User(
+            FirstName = 'Test',
+            LastName = 'User',
+            Username = 'realemail@email.com',
+            Email = 'realemail@email.com'
+        );
+
+        mockDb.doInsert(u);
+        Case c = new Case(
+            OwnerId = u.Id
+        );
+        mockDb.doInsert(c);
+
+        Test.startTest();
+        List<Case> queriedCaseList = (List<Case>) mockDb.query('SELECT TYPEOF Owner WHEN User THEN FirstName ELSE Id END FROM Case');
+        Test.stopTest();
+
+        Case queriedCase = queriedCaseList[0];
+
+        Assert.areEqual(u.FirstName, queriedCase.Owner.FirstName, 'Incorrect Name');
+    }
+
+    @IsTest
+    static void testTypeOfWithOwnerElse() {
+        MockDatabase mockDb = new MockDatabase();
+
+        Group caseQueue = new Group(
+            Name = 'Case Queue',
+            DeveloperName = 'Case_Queue'
+        );
+
+        mockDb.doInsert(caseQueue);
+        Case c = new Case(
+            OwnerId = caseQueue.Id
+        );
+        mockDb.doInsert(c);
+
+        Test.startTest();
+        List<Case> queriedCaseList = (List<Case>) mockDb.query('SELECT TYPEOF Owner WHEN User THEN FirstName ELSE Name END FROM Case');
+        Test.stopTest();
+
+        Case queriedCase = queriedCaseList[0];
+
+        Assert.areEqual(caseQueue.Name, queriedCase.Owner.Name, 'Incorrect Name');
+    }
+
+    @IsTest
+    static void testTypeOfWithGroupBy() {
+        MockDatabase mockDb = new MockDatabase();
+
+        Group caseQueue = new Group(
+            Name = 'Case Queue',
+            DeveloperName = 'Case_Queue'
+        );
+
+        mockDb.doInsert(caseQueue);
+        Case c = new Case(
+            OwnerId = caseQueue.Id
+        );
+        mockDb.doInsert(c);
+
+        String exMessage;
+        Test.startTest();
+        try {
+            mockDb.query('SELECT OwnerId, TYPEOF Owner WHEN User THEN FirstName ELSE Name END FROM Case GROUP BY OwnerId');
+        } catch(Exception e) {
+            exMessage = e.getMessage();
+        }
+        Test.stopTest();
+
+        Assert.isTrue(
+            exMessage != null && exMessage.contains('TYPEOF not supported with GROUP BY'), 
+            'Exception should have been thrown with the message "TYPEOF not allowed in GROUP BY query"'
+        );
+    }
 }

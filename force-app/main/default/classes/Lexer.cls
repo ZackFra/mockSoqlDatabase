@@ -17,106 +17,6 @@ public with sharing class Lexer {
     /**
      * Helper classes for the lexer, meant to be used internally
      */
-    
-    /**
-     * @description : Returns a string representation of the AST
-     */
-    public class Node {
-        public String id;
-        public String nodeType;
-        public Node left;
-        public Node right;
-
-        /**
-         * @description : Constructor for a Node, not to be used directly
-         * @param nodeType : String, the type of the node
-         * @param id : String, the id of the node
-         * @param left : Node, the left child of the node
-         * @param right : Node, the right child of the node
-         */
-        public Node(String nodeType, string id, Node left, Node right) { // NOPMD
-            ParserUtils.nullCheck(nodeType, 'nodeType may not be null');
-            ParserUtils.nullCheck(id, 'id may not be null');
-            
-            this.id = id;
-            this.nodeType = nodeType;
-            this.left = left;
-            this.right = right;
-        }
-        
-        /**
-         * @description : Returns a string representation of the node by traversing the tree in pre-order
-         * @return : String, the string representation of the node
-         */
-        public override String toString() {
-            String strVal = '{ id: ' + this.id + ', nodeType: ' + this.nodeType + ' }';
-            if(this.left != null) {
-                strVal = this.left.toString() + ', ' + strVal;
-            }
-            if(this.right != null) {
-                strVal += ', ' + this.right.toString();
-            }
-            return strVal;
-        }
-    }
-    
-    /**
-     * @description : Builder class for the Node class, used to create a Node
-     */
-    public class NodeBuilder {
-        String id;
-        String nodeType;
-        Node left;
-        Node right;
-        
-        /**
-         * @description : Sets the id of the node
-         * @param id : String, the id of the node
-         * @return : NodeBuilder, the current instance of the NodeBuilder
-         */
-        public NodeBuilder setId(String id) {
-            this.id = id;
-            return this;
-        }
-
-        /**
-         * @description : Sets the type of the node
-         * @param nodeType : String, the type of the node
-         * @return : NodeBuilder, the current instance of the NodeBuilder
-         */
-        public NodeBuilder setNodeType(String nodeType) {
-            this.nodeType = nodeType;
-            return this;
-        }
-
-        /**
-         * @description : Sets the left child of the node
-         * @param left : Node, the left child of the node
-         * @return : NodeBuilder, the current instance of the NodeBuilder
-         */
-        public NodeBuilder setLeft(Node left) {
-            this.left = left;
-            return this;
-        }
-
-        /**
-         * @description : Sets the right child of the node
-         * @param right : Node, the right child of the node
-         * @return : NodeBuilder, the current instance of the NodeBuilder
-         */
-        public NodeBuilder setRight(Node right) {
-            this.right = right;
-            return this;
-        }
-
-        /**
-         * @description : Builds the node
-         * @return : Node, the built node
-         */
-        public Node build() {
-            return new Node(nodeType, id, left, right);
-        }
-    }
 
     /**
      * Private methods for the lexer, meant to be used internally
@@ -303,12 +203,19 @@ public with sharing class Lexer {
         );
         
     }
+
+    private Boolean isTypeOf(String query) {
+        return query.length() >= 6 && lookahead(query, 6) == 'typeof';
+    }
     
     private Intermediary parseSelectExpr(String query) {
         query = ParserUtils.skipWhitespace(query);
         Intermediary selectExpr;
 
-        if(isAggregateFunction(query)) {
+        if(isTypeOf(query)) {
+            selectExpr = parseTypeOf(query);
+            query = selectExpr.subquery;
+        } else if(isAggregateFunction(query)) {
             selectExpr = parseAggregateFunc(query);
             query = selectExpr.subquery;
         } else if(lookahead(query, 1) == '(') {
@@ -340,7 +247,8 @@ public with sharing class Lexer {
                 curr = curr.left;
             }
             curr.left = restOfExpr.head;
-            selectExpr.subquery = restOfExpr.subquery;
+            query = restOfExpr.subquery;
+            selectExpr.subquery = query;
         }
         return selectExpr;
     }
@@ -350,7 +258,10 @@ public with sharing class Lexer {
     private Intermediary parseFieldListWithAliases(String query) {
         query = ParserUtils.skipWhitespace(query);
         Intermediary nextItem;
-        if(isAggregateFunction(query)) {
+        if(isTypeOf(query)) {
+            nextItem = parseTypeOf(query);
+            query = nextItem.subquery;
+        } else if(isAggregateFunction(query)) {
             nextItem = parseAggregateFunc(query);
             query = nextItem.subquery;
         } else {
@@ -544,8 +455,8 @@ public with sharing class Lexer {
     private Boolean isNextTokenFieldOrObject(String query) {
         return ParserUtils.validCharForFieldOrObject(lookahead(query, 1));
     }
-    
-    private Intermediary parseField(String query) {
+
+    private Map<String, String> getFieldName(String query) {
         query = ParserUtils.skipWhitespace(query);
         String fieldName = '';
         while(query.length() != 0 && 
@@ -564,6 +475,19 @@ public with sharing class Lexer {
         if(fieldName.isNumeric()) {
             throw new ParsingException(fieldName, 'field name');
         }
+
+        Map<String, String> dataMap = new Map<String, String> {
+            'fieldName' => fieldName,
+            'subquery' => query
+        };
+        return dataMap;
+    }
+    
+    private Intermediary parseField(String query) {
+        query = ParserUtils.skipWhitespace(query);
+        Map<String, String> dataMap = getFieldName(query);
+        String fieldName = dataMap.get('fieldName');
+        query = dataMap.get('subquery');
         
         Node head = new NodeBuilder()
             .setId(fieldName)
@@ -1143,6 +1067,130 @@ public with sharing class Lexer {
             	.setLeft(limitSize.head)
             	.build(),
             limitSize.subquery
+        );
+    }
+
+    private Boolean isElse(String query) {
+        return query.length() >= 4 && lookahead(query, 4) == 'else';
+    }
+
+    private Boolean isWhen(String query) {
+        return query.length() >= 4 && lookahead(query, 4) == 'when';
+    }
+    
+    private Intermediary parseElse(String query) {
+        query = ParserUtils.skipWhitespace(query);
+        if(query.length() == 0 || !isElse(query)) {
+            return null;
+        }
+        query = consume(query, 'else');
+        query = consume(query, ' ');
+        query = ParserUtils.skipWhitespace(query);
+        Intermediary fieldList = parseFieldList(query);
+        return new Intermediary(
+        	new NodeBuilder()
+            	.setId('else')
+            	.setNodeType('else')
+            	.setRight(fieldList.head)
+            	.build(),
+            fieldList.subquery
+        );
+    }
+
+    private Intermediary parseWhenList(String query) {
+        query = ParserUtils.skipWhitespace(query);
+        if(!isWhen(query)) {
+            return null;
+        }
+
+        Intermediary whenList;
+        while(isWhen(query)) {
+            Intermediary whenExpr = parseWhen(query);
+            query = whenExpr.subquery;
+            query = ParserUtils.skipWhitespace(query);
+            if(whenList == null) {
+                whenList = whenExpr;
+            } else {
+                Node curr = whenList.head;
+                while(curr.right != null) {
+                    curr = curr.right;
+                }
+                curr.right = whenExpr.head;
+            }
+        }
+
+        if(isElse(query)) {
+            Intermediary elseExpr = parseElse(query);
+            query = elseExpr.subquery;
+            Node curr = whenList.head;
+            while(curr.right != null) {
+                curr = curr.right;
+            }
+            curr.right = elseExpr.head;
+        }
+
+        whenList.subquery = query;
+        return whenList;
+    }
+
+    private Intermediary parseWhen(String query) {
+        query = ParserUtils.skipWhitespace(query);
+        if(query.length() < 4 || lookahead(query, 4) != 'when') {
+            return null;
+        }
+
+        query = consume(query, 'when');
+        query = consume(query, ' ');
+        query = ParserUtils.skipWhitespace(query);
+        Intermediary obj = parseObj(query);
+        query = obj.subquery;
+        query = consume(query, ' ');
+        query = ParserUtils.skipWhitespace(query);
+
+        query = consume(query, 'then');
+        query = consume(query, ' ');
+        query = ParserUtils.skipWhitespace(query);
+        Intermediary thenExpr = parseFieldList(query);
+        query = thenExpr.subquery;
+        return new Intermediary(
+        	new NodeBuilder()
+            	.setId('when')
+            	.setNodeType('when')
+            	.setLeft(obj.head)
+            	.setRight(thenExpr.head)
+            	.build(),
+            query
+        );
+    }
+
+    private Intermediary parseTypeOf(String query) {
+        query = ParserUtils.skipWhitespace(query);
+        if(query.length() < 6 || lookahead(query, 6) != 'typeof') {
+            return null;
+        }
+
+        query = consume(query, 'typeof');
+        query = consume(query, ' ');
+        query = ParserUtils.skipWhitespace(query);
+        Map<String, String> dataMap = getFieldName(query);
+        String fieldName = dataMap.get('fieldName');
+        query = dataMap.get('subquery');
+        query = consume(query, ' ');
+        query = ParserUtils.skipWhitespace(query);
+
+        Intermediary whenExpr = parseWhenList(query);
+        query = whenExpr.subquery;
+        query = ParserUtils.skipWhitespace(query);
+        query = consume(query, 'end');
+        query = consume(query, ' ');
+
+        return new Intermediary(
+        	new NodeBuilder()
+            	.setId(fieldName)
+            	.setNodeType('typeof')
+            	.setRight(whenExpr.head)
+            	.build(),
+            query
         );
     }
     

@@ -1,12 +1,7 @@
 /**
  * Description: This class is used to compare two generic objects of the same type.
  */
-public with sharing class ObjectComparator implements Comparable {
-
-    private Object obj;
-    public ObjectComparator(Object obj) {
-        this.obj = obj;
-    }
+public with sharing class ObjectComparator implements Comparator<Object> {
 
     /**
      * Description: This method compares two generic objects of the same type.
@@ -15,16 +10,19 @@ public with sharing class ObjectComparator implements Comparable {
      * @return: An integer value indicating the result of the comparison.
      * @throws UnsupportedTypeException: If the type of the objects is not supported.
      */
-    public Integer compareTo(Object objectToCompareto) {
-        if(!checkType(objectToCompareto)) {
+    public Integer compare(Object obj1, Object obj2) {
+        if(!isTypeSupported(obj1, obj2)) {
             throw new UnsupportedTypeException('These objects must be of the same type');
         }
 
-        Integer result = checkNull(objectToCompareto);
+        // if no meaningful data can be returned, returns null
+        Integer result = compareNull(obj1, obj2);
         if(result != null) {
             return result;
         }
-        result = checkSupportedObjects(objectToCompareto);
+
+        // if no meaningful data can be returned, returns null
+        result = compareSupportedObjects(obj1, obj2);
         if(result != null) {
             return result;
         }
@@ -33,24 +31,24 @@ public with sharing class ObjectComparator implements Comparable {
 
     private class UnsupportedTypeException extends Exception {}
 
-    private Boolean checkType(Object obj) {
-        if(this.obj == null || obj == null) {
+    private Boolean isTypeSupported(Object obj1, Object obj2) {
+        if(obj1 == null || obj2 == null) {
             return true;
-        } else if(this.obj instanceof Id && obj instanceof Id) {
+        } else if(obj1 instanceof Id && obj2 instanceof Id) {
             return true; 
-        } else if(this.obj instanceof String && obj instanceof String) {
+        } else if(obj1 instanceof String && obj2 instanceof String) {
             return true;
-        } else if(this.obj instanceof Integer && obj instanceof Integer) {
+        } else if(obj1 instanceof Integer && obj2 instanceof Integer) {
             return true;
-        } else if(this.obj instanceof Decimal && obj instanceof Decimal) {
+        } else if(obj1 instanceof Decimal && obj2 instanceof Decimal) {
             return true;
-        } else if(this.obj instanceof Date && obj instanceof Date) {
+        } else if(obj1 instanceof Date && obj2 instanceof Date) {
             return true;
-        } else if(this.obj instanceof DateTime && obj instanceof DateTime) {
+        } else if(obj1 instanceof DateTime && obj2 instanceof DateTime) {
             return true;
-        } else if(this.obj instanceof Time && obj instanceof Time) {
+        } else if(obj1 instanceof Time && obj2 instanceof Time) {
             return true;
-        } else if(this.obj instanceof Boolean && obj instanceof Boolean) {
+        } else if(obj1 instanceof Boolean && obj2 instanceof Boolean) {
             return true;
         }
 
@@ -59,12 +57,11 @@ public with sharing class ObjectComparator implements Comparable {
 
     /**
      * Description: This method compares two generic objects of the same type.
-     * @param obj: The object to compare.
+     * @param obj1: The first object to compare.
+     * @param obj2: The second object to compare.
      * @return: An integer value indicating the result of the comparison.
      */
-    private Integer checkSupportedObjects(Object objectToCompareTo) {
-        Object obj1 = this.obj;
-        Object obj2 = objectToCompareTo;
+    private Integer compareSupportedObjects(Object obj1, Object obj2) {
 
         if (obj1 instanceof Id) {
             return ((String)obj1).compareTo((String)obj2);
@@ -121,9 +118,10 @@ public with sharing class ObjectComparator implements Comparable {
         return null;
     }
 
-    private Integer checkNull(Object objectToCompareTo) {
-        Object obj1 = this.obj;
-        Object obj2 = objectToCompareTo;
+    /**
+     * @description This method compares two generic objects of the same type.
+     */
+    private Integer compareNull(Object obj1, Object obj2) {
 
         if (obj1 == null && obj2 == null) {
             return 0;

@@ -4,22 +4,22 @@
  */
 public with sharing class TopLevelNodes {
     
-    public Lexer.Node selectNode { get; private set; }
-    public Lexer.Node fromNode { get; private set; }
-    public Lexer.Node whereNode { get; private set; }
-    public Lexer.Node groupByNode { get; private set; }
-    public Lexer.Node havingNode { get; private set; }
-    public Lexer.Node orderByNode { get; private set; }
-    public Lexer.Node limitNode { get; private set; }
-    public Lexer.Node offsetNode { get; private set; }
-    public Lexer.Node forUpdateNode { get; private set; }
+    public Node selectNode { get; private set; }
+    public Node fromNode { get; private set; }
+    public Node whereNode { get; private set; }
+    public Node groupByNode { get; private set; }
+    public Node havingNode { get; private set; }
+    public Node orderByNode { get; private set; }
+    public Node limitNode { get; private set; }
+    public Node offsetNode { get; private set; }
+    public Node forUpdateNode { get; private set; }
     
 
-    public TopLevelNodes(Lexer.Node selectNode) {
+    public TopLevelNodes(Node selectNode) {
         this.selectNode = selectNode;
         this.fromNode = selectNode.right;
 
-        Lexer.Node curr = fromNode.right;
+        Node curr = fromNode.right;
 
         if(isNode(curr, 'where')) {
             this.whereNode = curr;
@@ -57,7 +57,7 @@ public with sharing class TopLevelNodes {
         }
     }
 
-    private Boolean isNode(Lexer.Node node, String nodeType) {
+    private Boolean isNode(Node node, String nodeType) {
         return node != null && node.nodeType == nodeType;
     }
 }

@@ -88,7 +88,7 @@ public with sharing class SObjectComparator implements Comparator<SObject> {
 
 
             if (aFieldValue != bFieldValue) {
-                ObjectComparator comparator = new ObjectComparator(aFieldValue);
+                ObjectComparator comparator = new ObjectComparator();
                 Integer result;
 
                 Integer nullResult = checkForNull(aFieldValue, bFieldValue, nullDir);
@@ -98,7 +98,7 @@ public with sharing class SObjectComparator implements Comparator<SObject> {
                     continue;
                 }
 
-                result = comparator.compareTo(bFieldValue);
+                result = comparator.compare(aFieldValue, bFieldValue);
                 if(result == 0) {
                     continue;
                 }

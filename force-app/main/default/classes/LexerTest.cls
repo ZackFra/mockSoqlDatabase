@@ -5,7 +5,7 @@ private with sharing class LexerTest {
     private static void testToString() {
         Test.startTest();
         Lexer t = new Lexer();
-        Lexer.Node head = t.parse('SELECT Id FROM Account');
+        Node head = t.parse('SELECT Id FROM Account');
         String result = head.toString();
         Test.stopTest();
         String expectedResult = '{ id: id, nodeType: field }, { id: select, nodeType: select }, { id: account, nodeType: object }, { id: from, nodeType: from }';
@@ -88,7 +88,7 @@ private with sharing class LexerTest {
     private static void testParseBoolean() {
         Test.startTest();
         Lexer t = new Lexer();
-        Lexer.Node head = t.parse('SELECT Id FROM Account WHERE IsDeleted = true');
+        Node head = t.parse('SELECT Id FROM Account WHERE IsDeleted = true');
         Test.stopTest();
 
         Assert.areEqual('select', head.id, 'Expected id to be "select"');
@@ -97,43 +97,43 @@ private with sharing class LexerTest {
         Assert.isNotNull(head.right, 'Expected right to be not null');
 
 
-        Lexer.Node idNode = head.left;
+        Node idNode = head.left;
         Assert.areEqual('id', idNode.id, 'Expected id to be "id"');
         Assert.areEqual('field', idNode.nodeType, 'Expected nodeType to be "field"');
         Assert.isNull(idNode.left, 'Expected left to be null');
         Assert.isNull(idNode.right, 'Expected right to be null');
 
-        Lexer.Node fromNode = head.right;
+        Node fromNode = head.right;
         Assert.areEqual('from', fromNode.id, 'Expected id to be "from"');
         Assert.areEqual('from', fromNode.nodeType, 'Expected nodeType to be "from"');
         Assert.isNotNull(fromNode.left, 'Expected left to be not null');
         Assert.isNotNull(fromNode.right, 'Expected right to be not null');
 
-        Lexer.Node accountNode = fromNode.left;
+        Node accountNode = fromNode.left;
         Assert.areEqual('account', accountNode.id, 'Expected id to be "account"');
         Assert.areEqual('object', accountNode.nodeType, 'Expected nodeType to be "object"');
         Assert.isNull(accountNode.left, 'Expected left to be null');
         Assert.isNull(accountNode.right, 'Expected right to be null');
 
-        Lexer.Node whereNode = fromNode.right;
+        Node whereNode = fromNode.right;
         Assert.areEqual('where', whereNode.id, 'Expected id to be "where"');
         Assert.areEqual('where', whereNode.nodeType, 'Expected nodeType to be "where"');
         Assert.isNotNull(whereNode.left, 'Expected left to be not null');
         Assert.isNull(whereNode.right, 'Expected right to be null');
 
-        Lexer.Node operatorNode = whereNode.left;
+        Node operatorNode = whereNode.left;
         Assert.areEqual('=', operatorNode.id, 'Expected id to be "operator"');
         Assert.areEqual('operator', operatorNode.nodeType, 'Expected nodeType to be "operator"');
         Assert.isNotNull(operatorNode.left, 'Expected left to not be null');
         Assert.isNotNull(operatorNode.right, 'Expected right to not be null');
 
-        Lexer.Node isDeletedNode = operatorNode.left;
+        Node isDeletedNode = operatorNode.left;
         Assert.areEqual('isdeleted', isDeletedNode.id, 'Expected id to be "isdeleted"');
         Assert.areEqual('field', isDeletedNode.nodeType, 'Expected nodeType to be "field"');
         Assert.isNull(isDeletedNode.left, 'Expected left to be null');
         Assert.isNull(isDeletedNode.right, 'Expected right to be null');
 
-        Lexer.Node valueNode = operatorNode.right;
+        Node valueNode = operatorNode.right;
         Assert.areEqual('true', valueNode.id, 'Expected id to be "true"');
         Assert.areEqual('boolean', valueNode.nodeType, 'Expected nodeType to be "boolean"');
         Assert.isNull(valueNode.left, 'Expected left to be null');
@@ -144,7 +144,7 @@ private with sharing class LexerTest {
     private static void testOrderBy() {
         Test.startTest();
         Lexer t = new Lexer();
-        Lexer.Node head = t.parse('SELECT Id FROM Account ORDER BY Name, Id');
+        Node head = t.parse('SELECT Id FROM Account ORDER BY Name, Id');
         Test.stopTest();
 
         Assert.areEqual('select', head.id, 'Expected id to be "select"');
@@ -152,37 +152,37 @@ private with sharing class LexerTest {
         Assert.isNotNull(head.left, 'Expected left to be not null');
         Assert.isNotNull(head.right, 'Expected right to be not null');
 
-        Lexer.Node idNode = head.left;
+        Node idNode = head.left;
         Assert.areEqual('id', idNode.id, 'Expected id to be "id"');
         Assert.areEqual('field', idNode.nodeType, 'Expected nodeType to be "field"');
         Assert.isNull(idNode.left, 'Expected left to be null');
         Assert.isNull(idNode.right, 'Expected right to be null');
 
-        Lexer.Node fromNode = head.right;
+        Node fromNode = head.right;
         Assert.areEqual('from', fromNode.id, 'Expected id to be "from"');
         Assert.areEqual('from', fromNode.nodeType, 'Expected nodeType to be "from"');
         Assert.isNotNull(fromNode.left, 'Expected left to be not null');
         Assert.isNotNull(fromNode.right, 'Expected right to be not null');
 
-        Lexer.Node accountNode = fromNode.left;
+        Node accountNode = fromNode.left;
         Assert.areEqual('account', accountNode.id, 'Expected id to be "account"');
         Assert.areEqual('object', accountNode.nodeType, 'Expected nodeType to be "object"');
         Assert.isNull(accountNode.left, 'Expected left to be null');
         Assert.isNull(accountNode.right, 'Expected right to be null');
 
-        Lexer.Node orderByNode = fromNode.right;
+        Node orderByNode = fromNode.right;
         Assert.areEqual('order by', orderByNode.id, 'Expected id to be "order by"');
         Assert.areEqual('order by', orderByNode.nodeType, 'Expected nodeType to be "order by"');
         Assert.isNotNull(orderByNode.left, 'Expected left to be not null');
         Assert.isNull(orderByNode.right, 'Expected right to be null');
 
-        Lexer.Node nameNode = orderByNode.left;
+        Node nameNode = orderByNode.left;
         Assert.areEqual('name', nameNode.id, 'Expected id to be "name"');
         Assert.areEqual('field', nameNode.nodeType, 'Expected nodeType to be "field"');
         Assert.isNotNull(nameNode.left, 'Expected left to not be null');
         Assert.isNull(nameNode.right, 'Expected right to be null');
 
-        Lexer.Node idNode2 = nameNode.left;
+        Node idNode2 = nameNode.left;
         Assert.areEqual('id', idNode2.id, 'Expected id to be "id"');
         Assert.areEqual('field', idNode2.nodeType, 'Expected nodeType to be "field"');
         Assert.isNull(idNode2.left, 'Expected left to be null');
@@ -193,7 +193,7 @@ private with sharing class LexerTest {
     private static void testLimit() {
         Test.startTest();
         Lexer t = new Lexer();
-        Lexer.Node head = t.parse('SELECT Id FROM Account LIMIT 10');
+        Node head = t.parse('SELECT Id FROM Account LIMIT 10');
         Test.stopTest();
 
         Assert.areEqual('select', head.id, 'Expected id to be "select"');
@@ -201,31 +201,31 @@ private with sharing class LexerTest {
         Assert.isNotNull(head.left, 'Expected left to be not null');
         Assert.isNotNull(head.right, 'Expected right to be not null');
 
-        Lexer.Node idNode = head.left;
+        Node idNode = head.left;
         Assert.areEqual('id', idNode.id, 'Expected id to be "id"');
         Assert.areEqual('field', idNode.nodeType, 'Expected nodeType to be "field"');
         Assert.isNull(idNode.left, 'Expected left to be null');
         Assert.isNull(idNode.right, 'Expected right to be null');
 
-        Lexer.Node fromNode = head.right;
+        Node fromNode = head.right;
         Assert.areEqual('from', fromNode.id, 'Expected id to be "from"');
         Assert.areEqual('from', fromNode.nodeType, 'Expected nodeType to be "from"');
         Assert.isNotNull(fromNode.left, 'Expected left to be not null');
         Assert.isNotNull(fromNode.right, 'Expected right to be not null');
 
-        Lexer.Node accountNode = fromNode.left;
+        Node accountNode = fromNode.left;
         Assert.areEqual('account', accountNode.id, 'Expected id to be "account"');
         Assert.areEqual('object', accountNode.nodeType, 'Expected nodeType to be "object"');
         Assert.isNull(accountNode.left, 'Expected left to be null');
         Assert.isNull(accountNode.right, 'Expected right to be null');
 
-        Lexer.Node limitNode = fromNode.right;
+        Node limitNode = fromNode.right;
         Assert.areEqual('limit', limitNode.id, 'Expected id to be "limit"');
         Assert.areEqual('limit', limitNode.nodeType, 'Expected nodeType to be "limit"');
         Assert.isNotNull(limitNode.left, 'Expected left to be not null');
         Assert.isNull(limitNode.right, 'Expected right to be null');
 
-        Lexer.Node valueNode = limitNode.left;
+        Node valueNode = limitNode.left;
         Assert.areEqual('10', valueNode.id, 'Expected id to be "10"');
         Assert.areEqual('number', valueNode.nodeType, 'Expected nodeType to be "number"');
         Assert.isNull(valueNode.left, 'Expected left to be null');
@@ -236,7 +236,7 @@ private with sharing class LexerTest {
     private static void testForUpdate() {
         Test.startTest();
         Lexer t = new Lexer();
-        Lexer.Node head = t.parse('SELECT Id FROM Account FOR UPDATE');
+        Node head = t.parse('SELECT Id FROM Account FOR UPDATE');
         Test.stopTest();
 
         Assert.areEqual('select', head.id, 'Expected id to be "select"');
@@ -244,25 +244,25 @@ private with sharing class LexerTest {
         Assert.isNotNull(head.left, 'Expected left to be not null');
         Assert.isNotNull(head.right, 'Expected right to be not null');
 
-        Lexer.Node idNode = head.left;
+        Node idNode = head.left;
         Assert.areEqual('id', idNode.id, 'Expected id to be "id"');
         Assert.areEqual('field', idNode.nodeType, 'Expected nodeType to be "field"');
         Assert.isNull(idNode.left, 'Expected left to be null');
         Assert.isNull(idNode.right, 'Expected right to be null');
 
-        Lexer.Node fromNode = head.right;
+        Node fromNode = head.right;
         Assert.areEqual('from', fromNode.id, 'Expected id to be "from"');
         Assert.areEqual('from', fromNode.nodeType, 'Expected nodeType to be "from"');
         Assert.isNotNull(fromNode.left, 'Expected left to be not null');
         Assert.isNotNull(fromNode.right, 'Expected right to be not null');
 
-        Lexer.Node accountNode = fromNode.left;
+        Node accountNode = fromNode.left;
         Assert.areEqual('account', accountNode.id, 'Expected id to be "account"');
         Assert.areEqual('object', accountNode.nodeType, 'Expected nodeType to be "object"');
         Assert.isNull(accountNode.left, 'Expected left to be null');
         Assert.isNull(accountNode.right, 'Expected right to be null');
 
-        Lexer.Node forUpdateNode = fromNode.right;
+        Node forUpdateNode = fromNode.right;
         Assert.areEqual('for update', forUpdateNode.id, 'Expected id to be "for update"');
         Assert.areEqual('for update', forUpdateNode.nodeType, 'Expected nodeType to be "for update"');
         Assert.isNull(forUpdateNode.left, 'Expected left to be null');
@@ -273,7 +273,7 @@ private with sharing class LexerTest {
     private static void testHavingClause() {
         Test.startTest();
         Lexer t = new Lexer();
-        Lexer.Node head = t.parse('SELECT Id FROM Account GROUP BY Id HAVING COUNT(Id) > 0');
+        Node head = t.parse('SELECT Id FROM Account GROUP BY Id HAVING COUNT(Id) > 0');
         Test.stopTest();
 
         Assert.areEqual('select', head.id, 'Expected id to be "select"');
@@ -286,25 +286,25 @@ private with sharing class LexerTest {
         Assert.isNotNull(head.left, 'Expected left to be not null');
         Assert.isNotNull(head.right, 'Expected right to be not null');
     
-        Lexer.Node idNode = head.left;
+        Node idNode = head.left;
         Assert.areEqual('id', idNode.id, 'Expected id to be "id"');
         Assert.areEqual('field', idNode.nodeType, 'Expected nodeType to be "field"');
         Assert.isNull(idNode.left, 'Expected left to be null');
         Assert.isNull(idNode.right, 'Expected right to be null');
 
-        Lexer.Node fromNode = head.right;
+        Node fromNode = head.right;
         Assert.areEqual('from', fromNode.id, 'Expected id to be "from"');
         Assert.areEqual('from', fromNode.nodeType, 'Expected nodeType to be "from"');
         Assert.isNotNull(fromNode.left, 'Expected left to be not null');
         Assert.isNotNull(fromNode.right, 'Expected right to be not null');
 
-        Lexer.Node accountNode = fromNode.left;
+        Node accountNode = fromNode.left;
         Assert.areEqual('account', accountNode.id, 'Expected id to be "account"');
         Assert.areEqual('object', accountNode.nodeType, 'Expected nodeType to be "object"');
         Assert.isNull(accountNode.left, 'Expected left to be null');
         Assert.isNull(accountNode.right, 'Expected right to be null');
 
-        Lexer.Node groupByNode = fromNode.right;
+        Node groupByNode = fromNode.right;
         Assert.areEqual('group by', groupByNode.id, 'Expected id to be "group by"');
         Assert.areEqual('group by', groupByNode.nodeType, 'Expected nodeType to be "group by"');
         Assert.isNotNull(groupByNode.left, 'Expected left to be not null');
@@ -315,37 +315,37 @@ private with sharing class LexerTest {
         Assert.isNotNull(groupByNode.left, 'Expected left to be not null');
         Assert.isNotNull(groupByNode.right, 'Expected right to be not null');
 
-        Lexer.Node idNode2 = groupByNode.left;
+        Node idNode2 = groupByNode.left;
         Assert.areEqual('id', idNode2.id, 'Expected id to be "id"');
         Assert.areEqual('field', idNode2.nodeType, 'Expected nodeType to be "field"');
         Assert.isNull(idNode2.left, 'Expected left to be null');
         Assert.isNull(idNode2.right, 'Expected right to be null');
 
-        Lexer.Node havingNode = groupByNode.right;
+        Node havingNode = groupByNode.right;
         Assert.areEqual('having', havingNode.id, 'Expected id to be "having"');
         Assert.areEqual('having', havingNode.nodeType, 'Expected nodeType to be "having"');
         Assert.isNotNull(havingNode.left, 'Expected left to be not null');
         Assert.isNull(havingNode.right, 'Expected right to be null');
 
-        Lexer.Node operatorNode = havingNode.left;
+        Node operatorNode = havingNode.left;
         Assert.areEqual('>', operatorNode.id, 'Expected id to be "operator"');
         Assert.areEqual('operator', operatorNode.nodeType, 'Expected nodeType to be "operator"');
         Assert.isNotNull(operatorNode.left, 'Expected left to not be null');
         Assert.isNotNull(operatorNode.right, 'Expected right to not be null');
 
-        Lexer.Node aggregateFunctionNode = operatorNode.left;
+        Node aggregateFunctionNode = operatorNode.left;
         Assert.areEqual('count', aggregateFunctionNode.id, 'Expected id to be "count"');
         Assert.areEqual('aggregate function', aggregateFunctionNode.nodeType, 'Expected nodeType to be "aggregate function"');
         Assert.isNull(aggregateFunctionNode.left, 'Expected left to be null');
         Assert.isNotNull(aggregateFunctionNode.right, 'Expected right to be not null');
 
-        Lexer.Node idNode3 = aggregateFunctionNode.right;
+        Node idNode3 = aggregateFunctionNode.right;
         Assert.areEqual('id', idNode3.id, 'Expected id to be "id"');
         Assert.areEqual('field', idNode3.nodeType, 'Expected nodeType to be "field"');
         Assert.isNull(idNode3.left, 'Expected left to be null');
         Assert.isNull(idNode3.right, 'Expected right to be null');
 
-        Lexer.Node valueNode = operatorNode.right;
+        Node valueNode = operatorNode.right;
         Assert.areEqual('0', valueNode.id, 'Expected id to be "0"');
         Assert.areEqual('number', valueNode.nodeType, 'Expected nodeType to be "number"');
         Assert.isNull(valueNode.left, 'Expected left to be null');
@@ -366,7 +366,7 @@ private with sharing class LexerTest {
         Test.startTest();
         for(String func : aggrFuncs) {
             Lexer t = new Lexer();
-            Lexer.Node head = t.parse('SELECT ' + func + '(Amount) FROM Opportunity');
+            Node head = t.parse('SELECT ' + func + '(Amount) FROM Opportunity');
             Map<String, Object> nodeDatum = new Map<String, Object> {
                 'head' => head,
                 'func' => func
@@ -377,7 +377,7 @@ private with sharing class LexerTest {
 
 
         for(Map<String, Object> nodeData : nodes) { 
-            Lexer.Node head = (Lexer.Node) nodeData.get('head');
+            Node head = (Node) nodeData.get('head');
             String func = (String) nodeData.get('func');
 
             // we expect this to come back in a particular order
@@ -386,25 +386,25 @@ private with sharing class LexerTest {
             Assert.isNotNull(head.left, 'Expected left to be not null');
             Assert.isNotNull(head.right, 'Expected right to be not null');
     
-            Lexer.Node sumNode = head.left;
+            Node sumNode = head.left;
             Assert.areEqual(func, sumNode.id, 'Expected id to be "' + func + '"');
             Assert.areEqual('aggregate function', sumNode.nodeType, 'Expected nodeType to be "aggregate function"');
             Assert.isNull(sumNode.left, 'Expected left to be null');
             Assert.isNotNull(sumNode.right, 'Expected right to be not null');
     
-            Lexer.Node amountNode = sumNode.right;
+            Node amountNode = sumNode.right;
             Assert.areEqual('amount', amountNode.id, 'Expected id to be "amount"');
             Assert.areEqual('field', amountNode.nodeType, 'Expected nodeType to be "field"');
             Assert.isNull(amountNode.left, 'Expected left to be null');
             Assert.isNull(amountNode.right, 'Expected right to be null');
     
-            Lexer.Node fromNode = head.right;
+            Node fromNode = head.right;
             Assert.areEqual('from', fromNode.id, 'Expected id to be "from"');
             Assert.areEqual('from', fromNode.nodeType, 'Expected nodeType to be "from"');
             Assert.isNotNull(fromNode.left, 'Expected left to be not null');
             Assert.isNull(fromNode.right, 'Expected right to be null');
     
-            Lexer.Node opportunityNode = fromNode.left;
+            Node opportunityNode = fromNode.left;
             Assert.areEqual('opportunity', opportunityNode.id, 'Expected id to be "opportunity"');
             Assert.areEqual('object', opportunityNode.nodeType, 'Expected nodeType to be "object"');
             Assert.isNull(opportunityNode.left, 'Expected left to be null');
@@ -416,7 +416,7 @@ private with sharing class LexerTest {
     private static void testSelectAccount() {
         Test.startTest();
         Lexer t = new Lexer();
-        Lexer.Node head = t.parse('SELECT Id FROM Account');
+        Node head = t.parse('SELECT Id FROM Account');
         Test.stopTest();
         
         // we expect this to come back in a particular order
@@ -425,19 +425,19 @@ private with sharing class LexerTest {
         Assert.isNotNull(head.left, 'Expected left to be not null');
         Assert.isNotNull(head.right, 'Expected right to be not null');
 
-        Lexer.Node idNode = head.left;
+        Node idNode = head.left;
         Assert.areEqual('id', idNode.id, 'Expected id to be "id"');
         Assert.areEqual('field', idNode.nodeType, 'Expected nodeType to be "field"');
         Assert.isNull(idNode.left, 'Expected left to be null');
         Assert.isNull(idNode.right, 'Expected right to be null');
 
-        Lexer.Node fromNode = head.right;
+        Node fromNode = head.right;
         Assert.areEqual('from', fromNode.id, 'Expected id to be "from"');
         Assert.areEqual('from', fromNode.nodeType, 'Expected nodeType to be "from"');
         Assert.isNotNull(fromNode.left, 'Expected left to be not null');
         Assert.isNull(fromNode.right, 'Expected right to be null');
 
-        Lexer.Node accountNode = fromNode.left;
+        Node accountNode = fromNode.left;
         Assert.areEqual('account', accountNode.id, 'Expected id to be "account"');
         Assert.areEqual('object', accountNode.nodeType, 'Expected nodeType to be "object"');
         Assert.isNull(accountNode.left, 'Expected left to be null');
@@ -448,7 +448,7 @@ private with sharing class LexerTest {
     private static void testSelectWithWhereClause() {
         Test.startTest();
         Lexer t = new Lexer();
-        Lexer.Node head = t.parse('SELECT Id FROM Account WHERE Name = \'Test\'');
+        Node head = t.parse('SELECT Id FROM Account WHERE Name = \'Test\'');
         Test.stopTest();
         
         // we expect this to come back in a particular order
@@ -457,43 +457,43 @@ private with sharing class LexerTest {
         Assert.isNotNull(head.left, 'Expected left to be not null');
         Assert.isNotNull(head.right, 'Expected right to be not null');
 
-        Lexer.Node idNode = head.left;
+        Node idNode = head.left;
         Assert.areEqual('id', idNode.id, 'Expected id to be "id"');
         Assert.areEqual('field', idNode.nodeType, 'Expected nodeType to be "field"');
         Assert.isNull(idNode.left, 'Expected left to be null');
         Assert.isNull(idNode.right, 'Expected right to be null');
 
-        Lexer.Node fromNode = head.right;
+        Node fromNode = head.right;
         Assert.areEqual('from', fromNode.id, 'Expected id to be "from"');
         Assert.areEqual('from', fromNode.nodeType, 'Expected nodeType to be "from"');
         Assert.isNotNull(fromNode.left, 'Expected left to be not null');
         Assert.isNotNull(fromNode.right, 'Expected right to be not null');
 
-        Lexer.Node accountNode = fromNode.left;
+        Node accountNode = fromNode.left;
         Assert.areEqual('account', accountNode.id, 'Expected id to be "account"');
         Assert.areEqual('object', accountNode.nodeType, 'Expected nodeType to be "object"');
         Assert.isNull(accountNode.left, 'Expected left to be null');
         Assert.isNull(accountNode.right, 'Expected right to be null');
 
-        Lexer.Node whereNode = fromNode.right;
+        Node whereNode = fromNode.right;
         Assert.areEqual('where', whereNode.id, 'Expected id to be "where"');
         Assert.areEqual('where', whereNode.nodeType, 'Expected nodeType to be "where"');
         Assert.isNotNull(whereNode.left, 'Expected left to be not null');
         Assert.isNull(whereNode.right, 'Expected right to be null');
 
-        Lexer.Node operatorNode = whereNode.left;
+        Node operatorNode = whereNode.left;
         Assert.areEqual('=', operatorNode.id, 'Expected id to be "operator"');
         Assert.areEqual('operator', operatorNode.nodeType, 'Expected nodeType to be "operator"');
         Assert.isNotNull(operatorNode.left, 'Expected left to not be null');
         Assert.isNotNull(operatorNode.right, 'Expected right to not be null');
 
-        Lexer.Node nameNode = operatorNode.left;
+        Node nameNode = operatorNode.left;
         Assert.areEqual('name', nameNode.id, 'Expected id to be "name"');
         Assert.areEqual('field', nameNode.nodeType, 'Expected nodeType to be "name"');
         Assert.isNull(nameNode.left, 'Expected left to be null');
         Assert.isNull(nameNode.right, 'Expected right to be null');
 
-        Lexer.Node valueNode = operatorNode.right;
+        Node valueNode = operatorNode.right;
         Assert.areEqual('test', valueNode.id, 'Expected id to be "value"');
         Assert.areEqual('string', valueNode.nodeType, 'Expected nodeType to be "value"');
         Assert.isNull(valueNode.left, 'Expected left to be null');
@@ -504,7 +504,7 @@ private with sharing class LexerTest {
     private static void testMixedFieldsSubQueries() {
         Test.startTest();
         Lexer t = new Lexer();
-        Lexer.Node head = t.parse('SELECT Id, (SELECT Id FROM Contacts), Name FROM Account');
+        Node head = t.parse('SELECT Id, (SELECT Id FROM Contacts), Name FROM Account');
         Test.stopTest();
 
         Assert.areEqual('select', head.id, 'Expected id to be "select"');
@@ -512,55 +512,55 @@ private with sharing class LexerTest {
         Assert.isNotNull(head.left, 'Expected left to be not null');
         Assert.isNotNull(head.right, 'Expected right to be not null');
 
-        Lexer.Node idNode = head.left;
+        Node idNode = head.left;
         Assert.areEqual('id', idNode.id, 'Expected id to be "id"');
         Assert.areEqual('field', idNode.nodeType, 'Expected nodeType to be "field"');
         Assert.isNotNull(idNode.left, 'Expected left to not be null');
         Assert.isNull(idNode.right, 'Expected right to be null');
 
-        Lexer.Node subQueryNode = idNode.left;
+        Node subQueryNode = idNode.left;
         Assert.areEqual('subquery', subQueryNode.id, 'Expected id to be "subquery"');
         Assert.areEqual('subquery', subQueryNode.nodeType, 'Expected nodeType to be "subquery"');
         Assert.isNotNull(subQueryNode.left, 'Expected left to not be null');
         Assert.isNotNull(subQueryNode.right, 'Expected right to not be null');
 
-        Lexer.Node subQuerySelectNode = subQueryNode.right;
+        Node subQuerySelectNode = subQueryNode.right;
         Assert.areEqual('select', subQuerySelectNode.id, 'Expected id to be "select"');
         Assert.areEqual('select', subQuerySelectNode.nodeType, 'Expected nodeType to be "select"');
         Assert.isNotNull(subQuerySelectNode.left, 'Expected left to not be null');
         Assert.isNotNull(subQuerySelectNode.right, 'Expected right to not be null');
 
-        Lexer.Node subQueryIdNode = subQuerySelectNode.left;
+        Node subQueryIdNode = subQuerySelectNode.left;
         Assert.areEqual('id', subQueryIdNode.id, 'Expected id to be "id"');
         Assert.areEqual('field', subQueryIdNode.nodeType, 'Expected nodeType to be "field"');
         Assert.isNull(subQueryIdNode.left, 'Expected left to be null');
         Assert.isNull(subQueryIdNode.right, 'Expected right to be null');
 
-        Lexer.Node subQueryFromNode = subQuerySelectNode.right;
+        Node subQueryFromNode = subQuerySelectNode.right;
         Assert.areEqual('from', subQueryFromNode.id, 'Expected id to be "from"');
         Assert.areEqual('from', subQueryFromNode.nodeType, 'Expected nodeType to be "from"');
         Assert.isNotNull(subQueryFromNode.left, 'Expected left to not be null');
         Assert.isNull(subQueryFromNode.right, 'Expected right to be null');
 
-        Lexer.Node subQueryContactNode = subQueryFromNode.left;
+        Node subQueryContactNode = subQueryFromNode.left;
         Assert.areEqual('contacts', subQueryContactNode.id, 'Expected id to be "contact"');
         Assert.areEqual('object', subQueryContactNode.nodeType, 'Expected nodeType to be "object"');
         Assert.isNull(subQueryContactNode.left, 'Expected left to be null');
         Assert.isNull(subQueryContactNode.right, 'Expected right to be null');
 
-        Lexer.Node nameNode = subQueryNode.left;
+        Node nameNode = subQueryNode.left;
         Assert.areEqual('name', nameNode.id, 'Expected id to be "name"');
         Assert.areEqual('field', nameNode.nodeType, 'Expected nodeType to be "field"');
         Assert.isNull(nameNode.left, 'Expected left to be null');
         Assert.isNull(nameNode.right, 'Expected right to be null');
 
-        Lexer.Node fromNode = head.right;
+        Node fromNode = head.right;
         Assert.areEqual('from', fromNode.id, 'Expected id to be "from"');
         Assert.areEqual('from', fromNode.nodeType, 'Expected nodeType to be "from"');
         Assert.isNotNull(fromNode.left, 'Expected left to not be null');
         Assert.isNull(fromNode.right, 'Expected right to be null');
 
-        Lexer.Node accountNode = fromNode.left;
+        Node accountNode = fromNode.left;
         Assert.areEqual('account', accountNode.id, 'Expected id to be "account"');
         Assert.areEqual('object', accountNode.nodeType, 'Expected nodeType to be "object"');
         Assert.isNull(accountNode.left, 'Expected left to be null');
@@ -572,7 +572,7 @@ private with sharing class LexerTest {
     private static void testSubQueryWithSubQueryFirst() {
         Test.startTest();
         Lexer t = new Lexer();
-        Lexer.Node head = t.parse('SELECT (SELECT Id FROM Contacts), Id FROM Account');
+        Node head = t.parse('SELECT (SELECT Id FROM Contacts), Id FROM Account');
         Test.stopTest();
 
         Assert.areEqual('select', head.id, 'Expected id to be "select"');
@@ -580,31 +580,31 @@ private with sharing class LexerTest {
         Assert.isNotNull(head.left, 'Expected left to be not null');
         Assert.isNotNull(head.right, 'Expected right to be not null');
 
-        Lexer.Node subQueryNode = head.left;
+        Node subQueryNode = head.left;
         Assert.areEqual('subquery', subQueryNode.id, 'Expected id to be "subquery"');
         Assert.areEqual('subquery', subQueryNode.nodeType, 'Expected nodeType to be "subquery"');
         Assert.isNotNull(subQueryNode.left, 'Expected left to not be null');
         Assert.isNotNull(subQueryNode.right, 'Expected right to not be null');
 
-        Lexer.Node subQuerySelectNode = subQueryNode.right;
+        Node subQuerySelectNode = subQueryNode.right;
         Assert.areEqual('select', subQuerySelectNode.id, 'Expected id to be "select"');
         Assert.areEqual('select', subQuerySelectNode.nodeType, 'Expected nodeType to be "select"');
         Assert.isNotNull(subQuerySelectNode.left, 'Expected left to not be null');
         Assert.isNotNull(subQuerySelectNode.right, 'Expected right to not be null');
 
-        Lexer.Node subQueryIdNode = subQuerySelectNode.left;
+        Node subQueryIdNode = subQuerySelectNode.left;
         Assert.areEqual('id', subQueryIdNode.id, 'Expected id to be "id"');
         Assert.areEqual('field', subQueryIdNode.nodeType, 'Expected nodeType to be "field"');
         Assert.isNull(subQueryIdNode.left, 'Expected left to be null');
         Assert.isNull(subQueryIdNode.right, 'Expected right to be null');
 
-        Lexer.Node subQueryFromNode = subQuerySelectNode.right;
+        Node subQueryFromNode = subQuerySelectNode.right;
         Assert.areEqual('from', subQueryFromNode.id, 'Expected id to be "from"');
         Assert.areEqual('from', subQueryFromNode.nodeType, 'Expected nodeType to be "from"');
         Assert.isNotNull(subQueryFromNode.left, 'Expected left to not be null');
         Assert.isNull(subQueryFromNode.right, 'Expected right to be null');
 
-        Lexer.Node subQueryContactNode = subQueryFromNode.left;
+        Node subQueryContactNode = subQueryFromNode.left;
         Assert.areEqual('contacts', subQueryContactNode.id, 'Expected id to be "contact"');
         Assert.areEqual('object', subQueryContactNode.nodeType, 'Expected nodeType to be "object"');
         Assert.isNull(subQueryContactNode.left, 'Expected left to be null');
@@ -616,7 +616,7 @@ private with sharing class LexerTest {
     private static void testSubQueryWithSubQuerySecond() {
         Test.startTest();
         Lexer t = new Lexer();
-        Lexer.Node head = t.parse('SELECT Id, (SELECT Id FROM Contacts) FROM Account');
+        Node head = t.parse('SELECT Id, (SELECT Id FROM Contacts) FROM Account');
         Test.stopTest();
 
         Assert.areEqual('select', head.id, 'Expected id to be "select"');
@@ -624,37 +624,37 @@ private with sharing class LexerTest {
         Assert.isNotNull(head.left, 'Expected left to be not null');
         Assert.isNotNull(head.right, 'Expected right to be not null');
 
-        Lexer.Node idNode = head.left;
+        Node idNode = head.left;
         Assert.areEqual('id', idNode.id, 'Expected id to be "id"');
         Assert.areEqual('field', idNode.nodeType, 'Expected nodeType to be "field"');
         Assert.isNotNull(idNode.left, 'Expected left to not be null');
         Assert.isNull(idNode.right, 'Expected right to be null');
 
-        Lexer.Node subQueryNode = idNode.left;
+        Node subQueryNode = idNode.left;
         Assert.areEqual('subquery', subQueryNode.id, 'Expected id to be "subquery"');
         Assert.areEqual('subquery', subQueryNode.nodeType, 'Expected nodeType to be "subquery"');
         Assert.isNull(subQueryNode.left, 'Expected left to be null');
         Assert.isNotNull(subQueryNode.right, 'Expected right to not be null');
 
-        Lexer.Node subQuerySelectNode = subQueryNode.right;
+        Node subQuerySelectNode = subQueryNode.right;
         Assert.areEqual('select', subQuerySelectNode.id, 'Expected id to be "select"');
         Assert.areEqual('select', subQuerySelectNode.nodeType, 'Expected nodeType to be "select"');
         Assert.isNotNull(subQuerySelectNode.left, 'Expected left to not be null');
         Assert.isNotNull(subQuerySelectNode.right, 'Expected right to not be null');
 
-        Lexer.Node subQueryIdNode = subQuerySelectNode.left;
+        Node subQueryIdNode = subQuerySelectNode.left;
         Assert.areEqual('id', subQueryIdNode.id, 'Expected id to be "id"');
         Assert.areEqual('field', subQueryIdNode.nodeType, 'Expected nodeType to be "field"');
         Assert.isNull(subQueryIdNode.left, 'Expected left to be null');
         Assert.isNull(subQueryIdNode.right, 'Expected right to be null');
 
-        Lexer.Node subQueryFromNode = subQuerySelectNode.right;
+        Node subQueryFromNode = subQuerySelectNode.right;
         Assert.areEqual('from', subQueryFromNode.id, 'Expected id to be "from"');
         Assert.areEqual('from', subQueryFromNode.nodeType, 'Expected nodeType to be "from"');
         Assert.isNotNull(subQueryFromNode.left, 'Expected left to not be null');
         Assert.isNull(subQueryFromNode.right, 'Expected right to be null');
 
-        Lexer.Node subQueryContactNode = subQueryFromNode.left;
+        Node subQueryContactNode = subQueryFromNode.left;
         Assert.areEqual('contacts', subQueryContactNode.id, 'Expected id to be "contact"');
         Assert.areEqual('object', subQueryContactNode.nodeType, 'Expected nodeType to be "object"');
         Assert.isNull(subQueryContactNode.left, 'Expected left to be null');
@@ -665,7 +665,7 @@ private with sharing class LexerTest {
     private static void testMultipleSubQueries() {
         Test.startTest();
         Lexer t = new Lexer();
-        Lexer.Node head = t.parse('SELECT Id, (SELECT Id FROM Contacts), (SELECT Id FROM Opportunities) FROM Account');
+        Node head = t.parse('SELECT Id, (SELECT Id FROM Contacts), (SELECT Id FROM Opportunities) FROM Account');
         Test.stopTest();
 
         Assert.areEqual('select', head.id, 'Expected id to be "select"');
@@ -673,67 +673,67 @@ private with sharing class LexerTest {
         Assert.isNotNull(head.left, 'Expected left to be not null');
         Assert.isNotNull(head.right, 'Expected right to be not null');
 
-        Lexer.Node idNode = head.left;
+        Node idNode = head.left;
         Assert.areEqual('id', idNode.id, 'Expected id to be "id"');
         Assert.areEqual('field', idNode.nodeType, 'Expected nodeType to be "field"');
         Assert.isNotNull(idNode.left, 'Expected left to not be null');
         Assert.isNull(idNode.right, 'Expected right to be null');
 
-        Lexer.Node subQueryNode = idNode.left;
+        Node subQueryNode = idNode.left;
         Assert.areEqual('subquery', subQueryNode.id, 'Expected id to be "subquery"');
         Assert.areEqual('subquery', subQueryNode.nodeType, 'Expected nodeType to be "subquery"');
         Assert.isNotNull(subQueryNode.left, 'Expected left to not be null');
         Assert.isNotNull(subQueryNode.right, 'Expected right to not be null');
 
-        Lexer.Node subQuerySelectNode = subQueryNode.right;
+        Node subQuerySelectNode = subQueryNode.right;
         Assert.areEqual('select', subQuerySelectNode.id, 'Expected id to be "select"');
         Assert.areEqual('select', subQuerySelectNode.nodeType, 'Expected nodeType to be "select"');
         Assert.isNotNull(subQuerySelectNode.left, 'Expected left to not be null');
         Assert.isNotNull(subQuerySelectNode.right, 'Expected right to not be null');
 
-        Lexer.Node subQueryIdNode = subQuerySelectNode.left;
+        Node subQueryIdNode = subQuerySelectNode.left;
         Assert.areEqual('id', subQueryIdNode.id, 'Expected id to be "id"');
         Assert.areEqual('field', subQueryIdNode.nodeType, 'Expected nodeType to be "field"');
         Assert.isNull(subQueryIdNode.left, 'Expected left to be null');
         Assert.isNull(subQueryIdNode.right, 'Expected right to be null');
 
-        Lexer.Node subQueryFromNode = subQuerySelectNode.right;
+        Node subQueryFromNode = subQuerySelectNode.right;
         Assert.areEqual('from', subQueryFromNode.id, 'Expected id to be "from"');
         Assert.areEqual('from', subQueryFromNode.nodeType, 'Expected nodeType to be "from"');
         Assert.isNotNull(subQueryFromNode.left, 'Expected left to not be null');
         Assert.isNull(subQueryFromNode.right, 'Expected right to be null');
 
-        Lexer.Node subQueryContactNode = subQueryFromNode.left;
+        Node subQueryContactNode = subQueryFromNode.left;
         Assert.areEqual('contacts', subQueryContactNode.id, 'Expected id to be "contact"');
         Assert.areEqual('object', subQueryContactNode.nodeType, 'Expected nodeType to be "object"');
         Assert.isNull(subQueryContactNode.left, 'Expected left to be null');
         Assert.isNull(subQueryContactNode.right, 'Expected right to be null');
 
-        Lexer.Node subQueryNode2 = subQueryNode.left;
+        Node subQueryNode2 = subQueryNode.left;
         Assert.areEqual('subquery', subQueryNode2.id, 'Expected id to be "subquery"');
         Assert.areEqual('subquery', subQueryNode2.nodeType, 'Expected nodeType to be "subquery"');
         Assert.isNull(subQueryNode2.left, 'Expected left to be null');
         Assert.isNotNull(subQueryNode2.right, 'Expected right to not be null');
 
-        Lexer.Node subQuerySelectNode2 = subQueryNode2.right;
+        Node subQuerySelectNode2 = subQueryNode2.right;
         Assert.areEqual('select', subQuerySelectNode2.id, 'Expected id to be "select"');
         Assert.areEqual('select', subQuerySelectNode2.nodeType, 'Expected nodeType to be "select"');
         Assert.isNotNull(subQuerySelectNode2.left, 'Expected left to not be null');
         Assert.isNotNull(subQuerySelectNode2.right, 'Expected right to not be null');
 
-        Lexer.Node subQueryIdNode2 = subQuerySelectNode2.left;
+        Node subQueryIdNode2 = subQuerySelectNode2.left;
         Assert.areEqual('id', subQueryIdNode2.id, 'Expected id to be "id"');
         Assert.areEqual('field', subQueryIdNode2.nodeType, 'Expected nodeType to be "field"');
         Assert.isNull(subQueryIdNode2.left, 'Expected left to be null');
         Assert.isNull(subQueryIdNode2.right, 'Expected right to be null');
 
-        Lexer.Node subQueryFromNode2 = subQuerySelectNode2.right;
+        Node subQueryFromNode2 = subQuerySelectNode2.right;
         Assert.areEqual('from', subQueryFromNode2.id, 'Expected id to be "from"');
         Assert.areEqual('from', subQueryFromNode2.nodeType, 'Expected nodeType to be "from"');
         Assert.isNotNull(subQueryFromNode2.left, 'Expected left to not be null');
         Assert.isNull(subQueryFromNode2.right, 'Expected right to be null');
 
-        Lexer.Node subQueryOpportunityNode = subQueryFromNode2.left;
+        Node subQueryOpportunityNode = subQueryFromNode2.left;
         Assert.areEqual('opportunities', subQueryOpportunityNode.id, 'Expected id to be "opportunities"');
         Assert.areEqual('object', subQueryOpportunityNode.nodeType, 'Expected nodeType to be "object"');
         Assert.isNull(subQueryOpportunityNode.left, 'Expected left to be null');
@@ -745,7 +745,7 @@ private with sharing class LexerTest {
     private static void testSubQueryWithQueryInWhereClause() {
         Test.startTest();
         Lexer t = new Lexer();
-        Lexer.Node head = t.parse('SELECT Id FROM Account WHERE Id IN (SELECT AccountId FROM Contact)');
+        Node head = t.parse('SELECT Id FROM Account WHERE Id IN (SELECT AccountId FROM Contact)');
         Test.stopTest();
 
         Assert.areEqual('select', head.id, 'Expected id to be "select"');
@@ -753,67 +753,67 @@ private with sharing class LexerTest {
         Assert.isNotNull(head.left, 'Expected left to be not null');
         Assert.isNotNull(head.right, 'Expected right to be not null');
 
-        Lexer.Node idNode = head.left;
+        Node idNode = head.left;
         Assert.areEqual('id', idNode.id, 'Expected id to be "id"');
         Assert.areEqual('field', idNode.nodeType, 'Expected nodeType to be "field"');
         Assert.isNull(idNode.left, 'Expected left to be null');
         Assert.isNull(idNode.right, 'Expected right to be null');
 
-        Lexer.Node fromNode = head.right;
+        Node fromNode = head.right;
         Assert.areEqual('from', fromNode.id, 'Expected id to be "from"');
         Assert.areEqual('from', fromNode.nodeType, 'Expected nodeType to be "from"');
         Assert.isNotNull(fromNode.left, 'Expected left to be not null');
         Assert.isNotNull(fromNode.right, 'Expected right to be not null');
 
-        Lexer.Node accountNode = fromNode.left;
+        Node accountNode = fromNode.left;
         Assert.areEqual('account', accountNode.id, 'Expected id to be "account"');
         Assert.areEqual('object', accountNode.nodeType, 'Expected nodeType to be "object"');
         Assert.isNull(accountNode.left, 'Expected left to be null');
         Assert.isNull(accountNode.right, 'Expected right to be null');
 
-        Lexer.Node whereNode = fromNode.right;
+        Node whereNode = fromNode.right;
         Assert.areEqual('where', whereNode.id, 'Expected id to be "where"');
         Assert.areEqual('where', whereNode.nodeType, 'Expected nodeType to be "where"');
         Assert.isNotNull(whereNode.left, 'Expected left to be not null');
         Assert.isNull(whereNode.right, 'Expected right to be null');
 
-        Lexer.Node operatorNode = whereNode.left;
+        Node operatorNode = whereNode.left;
         Assert.areEqual('in', operatorNode.id, 'Expected id to be "operator"');
         Assert.areEqual('operator', operatorNode.nodeType, 'Expected nodeType to be "operator"');
         Assert.isNotNull(operatorNode.left, 'Expected left to not be null');
         Assert.isNotNull(operatorNode.right, 'Expected right to not be null');
 
-        Lexer.Node idNode2 = operatorNode.left;
+        Node idNode2 = operatorNode.left;
         Assert.areEqual('id', idNode2.id, 'Expected id to be "id"');
         Assert.areEqual('field', idNode2.nodeType, 'Expected nodeType to be "field"');
         Assert.isNull(idNode2.left, 'Expected left to be null');
         Assert.isNull(idNode2.right, 'Expected right to be null');
 
-        Lexer.Node subQueryNode = operatorNode.right;
+        Node subQueryNode = operatorNode.right;
         Assert.areEqual('subquery', subQueryNode.id, 'Expected id to be "subquery"');
         Assert.areEqual('subquery', subQueryNode.nodeType, 'Expected nodeType to be "subquery"');
         Assert.isNull(subQueryNode.left, 'Expected left to be null');
         Assert.isNotNull(subQueryNode.right, 'Expected right to not be null');
 
-        Lexer.Node subQuerySelectNode = subQueryNode.right;
+        Node subQuerySelectNode = subQueryNode.right;
         Assert.areEqual('select', subQuerySelectNode.id, 'Expected id to be "select"');
         Assert.areEqual('select', subQuerySelectNode.nodeType, 'Expected nodeType to be "select"');
         Assert.isNotNull(subQuerySelectNode.left, 'Expected left to not be null');
         Assert.isNotNull(subQuerySelectNode.right, 'Expected right to not be null');
 
-        Lexer.Node subQueryAccountIdNode = subQuerySelectNode.left;
+        Node subQueryAccountIdNode = subQuerySelectNode.left;
         Assert.areEqual('accountid', subQueryAccountIdNode.id, 'Expected id to be "accountid"');
         Assert.areEqual('field', subQueryAccountIdNode.nodeType, 'Expected nodeType to be "field"');
         Assert.isNull(subQueryAccountIdNode.left, 'Expected left to be null');
         Assert.isNull(subQueryAccountIdNode.right, 'Expected right to be null');
 
-        Lexer.Node subQueryFromNode = subQuerySelectNode.right;
+        Node subQueryFromNode = subQuerySelectNode.right;
         Assert.areEqual('from', subQueryFromNode.id, 'Expected id to be "from"');
         Assert.areEqual('from', subQueryFromNode.nodeType, 'Expected nodeType to be "from"');
         Assert.isNotNull(subQueryFromNode.left, 'Expected left to not be null');
         Assert.isNull(subQueryFromNode.right, 'Expected right to be null');
 
-        Lexer.Node subQueryContactNode = subQueryFromNode.left;
+        Node subQueryContactNode = subQueryFromNode.left;
         Assert.areEqual('contact', subQueryContactNode.id, 'Expected id to be "contact"');
         Assert.areEqual('object', subQueryContactNode.nodeType, 'Expected nodeType to be "object"');
         Assert.isNull(subQueryContactNode.left, 'Expected left to be null');
@@ -824,7 +824,7 @@ private with sharing class LexerTest {
     private static void testSubQueryWithQueryInWhereClause2() {
         Test.startTest();
         Lexer t = new Lexer();
-        Lexer.Node head = t.parse('SELECT Id FROM Account WHERE Id IN (SELECT AccountId FROM Contact WHERE Name = \'Test\')');
+        Node head = t.parse('SELECT Id FROM Account WHERE Id IN (SELECT AccountId FROM Contact WHERE Name = \'Test\')');
         Test.stopTest();
 
         Assert.areEqual('select', head.id, 'Expected id to be "select"');
@@ -832,89 +832,89 @@ private with sharing class LexerTest {
         Assert.isNotNull(head.left, 'Expected left to be not null');
         Assert.isNotNull(head.right, 'Expected right to be not null');
 
-        Lexer.Node idNode = head.left;
+        Node idNode = head.left;
         Assert.areEqual('id', idNode.id, 'Expected id to be "id"');
         Assert.areEqual('field', idNode.nodeType, 'Expected nodeType to be "field"');
         Assert.isNull(idNode.left, 'Expected left to be null');
         Assert.isNull(idNode.right, 'Expected right to be null');
 
-        Lexer.Node fromNode = head.right;
+        Node fromNode = head.right;
         Assert.areEqual('from', fromNode.id, 'Expected id to be "from"');
         Assert.areEqual('from', fromNode.nodeType, 'Expected nodeType to be "from"');
         Assert.isNotNull(fromNode.left, 'Expected left to be not null');
         Assert.isNotNull(fromNode.right, 'Expected right to be not null');
 
-        Lexer.Node accountNode = fromNode.left;
+        Node accountNode = fromNode.left;
         Assert.areEqual('account', accountNode.id, 'Expected id to be "account"');
         Assert.areEqual('object', accountNode.nodeType, 'Expected nodeType to be "object"');
         Assert.isNull(accountNode.left, 'Expected left to be null');
         Assert.isNull(accountNode.right, 'Expected right to be null');
 
-        Lexer.Node whereNode = fromNode.right;
+        Node whereNode = fromNode.right;
         Assert.areEqual('where', whereNode.id, 'Expected id to be "where"');
         Assert.areEqual('where', whereNode.nodeType, 'Expected nodeType to be "where"');
         Assert.isNotNull(whereNode.left, 'Expected left to be not null');
         Assert.isNull(whereNode.right, 'Expected right to be null');
 
-        Lexer.Node operatorNode = whereNode.left;
+        Node operatorNode = whereNode.left;
         Assert.areEqual('in', operatorNode.id, 'Expected id to be "operator"');
         Assert.areEqual('operator', operatorNode.nodeType, 'Expected nodeType to be "operator"');
         Assert.isNotNull(operatorNode.left, 'Expected left to not be null');
         Assert.isNotNull(operatorNode.right, 'Expected right to not be null');
 
-        Lexer.Node idNode2 = operatorNode.left;
+        Node idNode2 = operatorNode.left;
         Assert.areEqual('id', idNode2.id, 'Expected id to be "id"');
         Assert.areEqual('field', idNode2.nodeType, 'Expected nodeType to be "field"');
         Assert.isNull(idNode2.left, 'Expected left to be null');
         Assert.isNull(idNode2.right, 'Expected right to be null');
 
-        Lexer.Node subQueryNode = operatorNode.right;
+        Node subQueryNode = operatorNode.right;
         Assert.areEqual('subquery', subQueryNode.id, 'Expected id to be "subquery"');
         Assert.areEqual('subquery', subQueryNode.nodeType, 'Expected nodeType to be "subquery"');
         Assert.isNull(subQueryNode.left, 'Expected left to be null');
 
-        Lexer.Node subQuerySelectNode = subQueryNode.right;
+        Node subQuerySelectNode = subQueryNode.right;
         Assert.areEqual('select', subQuerySelectNode.id, 'Expected id to be "select"');
         Assert.areEqual('select', subQuerySelectNode.nodeType, 'Expected nodeType to be "select"');
         Assert.isNotNull(subQuerySelectNode.left, 'Expected left to not be null');
         Assert.isNotNull(subQuerySelectNode.right, 'Expected right to not be null');
 
-        Lexer.Node subQueryAccountIdNode = subQuerySelectNode.left;
+        Node subQueryAccountIdNode = subQuerySelectNode.left;
         Assert.areEqual('accountid', subQueryAccountIdNode.id, 'Expected id to be "accountid"');
         Assert.areEqual('field', subQueryAccountIdNode.nodeType, 'Expected nodeType to be "field"');
         Assert.isNull(subQueryAccountIdNode.left, 'Expected left to be null');
         Assert.isNull(subQueryAccountIdNode.right, 'Expected right to be null');
 
-        Lexer.Node subQueryFromNode = subQuerySelectNode.right;
+        Node subQueryFromNode = subQuerySelectNode.right;
         Assert.areEqual('from', subQueryFromNode.id, 'Expected id to be "from"');
         Assert.areEqual('from', subQueryFromNode.nodeType, 'Expected nodeType to be "from"');
         Assert.isNotNull(subQueryFromNode.left, 'Expected left to not be null');
         Assert.isNotNull(subQueryFromNode.right, 'Expected right to not be null');
 
-        Lexer.Node subQueryContactNode = subQueryFromNode.left;
+        Node subQueryContactNode = subQueryFromNode.left;
         Assert.areEqual('contact', subQueryContactNode.id, 'Expected id to be "contact"');
         Assert.areEqual('object', subQueryContactNode.nodeType, 'Expected nodeType to be "object"');
         Assert.isNull(subQueryContactNode.left, 'Expected left to be null');
 
-        Lexer.Node subQueryWhereNode = subQueryFromNode.right;
+        Node subQueryWhereNode = subQueryFromNode.right;
         Assert.areEqual('where', subQueryWhereNode.id, 'Expected id to be "where"');
         Assert.areEqual('where', subQueryWhereNode.nodeType, 'Expected nodeType to be "where"');
         Assert.isNotNull(subQueryWhereNode.left, 'Expected left to not be null');
         Assert.isNull(subQueryWhereNode.right, 'Expected right to be null');
 
-        Lexer.Node subQueryOperatorNode = subQueryWhereNode.left;
+        Node subQueryOperatorNode = subQueryWhereNode.left;
         Assert.areEqual('=', subQueryOperatorNode.id, 'Expected id to be "operator"');
         Assert.areEqual('operator', subQueryOperatorNode.nodeType, 'Expected nodeType to be "operator"');
         Assert.isNotNull(subQueryOperatorNode.left, 'Expected left to not be null');
         Assert.isNotNull(subQueryOperatorNode.right, 'Expected right to not be null');
 
-        Lexer.Node subQueryNameNode = subQueryOperatorNode.left;
+        Node subQueryNameNode = subQueryOperatorNode.left;
         Assert.areEqual('name', subQueryNameNode.id, 'Expected id to be "name"');
         Assert.areEqual('field', subQueryNameNode.nodeType, 'Expected nodeType to be "name"');
         Assert.isNull(subQueryNameNode.left, 'Expected left to be null');
         Assert.isNull(subQueryNameNode.right, 'Expected right to be null');
 
-        Lexer.Node subQueryValueNode = subQueryOperatorNode.right;
+        Node subQueryValueNode = subQueryOperatorNode.right;
         Assert.areEqual('test', subQueryValueNode.id, 'Expected id to be "value"');
         Assert.areEqual('string', subQueryValueNode.nodeType, 'Expected nodeType to be "value"');
         Assert.isNull(subQueryValueNode.left, 'Expected left to be null');
@@ -925,7 +925,7 @@ private with sharing class LexerTest {
     private static void testBindVar() {
         Test.startTest();
         Lexer t = new Lexer();
-        Lexer.Node head = t.parse('SELECT Id FROM Account WHERE Id = :id');
+        Node head = t.parse('SELECT Id FROM Account WHERE Id = :id');
         Test.stopTest();
 
         Assert.areEqual('select', head.id, 'Expected id to be "select"');
@@ -933,42 +933,42 @@ private with sharing class LexerTest {
         Assert.isNotNull(head.left, 'Expected left to be not null');
         Assert.isNotNull(head.right, 'Expected right to be not null');
 
-        Lexer.Node idNode = head.left;
+        Node idNode = head.left;
         Assert.areEqual('id', idNode.id, 'Expected id to be "id"');
         Assert.areEqual('field', idNode.nodeType, 'Expected nodeType to be "field"');
         Assert.isNull(idNode.left, 'Expected left to be null');
         Assert.isNull(idNode.right, 'Expected right to be null');
 
-        Lexer.Node fromNode = head.right;
+        Node fromNode = head.right;
         Assert.areEqual('from', fromNode.id, 'Expected id to be "from"');
         Assert.areEqual('from', fromNode.nodeType, 'Expected nodeType to be "from"');
         Assert.isNotNull(fromNode.left, 'Expected left to be not null');
 
-        Lexer.Node accountNode = fromNode.left;
+        Node accountNode = fromNode.left;
         Assert.areEqual('account', accountNode.id, 'Expected id to be "account"');
         Assert.areEqual('object', accountNode.nodeType, 'Expected nodeType to be "object"');
         Assert.isNull(accountNode.left, 'Expected left to be null');
         Assert.isNull(accountNode.right, 'Expected right to be null');
 
-        Lexer.Node whereNode = fromNode.right;
+        Node whereNode = fromNode.right;
         Assert.areEqual('where', whereNode.id, 'Expected id to be "where"');
         Assert.areEqual('where', whereNode.nodeType, 'Expected nodeType to be "where"');
         Assert.isNotNull(whereNode.left, 'Expected left to be not null');
         Assert.isNull(whereNode.right, 'Expected right to be null');
 
-        Lexer.Node operatorNode = whereNode.left;
+        Node operatorNode = whereNode.left;
         Assert.areEqual('=', operatorNode.id, 'Expected id to be "operator"');
         Assert.areEqual('operator', operatorNode.nodeType, 'Expected nodeType to be "operator"');
         Assert.isNotNull(operatorNode.left, 'Expected left to not be null');
         Assert.isNotNull(operatorNode.right, 'Expected right to not be null');
 
-        Lexer.Node idNode2 = operatorNode.left;
+        Node idNode2 = operatorNode.left;
         Assert.areEqual('id', idNode2.id, 'Expected id to be "id"');
         Assert.areEqual('field', idNode2.nodeType, 'Expected nodeType to be "field"');
         Assert.isNull(idNode2.left, 'Expected left to be null');
         Assert.isNull(idNode2.right, 'Expected right to be null');
 
-        Lexer.Node bindVarNode = operatorNode.right;
+        Node bindVarNode = operatorNode.right;
         Assert.areEqual('id', bindVarNode.id, 'Expected id to be "id"');
         Assert.areEqual('bind variable', bindVarNode.nodeType, 'Expected nodeType to be "bind variable"');
         Assert.isNull(bindVarNode.left, 'Expected left to be null');
@@ -980,7 +980,7 @@ private with sharing class LexerTest {
     private static void testAndStatements() {
         Test.startTest();
         Lexer t = new Lexer();
-        Lexer.Node head = t.parse('SELECT Id FROM Contact WHERE FirstName = \'test\' AND LastName = \'test2\' AND Account.Name = \'testAcct\'');
+        Node head = t.parse('SELECT Id FROM Contact WHERE FirstName = \'test\' AND LastName = \'test2\' AND Account.Name = \'testAcct\'');
         Test.stopTest();
 
         Assert.areEqual('select', head.id, 'Expected id to be "select"');
@@ -988,91 +988,91 @@ private with sharing class LexerTest {
         Assert.isNotNull(head.left, 'Expected left to be not null');
         Assert.isNotNull(head.right, 'Expected right to be not null');
 
-        Lexer.Node idNode = head.left;
+        Node idNode = head.left;
         Assert.areEqual('id', idNode.id, 'Expected id to be "id"');
         Assert.areEqual('field', idNode.nodeType, 'Expected nodeType to be "field"');
         Assert.isNull(idNode.left, 'Expected left to be null');
         Assert.isNull(idNode.right, 'Expected right to be null');
 
-        Lexer.Node fromNode = head.right;
+        Node fromNode = head.right;
         Assert.areEqual('from', fromNode.id, 'Expected id to be "from"');
         Assert.areEqual('from', fromNode.nodeType, 'Expected nodeType to be "from"');
         Assert.isNotNull(fromNode.left, 'Expected left to be not null');
         Assert.isNotNull(fromNode.right, 'Expected right to be not null');
 
-        Lexer.Node contactNode = fromNode.left;
+        Node contactNode = fromNode.left;
         Assert.areEqual('contact', contactNode.id, 'Expected id to be "contact"');
         Assert.areEqual('object', contactNode.nodeType, 'Expected nodeType to be "object"');
         Assert.isNull(contactNode.left, 'Expected left to be null');
         Assert.isNull(contactNode.right, 'Expected right to be null');
 
-        Lexer.Node whereNode = fromNode.right;
+        Node whereNode = fromNode.right;
         Assert.areEqual('where', whereNode.id, 'Expected id to be "where"');
         Assert.areEqual('where', whereNode.nodeType, 'Expected nodeType to be "where"');
         Assert.isNotNull(whereNode.left, 'Expected left to be not null');
         Assert.isNull(whereNode.right, 'Expected right to be null');
 
-        Lexer.Node andNode = whereNode.left;
+        Node andNode = whereNode.left;
         Assert.areEqual('and', andNode.id, 'Expected id to be "and"');
         Assert.areEqual('and', andNode.nodeType, 'Expected nodeType to be "operator"');
         Assert.isNotNull(andNode.left, 'Expected left to not be null');
         Assert.isNotNull(andNode.right, 'Expected right to not be null');
 
-        Lexer.Node operatorNode = andNode.left;
+        Node operatorNode = andNode.left;
         Assert.areEqual('=', operatorNode.id, 'Expected id to be "operator"');
         Assert.areEqual('operator', operatorNode.nodeType, 'Expected nodeType to be "operator"');
         Assert.isNotNull(operatorNode.left, 'Expected left to not be null');
         Assert.isNotNull(operatorNode.right, 'Expected right to not be null');
 
-        Lexer.Node firstNameNode = operatorNode.left;
+        Node firstNameNode = operatorNode.left;
         Assert.areEqual('firstname', firstNameNode.id, 'Expected id to be "firstname"');
         Assert.areEqual('field', firstNameNode.nodeType, 'Expected nodeType to be "field"');
         Assert.isNull(firstNameNode.left, 'Expected left to be null');
         Assert.isNull(firstNameNode.right, 'Expected right to be null');
 
-        Lexer.Node valueNode = operatorNode.right;
+        Node valueNode = operatorNode.right;
         Assert.areEqual('test', valueNode.id, 'Expected id to be "test"');
         Assert.areEqual('string', valueNode.nodeType, 'Expected nodeType to be "string"');
         Assert.isNull(valueNode.left, 'Expected left to be null');
         Assert.isNull(valueNode.right, 'Expected right to be null');
 
-        Lexer.Node andNode2 = andNode.right;
+        Node andNode2 = andNode.right;
         Assert.areEqual('and', andNode2.id, 'Expected id to be "and"');
         Assert.areEqual('and', andNode2.nodeType, 'Expected nodeType to be "operator"');
         Assert.isNotNull(andNode2.left, 'Expected left to not be null');
         Assert.isNotNull(andNode2.right, 'Expected right to not be null');
 
-        Lexer.Node operatorNode2 = andNode2.left;
+        Node operatorNode2 = andNode2.left;
         Assert.areEqual('=', operatorNode2.id, 'Expected id to be "operator"');
         Assert.areEqual('operator', operatorNode2.nodeType, 'Expected nodeType to be "operator"');
         Assert.isNotNull(operatorNode2.left, 'Expected left to not be null');
         Assert.isNotNull(operatorNode2.right, 'Expected right to not be null');
 
-        Lexer.Node lastNameNode = operatorNode2.left;
+        Node lastNameNode = operatorNode2.left;
         Assert.areEqual('lastname', lastNameNode.id, 'Expected id to be "lastname"');
         Assert.areEqual('field', lastNameNode.nodeType, 'Expected nodeType to be "field"');
         Assert.isNull(lastNameNode.left, 'Expected left to be null');
         Assert.isNull(lastNameNode.right, 'Expected right to be null');
 
-        Lexer.Node valueNode2 = operatorNode2.right;
+        Node valueNode2 = operatorNode2.right;
         Assert.areEqual('test2', valueNode2.id, 'Expected id to be "test2"');
         Assert.areEqual('string', valueNode2.nodeType, 'Expected nodeType to be "string"');
         Assert.isNull(valueNode2.left, 'Expected left to be null');
         Assert.isNull(valueNode2.right, 'Expected right to be null');
 
-        Lexer.Node operatorNode3 = andNode2.right;
+        Node operatorNode3 = andNode2.right;
         Assert.areEqual('=', operatorNode3.id, 'Expected id to be "operator"');
         Assert.areEqual('operator', operatorNode3.nodeType, 'Expected nodeType to be "operator"');
         Assert.isNotNull(operatorNode3.left, 'Expected left to not be null');
         Assert.isNotNull(operatorNode3.right, 'Expected right to not be null');
 
-        Lexer.Node accountNameNode = operatorNode3.left;
+        Node accountNameNode = operatorNode3.left;
         Assert.areEqual('account.name', accountNameNode.id, 'Expected id to be "account.name"');
         Assert.areEqual('field', accountNameNode.nodeType, 'Expected nodeType to be "field"');
         Assert.isNull(accountNameNode.left, 'Expected left to be null');
         Assert.isNull(accountNameNode.right, 'Expected right to be null');
 
-        Lexer.Node valueNode3 = operatorNode3.right;
+        Node valueNode3 = operatorNode3.right;
         Assert.areEqual('testacct', valueNode3.id, 'Expected id to be "testacct"');
         Assert.areEqual('string', valueNode3.nodeType, 'Expected nodeType to be "string"');
         Assert.isNull(valueNode3.left, 'Expected left to be null');
@@ -1083,7 +1083,7 @@ private with sharing class LexerTest {
     private static void testQueryWithOrAnd() {
         Test.startTest();
         Lexer t = new Lexer();
-        Lexer.Node head = t.parse('SELECT Id FROM Contact WHERE FirstName = \'test\' OR LastName = \'test2\' AND Account.Name = \'testAcct\'');
+        Node head = t.parse('SELECT Id FROM Contact WHERE FirstName = \'test\' OR LastName = \'test2\' AND Account.Name = \'testAcct\'');
         Test.stopTest();
 
         Assert.areEqual('select', head.id, 'Expected id to be "select"');
@@ -1091,91 +1091,91 @@ private with sharing class LexerTest {
         Assert.isNotNull(head.left, 'Expected left to be not null');
         Assert.isNotNull(head.right, 'Expected right to be not null');
 
-        Lexer.Node idNode = head.left;
+        Node idNode = head.left;
         Assert.areEqual('id', idNode.id, 'Expected id to be "id"');
         Assert.areEqual('field', idNode.nodeType, 'Expected nodeType to be "field"');
         Assert.isNull(idNode.left, 'Expected left to be null');
         Assert.isNull(idNode.right, 'Expected right to be null');
 
-        Lexer.Node fromNode = head.right;
+        Node fromNode = head.right;
         Assert.areEqual('from', fromNode.id, 'Expected id to be "from"');
         Assert.areEqual('from', fromNode.nodeType, 'Expected nodeType to be "from"');
         Assert.isNotNull(fromNode.left, 'Expected left to be not null');
         Assert.isNotNull(fromNode.right, 'Expected right to be not null');
 
-        Lexer.Node contactNode = fromNode.left;
+        Node contactNode = fromNode.left;
         Assert.areEqual('contact', contactNode.id, 'Expected id to be "contact"');
         Assert.areEqual('object', contactNode.nodeType, 'Expected nodeType to be "object"');
         Assert.isNull(contactNode.left, 'Expected left to be null');
         Assert.isNull(contactNode.right, 'Expected right to be null');
 
-        Lexer.Node whereNode = fromNode.right;
+        Node whereNode = fromNode.right;
         Assert.areEqual('where', whereNode.id, 'Expected id to be "where"');
         Assert.areEqual('where', whereNode.nodeType, 'Expected nodeType to be "where"');
         Assert.isNotNull(whereNode.left, 'Expected left to be not null');
         Assert.isNull(whereNode.right, 'Expected right to be null');
 
-        Lexer.Node orNode = whereNode.left;
+        Node orNode = whereNode.left;
         Assert.areEqual('or', orNode.id, 'Expected id to be "or"');
         Assert.areEqual('or', orNode.nodeType, 'Expected nodeType to be "operator"');
         Assert.isNotNull(orNode.left, 'Expected left to not be null');
         Assert.isNotNull(orNode.right, 'Expected right to not be null');
 
-        Lexer.Node operatorNode = orNode.left;
+        Node operatorNode = orNode.left;
         Assert.areEqual('=', operatorNode.id, 'Expected id to be "operator"');
         Assert.areEqual('operator', operatorNode.nodeType, 'Expected nodeType to be "operator"');
         Assert.isNotNull(operatorNode.left, 'Expected left to not be null');
         Assert.isNotNull(operatorNode.right, 'Expected right to not be null');
 
-        Lexer.Node firstNameNode = operatorNode.left;
+        Node firstNameNode = operatorNode.left;
         Assert.areEqual('firstname', firstNameNode.id, 'Expected id to be "firstname"');
         Assert.areEqual('field', firstNameNode.nodeType, 'Expected nodeType to be "field"');
         Assert.isNull(firstNameNode.left, 'Expected left to be null');
         Assert.isNull(firstNameNode.right, 'Expected right to be null');
 
-        Lexer.Node valueNode = operatorNode.right;
+        Node valueNode = operatorNode.right;
         Assert.areEqual('test', valueNode.id, 'Expected id to be "test"');
         Assert.areEqual('string', valueNode.nodeType, 'Expected nodeType to be "string"');
         Assert.isNull(valueNode.left, 'Expected left to be null');
         Assert.isNull(valueNode.right, 'Expected right to be null');
 
-        Lexer.Node andNode = orNode.right;
+        Node andNode = orNode.right;
         Assert.areEqual('and', andNode.id, 'Expected id to be "and"');
         Assert.areEqual('and', andNode.nodeType, 'Expected nodeType to be "operator"');
         Assert.isNotNull(andNode.left, 'Expected left to not be null');
         Assert.isNotNull(andNode.right, 'Expected right to not be null');
 
-        Lexer.Node operatorNode2 = andNode.left;
+        Node operatorNode2 = andNode.left;
         Assert.areEqual('=', operatorNode2.id, 'Expected id to be "operator"');
         Assert.areEqual('operator', operatorNode2.nodeType, 'Expected nodeType to be "operator"');
         Assert.isNotNull(operatorNode2.left, 'Expected left to not be null');
         Assert.isNotNull(operatorNode2.right, 'Expected right to not be null');
 
-        Lexer.Node lastNameNode = operatorNode2.left;
+        Node lastNameNode = operatorNode2.left;
         Assert.areEqual('lastname', lastNameNode.id, 'Expected id to be "lastname"');
         Assert.areEqual('field', lastNameNode.nodeType, 'Expected nodeType to be "field"');
         Assert.isNull(lastNameNode.left, 'Expected left to be null');
         Assert.isNull(lastNameNode.right, 'Expected right to be null');
 
-        Lexer.Node valueNode2 = operatorNode2.right;
+        Node valueNode2 = operatorNode2.right;
         Assert.areEqual('test2', valueNode2.id, 'Expected id to be "test2"');
         Assert.areEqual('string', valueNode2.nodeType, 'Expected nodeType to be "string"');
         Assert.isNull(valueNode2.left, 'Expected left to be null');
         Assert.isNull(valueNode2.right, 'Expected right to be null');
 
-        Lexer.Node operatorNode3 = andNode.right;
+        Node operatorNode3 = andNode.right;
         Assert.areEqual('=', operatorNode3.id, 'Expected id to be "operator"');
         Assert.areEqual('operator', operatorNode3.nodeType, 'Expected nodeType to be "operator"');
         Assert.isNotNull(operatorNode3.left, 'Expected left to not be null');
         Assert.isNotNull(operatorNode3.right, 'Expected right to not be null');
 
-        Lexer.Node accountNameNode = operatorNode3.left;
+        Node accountNameNode = operatorNode3.left;
         Assert.areEqual('account.name', accountNameNode.id, 'Expected id to be "account.name"');
         Assert.areEqual('field', accountNameNode.nodeType, 'Expected nodeType to be "field"');
         Assert.isNull(accountNameNode.left, 'Expected left to be null');
         Assert.isNull(accountNameNode.right, 'Expected right to be null');
 
-        Lexer.Node valueNode3 = operatorNode3.right;
+        Node valueNode3 = operatorNode3.right;
         Assert.areEqual('testacct', valueNode3.id, 'Expected id to be "testacct"');
         Assert.areEqual('string', valueNode3.nodeType, 'Expected nodeType to be "string"');
         Assert.isNull(valueNode3.left, 'Expected left to be null');
@@ -1188,7 +1188,7 @@ private with sharing class LexerTest {
     private static void testNot() {
         Test.startTest();
         Lexer t = new Lexer();
-        Lexer.Node head = t.parse('SELECT Id FROM Contact WHERE NOT FirstName = \'test\'');
+        Node head = t.parse('SELECT Id FROM Contact WHERE NOT FirstName = \'test\'');
         Test.stopTest();
 
         Assert.areEqual('select', head.id, 'Expected id to be "select"');
@@ -1196,49 +1196,49 @@ private with sharing class LexerTest {
         Assert.isNotNull(head.left, 'Expected left to be not null');
         Assert.isNotNull(head.right, 'Expected right to be not null');
 
-        Lexer.Node idNode = head.left;
+        Node idNode = head.left;
         Assert.areEqual('id', idNode.id, 'Expected id to be "id"');
         Assert.areEqual('field', idNode.nodeType, 'Expected nodeType to be "field"');
         Assert.isNull(idNode.left, 'Expected left to be null');
         Assert.isNull(idNode.right, 'Expected right to be null');
 
-        Lexer.Node fromNode = head.right;
+        Node fromNode = head.right;
         Assert.areEqual('from', fromNode.id, 'Expected id to be "from"');
         Assert.areEqual('from', fromNode.nodeType, 'Expected nodeType to be "from"');
         Assert.isNotNull(fromNode.left, 'Expected left to be not null');
         Assert.isNotNull(fromNode.right, 'Expected right to be not null');
 
-        Lexer.Node contactNode = fromNode.left;
+        Node contactNode = fromNode.left;
         Assert.areEqual('contact', contactNode.id, 'Expected id to be "contact"');
         Assert.areEqual('object', contactNode.nodeType, 'Expected nodeType to be "object"');
         Assert.isNull(contactNode.left, 'Expected left to be null');
         Assert.isNull(contactNode.right, 'Expected right to be null');
 
-        Lexer.Node whereNode = fromNode.right;
+        Node whereNode = fromNode.right;
         Assert.areEqual('where', whereNode.id, 'Expected id to be "where"');
         Assert.areEqual('where', whereNode.nodeType, 'Expected nodeType to be "where"');
         Assert.isNotNull(whereNode.left, 'Expected left to be not null');
         Assert.isNull(whereNode.right, 'Expected right to be null');
 
-        Lexer.Node notNode = whereNode.left;
+        Node notNode = whereNode.left;
         Assert.areEqual('not', notNode.id, 'Expected id to be "not"');
         Assert.areEqual('not', notNode.nodeType, 'Expected nodeType to be "not"');
         Assert.isNotNull(notNode.left, 'Expected left to be not null');
         Assert.isNull(notNode.right, 'Expected right to be null');
 
-        Lexer.Node operatorNode = notNode.left;
+        Node operatorNode = notNode.left;
         Assert.areEqual('=', operatorNode.id, 'Expected id to be "operator"');
         Assert.areEqual('operator', operatorNode.nodeType, 'Expected nodeType to be "operator"');
         Assert.isNotNull(operatorNode.left, 'Expected left to not be null');
         Assert.isNotNull(operatorNode.right, 'Expected right to not be null');
 
-        Lexer.Node firstNameNode = operatorNode.left;
+        Node firstNameNode = operatorNode.left;
         Assert.areEqual('firstname', firstNameNode.id, 'Expected id to be "firstname"');
         Assert.areEqual('field', firstNameNode.nodeType, 'Expected nodeType to be "field"');
         Assert.isNull(firstNameNode.left, 'Expected left to be null');
         Assert.isNull(firstNameNode.right, 'Expected right to be null');
 
-        Lexer.Node valueNode = operatorNode.right;
+        Node valueNode = operatorNode.right;
         Assert.areEqual('test', valueNode.id, 'Expected id to be "test"');
         Assert.areEqual('string', valueNode.nodeType, 'Expected nodeType to be "string"');
         Assert.isNull(valueNode.left, 'Expected left to be null');
@@ -1249,7 +1249,7 @@ private with sharing class LexerTest {
     private static void testCorrectsForAndWithOr() {
         Test.startTest();
         Lexer t = new Lexer();
-        Lexer.Node head = t.parse('SELECT Id FROM Contact WHERE FirstName = \'test\' OR LastName = \'test2\' AND Account.Name = \'testAcct\' OR Account.Name = \'testAcct2\'');
+        Node head = t.parse('SELECT Id FROM Contact WHERE FirstName = \'test\' OR LastName = \'test2\' AND Account.Name = \'testAcct\' OR Account.Name = \'testAcct2\'');
         Test.stopTest();
 
         Assert.areEqual('select', head.id, 'Expected id to be "select"');
@@ -1257,115 +1257,115 @@ private with sharing class LexerTest {
         Assert.isNotNull(head.left, 'Expected left to be not null');
         Assert.isNotNull(head.right, 'Expected right to be not null');
 
-        Lexer.Node idNode = head.left;
+        Node idNode = head.left;
         Assert.areEqual('id', idNode.id, 'Expected id to be "id"');
         Assert.areEqual('field', idNode.nodeType, 'Expected nodeType to be "field"');
         Assert.isNull(idNode.left, 'Expected left to be null');
         Assert.isNull(idNode.right, 'Expected right to be null');
 
-        Lexer.Node fromNode = head.right;
+        Node fromNode = head.right;
         Assert.areEqual('from', fromNode.id, 'Expected id to be "from"');
         Assert.areEqual('from', fromNode.nodeType, 'Expected nodeType to be "from"');
         Assert.isNotNull(fromNode.left, 'Expected left to be not null');
         Assert.isNotNull(fromNode.right, 'Expected right to be not null');
 
-        Lexer.Node contactNode = fromNode.left;
+        Node contactNode = fromNode.left;
         Assert.areEqual('contact', contactNode.id, 'Expected id to be "contact"');
         Assert.areEqual('object', contactNode.nodeType, 'Expected nodeType to be "object"');
         Assert.isNull(contactNode.left, 'Expected left to be null');
         Assert.isNull(contactNode.right, 'Expected right to be null');
 
-        Lexer.Node whereNode = fromNode.right;
+        Node whereNode = fromNode.right;
         Assert.areEqual('where', whereNode.id, 'Expected id to be "where"');
         Assert.areEqual('where', whereNode.nodeType, 'Expected nodeType to be "where"');
         Assert.isNotNull(whereNode.left, 'Expected left to be not null');
         Assert.isNull(whereNode.right, 'Expected right to be null');
 
-        Lexer.Node orNode = whereNode.left;
+        Node orNode = whereNode.left;
         Assert.areEqual('or', orNode.id, 'Expected id to be "or"');
         Assert.areEqual('or', orNode.nodeType, 'Expected nodeType to be "operator"');
         Assert.isNotNull(orNode.left, 'Expected left to not be null');
         Assert.isNotNull(orNode.right, 'Expected right to not be null');
 
-        Lexer.Node orNode2 = orNode.left;
+        Node orNode2 = orNode.left;
         Assert.areEqual('or', orNode2.id, 'Expected id to be "or"');
         Assert.areEqual('or', orNode2.nodeType, 'Expected nodeType to be "operator"');
         Assert.isNotNull(orNode2.left, 'Expected left to not be null');
         Assert.isNotNull(orNode2.right, 'Expected right to not be null');
 
-        Lexer.Node operatorNode = orNode2.left;
+        Node operatorNode = orNode2.left;
         Assert.areEqual('=', operatorNode.id, 'Expected id to be "operator"');
         Assert.areEqual('operator', operatorNode.nodeType, 'Expected nodeType to be "operator"');
         Assert.isNotNull(operatorNode.left, 'Expected left to not be null');
         Assert.isNotNull(operatorNode.right, 'Expected right to not be null');
 
-        Lexer.Node firstNameNode = operatorNode.left;
+        Node firstNameNode = operatorNode.left;
         Assert.areEqual('firstname', firstNameNode.id, 'Expected id to be "firstname"');
         Assert.areEqual('field', firstNameNode.nodeType, 'Expected nodeType to be "field"');
         Assert.isNull(firstNameNode.left, 'Expected left to be null');
         Assert.isNull(firstNameNode.right, 'Expected right to be null');
 
-        Lexer.Node valueNode = operatorNode.right;
+        Node valueNode = operatorNode.right;
         Assert.areEqual('test', valueNode.id, 'Expected id to be "test"');
         Assert.areEqual('string', valueNode.nodeType, 'Expected nodeType to be "string"');
         Assert.isNull(valueNode.left, 'Expected left to be null');
         Assert.isNull(valueNode.right, 'Expected right to be null');
 
-        Lexer.Node andNode = orNode2.right;
+        Node andNode = orNode2.right;
         Assert.areEqual('and', andNode.id, 'Expected id to be "and"');
         Assert.areEqual('and', andNode.nodeType, 'Expected nodeType to be "operator"');
         Assert.isNotNull(andNode.left, 'Expected left to not be null');
         Assert.isNotNull(andNode.right, 'Expected right to not be null');
 
-        Lexer.Node operatorNode2 = andNode.left;
+        Node operatorNode2 = andNode.left;
         Assert.areEqual('=', operatorNode2.id, 'Expected id to be "operator"');
         Assert.areEqual('operator', operatorNode2.nodeType, 'Expected nodeType to be "operator"');
         Assert.isNotNull(operatorNode2.left, 'Expected left to not be null');
         Assert.isNotNull(operatorNode2.right, 'Expected right to not be null');
 
-        Lexer.Node lastNameNode = operatorNode2.left;
+        Node lastNameNode = operatorNode2.left;
         Assert.areEqual('lastname', lastNameNode.id, 'Expected id to be "lastname"');
         Assert.areEqual('field', lastNameNode.nodeType, 'Expected nodeType to be "field"');
         Assert.isNull(lastNameNode.left, 'Expected left to be null');
         Assert.isNull(lastNameNode.right, 'Expected right to be null');
 
-        Lexer.Node valueNode2 = operatorNode2.right;
+        Node valueNode2 = operatorNode2.right;
         Assert.areEqual('test2', valueNode2.id, 'Expected id to be "test2"');
         Assert.areEqual('string', valueNode2.nodeType, 'Expected nodeType to be "string"');
         Assert.isNull(valueNode2.left, 'Expected left to be null');
         Assert.isNull(valueNode2.right, 'Expected right to be null');
 
-        Lexer.Node operatorNode3 = andNode.right;
+        Node operatorNode3 = andNode.right;
         Assert.areEqual('=', operatorNode3.id, 'Expected id to be "operator"');
         Assert.areEqual('operator', operatorNode3.nodeType, 'Expected nodeType to be "operator"');
         Assert.isNotNull(operatorNode3.left, 'Expected left to not be null');
         Assert.isNotNull(operatorNode3.right, 'Expected right to not be null');
 
-        Lexer.Node accountNameNode = operatorNode3.left;
+        Node accountNameNode = operatorNode3.left;
         Assert.areEqual('account.name', accountNameNode.id, 'Expected id to be "account.name"');
         Assert.areEqual('field', accountNameNode.nodeType, 'Expected nodeType to be "field"');
         Assert.isNull(accountNameNode.left, 'Expected left to be null');
         Assert.isNull(accountNameNode.right, 'Expected right to be null');
 
-        Lexer.Node valueNode3 = operatorNode3.right;
+        Node valueNode3 = operatorNode3.right;
         Assert.areEqual('testacct', valueNode3.id, 'Expected id to be "testacct"');
         Assert.areEqual('string', valueNode3.nodeType, 'Expected nodeType to be "string"');
         Assert.isNull(valueNode3.left, 'Expected left to be null');
         Assert.isNull(valueNode3.right, 'Expected right to be null');
 
-        Lexer.Node operatorNode4 = orNode.right;
+        Node operatorNode4 = orNode.right;
         Assert.areEqual('=', operatorNode4.id, 'Expected id to be "operator"');
         Assert.areEqual('operator', operatorNode4.nodeType, 'Expected nodeType to be "operator"');
         Assert.isNotNull(operatorNode4.left, 'Expected left to not be null');
         Assert.isNotNull(operatorNode4.right, 'Expected right to not be null');
 
-        Lexer.Node accountNameNode2 = operatorNode4.left;
+        Node accountNameNode2 = operatorNode4.left;
         Assert.areEqual('account.name', accountNameNode2.id, 'Expected id to be "account.name"');
         Assert.areEqual('field', accountNameNode2.nodeType, 'Expected nodeType to be "field"');
         Assert.isNull(accountNameNode2.left, 'Expected left to be null');
         Assert.isNull(accountNameNode2.right, 'Expected right to be null');
 
-        Lexer.Node valueNode4 = operatorNode4.right;
+        Node valueNode4 = operatorNode4.right;
         Assert.areEqual('testacct2', valueNode4.id, 'Expected id to be "testacct2"');
         Assert.areEqual('string', valueNode4.nodeType, 'Expected nodeType to be "string"');
         Assert.isNull(valueNode4.left, 'Expected left to be null');
@@ -1376,7 +1376,7 @@ private with sharing class LexerTest {
     private static void testCorrectsForAndWithOrWithSubExpr() {
         Test.startTest();
         Lexer t = new Lexer();
-        Lexer.Node head = t.parse('SELECT Id FROM Contact WHERE FirstName = \'test\' AND LastName = \'test2\' OR (Account.Name = \'testAcct\' AND Account.Name = \'testAcct2\' OR Account.Name = \'testAcct3\')');
+        Node head = t.parse('SELECT Id FROM Contact WHERE FirstName = \'test\' AND LastName = \'test2\' OR (Account.Name = \'testAcct\' AND Account.Name = \'testAcct2\' OR Account.Name = \'testAcct3\')');
         Test.stopTest();
 
         Assert.areEqual('select', head.id, 'Expected id to be "select"');
@@ -1384,145 +1384,145 @@ private with sharing class LexerTest {
         Assert.isNotNull(head.left, 'Expected left to be not null');
         Assert.isNotNull(head.right, 'Expected right to be not null');
 
-        Lexer.Node idNode = head.left;
+        Node idNode = head.left;
         Assert.areEqual('id', idNode.id, 'Expected id to be "id"');
         Assert.areEqual('field', idNode.nodeType, 'Expected nodeType to be "field"');
         Assert.isNull(idNode.left, 'Expected left to be null');
         Assert.isNull(idNode.right, 'Expected right to be null');
 
-        Lexer.Node fromNode = head.right;
+        Node fromNode = head.right;
         Assert.areEqual('from', fromNode.id, 'Expected id to be "from"');
         Assert.areEqual('from', fromNode.nodeType, 'Expected nodeType to be "from"');
         Assert.isNotNull(fromNode.left, 'Expected left to be not null');
         Assert.isNotNull(fromNode.right, 'Expected right to be not null');
 
-        Lexer.Node contactNode = fromNode.left;
+        Node contactNode = fromNode.left;
         Assert.areEqual('contact', contactNode.id, 'Expected id to be "contact"');
         Assert.areEqual('object', contactNode.nodeType, 'Expected nodeType to be "object"');
         Assert.isNull(contactNode.left, 'Expected left to be null');
         Assert.isNull(contactNode.right, 'Expected right to be null');
 
-        Lexer.Node whereNode = fromNode.right;
+        Node whereNode = fromNode.right;
         Assert.areEqual('where', whereNode.id, 'Expected id to be "where"');
         Assert.areEqual('where', whereNode.nodeType, 'Expected nodeType to be "where"');
         Assert.isNotNull(whereNode.left, 'Expected left to be not null');
         Assert.isNull(whereNode.right, 'Expected right to be null');
 
-        Lexer.Node orNode = whereNode.left;
+        Node orNode = whereNode.left;
         Assert.areEqual('or', orNode.id, 'Expected id to be "or"');
         Assert.areEqual('or', orNode.nodeType, 'Expected nodeType to be "operator"');
         Assert.isNotNull(orNode.left, 'Expected left to not be null');
         Assert.isNotNull(orNode.right, 'Expected right to not be null');
 
-        Lexer.Node andNode = orNode.left;
+        Node andNode = orNode.left;
         Assert.areEqual('and', andNode.id, 'Expected id to be "and"');
         Assert.areEqual('and', andNode.nodeType, 'Expected nodeType to be "operator"');
         Assert.isNotNull(andNode.left, 'Expected left to not be null');
         Assert.isNotNull(andNode.right, 'Expected right to not be null');
 
-        Lexer.Node operatorNode = andNode.left;
+        Node operatorNode = andNode.left;
         Assert.areEqual('=', operatorNode.id, 'Expected id to be "operator"');
         Assert.areEqual('operator', operatorNode.nodeType, 'Expected nodeType to be "operator"');
         Assert.isNotNull(operatorNode.left, 'Expected left to not be null');
         Assert.isNotNull(operatorNode.right, 'Expected right to not be null');
 
-        Lexer.Node firstNameNode = operatorNode.left;
+        Node firstNameNode = operatorNode.left;
         Assert.areEqual('firstname', firstNameNode.id, 'Expected id to be "firstname"');
         Assert.areEqual('field', firstNameNode.nodeType, 'Expected nodeType to be "field"');
         Assert.isNull(firstNameNode.left, 'Expected left to be null');
         Assert.isNull(firstNameNode.right, 'Expected right to be null');
 
-        Lexer.Node valueNode = operatorNode.right;
+        Node valueNode = operatorNode.right;
         Assert.areEqual('test', valueNode.id, 'Expected id to be "test"');
         Assert.areEqual('string', valueNode.nodeType, 'Expected nodeType to be "string"');
         Assert.isNull(valueNode.left, 'Expected left to be null');
         Assert.isNull(valueNode.right, 'Expected right to be null');
 
-        Lexer.Node operatorNode2 = andNode.right;
+        Node operatorNode2 = andNode.right;
         Assert.areEqual('=', operatorNode2.id, 'Expected id to be "operator"');
         Assert.areEqual('operator', operatorNode2.nodeType, 'Expected nodeType to be "operator"');
         Assert.isNotNull(operatorNode2.left, 'Expected left to not be null');
         Assert.isNotNull(operatorNode2.right, 'Expected right to not be null');
 
-        Lexer.Node lastNameNode = operatorNode2.left;
+        Node lastNameNode = operatorNode2.left;
         Assert.areEqual('lastname', lastNameNode.id, 'Expected id to be "lastname"');
         Assert.areEqual('field', lastNameNode.nodeType, 'Expected nodeType to be "field"');
         Assert.isNull(lastNameNode.left, 'Expected left to be null');
         Assert.isNull(lastNameNode.right, 'Expected right to be null');
 
-        Lexer.Node valueNode2 = operatorNode2.right;
+        Node valueNode2 = operatorNode2.right;
         Assert.areEqual('test2', valueNode2.id, 'Expected id to be "test2"');
         Assert.areEqual('string', valueNode2.nodeType, 'Expected nodeType to be "string"');
         Assert.isNull(valueNode2.left, 'Expected left to be null');
         Assert.isNull(valueNode2.right, 'Expected right to be null');
 
-        Lexer.Node subExprNode2 = orNode.right;
+        Node subExprNode2 = orNode.right;
         Assert.areEqual('conditional subexpression', subExprNode2.id, 'Expected id to be "conditional subexpression"');
         Assert.areEqual('conditional subexpression', subExprNode2.nodeType, 'Expected nodeType to be "conditional subexpression"');
         Assert.isNotNull(subExprNode2.left, 'Expected left to not be null');
         Assert.isNull(subExprNode2.right, 'Expected right to be null');
 
-        Lexer.Node orNode2 = subExprNode2.left;
+        Node orNode2 = subExprNode2.left;
         Assert.areEqual('or', orNode2.id, 'Expected id to be "or"');
         Assert.areEqual('or', orNode2.nodeType, 'Expected nodeType to be "operator"');
         Assert.isNotNull(orNode2.left, 'Expected left to not be null');
         Assert.isNotNull(orNode2.right, 'Expected right to not be null');
 
-        Lexer.Node andNode2 = orNode2.left;
+        Node andNode2 = orNode2.left;
         Assert.areEqual('and', andNode2.id, 'Expected id to be "and"');
         Assert.areEqual('and', andNode2.nodeType, 'Expected nodeType to be "operator"');
         Assert.isNotNull(andNode2.left, 'Expected left to not be null');
         Assert.isNotNull(andNode2.right, 'Expected right to not be null');
 
-        Lexer.Node operatorNode3 = andNode2.left;
+        Node operatorNode3 = andNode2.left;
         Assert.areEqual('=', operatorNode3.id, 'Expected id to be "operator"');
         Assert.areEqual('operator', operatorNode3.nodeType, 'Expected nodeType to be "operator"');
         Assert.isNotNull(operatorNode3.left, 'Expected left to not be null');
         Assert.isNotNull(operatorNode3.right, 'Expected right to not be null');
 
-        Lexer.Node accountNameNode = operatorNode3.left;
+        Node accountNameNode = operatorNode3.left;
         Assert.areEqual('account.name', accountNameNode.id, 'Expected id to be "account.name"');
         Assert.areEqual('field', accountNameNode.nodeType, 'Expected nodeType to be "field"');
         Assert.isNull(accountNameNode.left, 'Expected left to be null');
         Assert.isNull(accountNameNode.right, 'Expected right to be null');
 
-        Lexer.Node valueNode3 = operatorNode3.right;
+        Node valueNode3 = operatorNode3.right;
         Assert.areEqual('testacct', valueNode3.id, 'Expected id to be "testacct"');
         Assert.areEqual('string', valueNode3.nodeType, 'Expected nodeType to be "string"');
         Assert.isNull(valueNode3.left, 'Expected left to be null');
         Assert.isNull(valueNode3.right, 'Expected right to be null');
 
-        Lexer.Node operatorNode4 = andNode2.right;
+        Node operatorNode4 = andNode2.right;
         Assert.areEqual('=', operatorNode4.id, 'Expected id to be "operator"');
         Assert.areEqual('operator', operatorNode4.nodeType, 'Expected nodeType to be "operator"');
         Assert.isNotNull(operatorNode4.left, 'Expected left to not be null');
         Assert.isNotNull(operatorNode4.right, 'Expected right to not be null');
 
-        Lexer.Node accountNameNode2 = operatorNode4.left;
+        Node accountNameNode2 = operatorNode4.left;
         Assert.areEqual('account.name', accountNameNode2.id, 'Expected id to be "account.name"');
         Assert.areEqual('field', accountNameNode2.nodeType, 'Expected nodeType to be "field"');
         Assert.isNull(accountNameNode2.left, 'Expected left to be null');
         Assert.isNull(accountNameNode2.right, 'Expected right to be null');
 
-        Lexer.Node valueNode4 = operatorNode4.right;
+        Node valueNode4 = operatorNode4.right;
         Assert.areEqual('testacct2', valueNode4.id, 'Expected id to be "testacct2"');
         Assert.areEqual('string', valueNode4.nodeType, 'Expected nodeType to be "string"');
         Assert.isNull(valueNode4.left, 'Expected left to be null');
         Assert.isNull(valueNode4.right, 'Expected right to be null');
 
-        Lexer.Node operatorNode5 = orNode2.right;
+        Node operatorNode5 = orNode2.right;
         Assert.areEqual('=', operatorNode5.id, 'Expected id to be "operator"');
         Assert.areEqual('operator', operatorNode5.nodeType, 'Expected nodeType to be "operator"');
         Assert.isNotNull(operatorNode5.left, 'Expected left to not be null');
         Assert.isNotNull(operatorNode5.right, 'Expected right to not be null');
 
-        Lexer.Node accountNameNode3 = operatorNode5.left;
+        Node accountNameNode3 = operatorNode5.left;
         Assert.areEqual('account.name', accountNameNode3.id, 'Expected id to be "account.name"');
         Assert.areEqual('field', accountNameNode3.nodeType, 'Expected nodeType to be "field"');
         Assert.isNull(accountNameNode3.left, 'Expected left to be null');
         Assert.isNull(accountNameNode3.right, 'Expected right to be null');
 
-        Lexer.Node valueNode5 = operatorNode5.right;
+        Node valueNode5 = operatorNode5.right;
         Assert.areEqual('testacct3', valueNode5.id, 'Expected id to be "testacct3"');
         Assert.areEqual('string', valueNode5.nodeType, 'Expected nodeType to be "string"');
         Assert.isNull(valueNode5.left, 'Expected left to be null');
@@ -1534,7 +1534,7 @@ private with sharing class LexerTest {
     private static void testAlias() {
         Test.startTest();
         Lexer t = new Lexer();
-        Lexer.Node head = t.parse('SELECT COUNT(Id) cnt1 FROM Account GROUP BY Id');
+        Node head = t.parse('SELECT COUNT(Id) cnt1 FROM Account GROUP BY Id');
         Test.stopTest();
 
         Assert.areEqual('select', head.id, 'Expected id to be "select"');
@@ -1542,43 +1542,43 @@ private with sharing class LexerTest {
         Assert.isNotNull(head.left, 'Expected left to be not null');
         Assert.isNotNull(head.right, 'Expected right to be not null');
 
-        Lexer.Node countNode = head.left;
+        Node countNode = head.left;
         Assert.areEqual('count', countNode.id, 'Expected id to be "count"');
         Assert.areEqual('aggregate function', countNode.nodeType, 'Expected nodeType to be "aggregate function"');
         Assert.isNull(countNode.left, 'Expected left to be null');
         Assert.isNotNull(countNode.right, 'Expected right to not be null');
 
-        Lexer.Node idNode = countNode.right;
+        Node idNode = countNode.right;
         Assert.areEqual('id', idNode.id, 'Expected id to be "id"');
         Assert.areEqual('field', idNode.nodeType, 'Expected nodeType to be "field"');
         Assert.isNotNull(idNode.left, 'Expected left to not be null');
         Assert.isNull(idNode.right, 'Expected right to be null');
 
-        Lexer.Node aliasNode = idNode.left;
+        Node aliasNode = idNode.left;
         Assert.areEqual('cnt1', aliasNode.id, 'Expected id to be "cnt1"');
         Assert.areEqual('alias', aliasNode.nodeType, 'Expected nodeType to be "alias"');
         Assert.isNull(aliasNode.left, 'Expected left to be null');
         Assert.isNull(aliasNode.right, 'Expected right to be null');
 
-        Lexer.Node fromNode = head.right;
+        Node fromNode = head.right;
         Assert.areEqual('from', fromNode.id, 'Expected id to be "from"');
         Assert.areEqual('from', fromNode.nodeType, 'Expected nodeType to be "from"');
         Assert.isNotNull(fromNode.left, 'Expected left to be not null');
         Assert.isNotNull(fromNode.right, 'Expected right to be not null');
 
-        Lexer.Node accountNode = fromNode.left;
+        Node accountNode = fromNode.left;
         Assert.areEqual(accountNode.id, 'account', 'Expected id to be "account"');
         Assert.areEqual(accountNode.nodeType, 'object', 'Expected nodeType to be "object"');
         Assert.isNull(accountNode.left, 'Expected left to be null');
         Assert.isNull(accountNode.right, 'Expected right to be null');
 
-        Lexer.Node groupByNode = fromNode.right;
+        Node groupByNode = fromNode.right;
         Assert.areEqual('group by', groupByNode.id, 'Expected id to be "group by"');
         Assert.areEqual('group by', groupByNode.nodeType, 'Expected nodeType to be "group by"');
         Assert.isNotNull(groupByNode.left, 'Expected left to be not null');
         Assert.isNull(groupByNode.right, 'Expected right to be null');
 
-        Lexer.Node idNode2 = groupByNode.left;
+        Node idNode2 = groupByNode.left;
         Assert.areEqual('id', idNode2.id, 'Expected id to be "id"');
         Assert.areEqual('field', idNode2.nodeType, 'Expected nodeType to be "field"');
         Assert.isNull(idNode2.left, 'Expected left to be null');
@@ -1589,68 +1589,68 @@ private with sharing class LexerTest {
     private static void testParseValueList() {
         Test.startTest();
         Lexer t = new Lexer();
-        Lexer.Node head = t.parse('SELECT Id FROM Contact WHERE FirstName IN (\'test\', \'test2\')');
+        Node head = t.parse('SELECT Id FROM Contact WHERE FirstName IN (\'test\', \'test2\')');
         Test.stopTest();
         Assert.areEqual('select', head.id, 'Expected id to be "select"');
         Assert.areEqual('select', head.nodeType, 'Expected nodeType to be "select"');
         Assert.isNotNull(head.left, 'Expected left to be not null');
         Assert.isNotNull(head.right, 'Expected right to be not null');
 
-        Lexer.Node idNode = head.left;
+        Node idNode = head.left;
         Assert.areEqual(idNode.id, 'id', 'Expected id to be "id"');
         Assert.areEqual(idNode.nodeType, 'field', 'Expected nodeType to be "field"');
         Assert.isNull(idNode.left, 'Expected left to be null');
         Assert.isNull(idNode.right, 'Expected right to be null');
 
-        Lexer.Node fromNode = head.right;
+        Node fromNode = head.right;
         Assert.areEqual('from', fromNode.id, 'Expected id to be "from"');
         Assert.areEqual('from', fromNode.nodeType, 'Expected nodeType to be "from"');
         Assert.isNotNull(fromNode.left, 'Expected left to be not null');
         Assert.isNotNull(fromNode.right, 'Expected right to be not null');
 
-        Lexer.Node contactNode = fromNode.left;
+        Node contactNode = fromNode.left;
         Assert.areEqual('contact', contactNode.id, 'Expected id to be "contact"');
         Assert.areEqual('object', contactNode.nodeType, 'Expected nodeType to be "object"');
         Assert.isNull(contactNode.left, 'Expected left to be null');
         Assert.isNull(contactNode.right, 'Expected right to be null');
 
-        Lexer.Node whereNode = fromNode.right;
+        Node whereNode = fromNode.right;
         Assert.areEqual('where', whereNode.id, 'Expected id to be "where"');
         Assert.areEqual('where', whereNode.nodeType, 'Expected nodeType to be "where"');
         Assert.isNotNull(whereNode.left, 'Expected left to be not null');
         Assert.isNull(whereNode.right, 'Expected right to be null');
 
-        Lexer.Node inNode = whereNode.left;
+        Node inNode = whereNode.left;
         Assert.areEqual('in', inNode.id, 'Expected id to be "in"');
         Assert.areEqual('operator', inNode.nodeType, 'Expected nodeType to be "operator"');
         Assert.isNotNull(inNode.left, 'Expected left to not be null');
         Assert.isNotNull(inNode.right, 'Expected right to not be null');
 
-        Lexer.Node firstNameNode = inNode.left;
+        Node firstNameNode = inNode.left;
         Assert.areEqual('firstname', firstNameNode.id, 'Expected id to be "firstname"');
         Assert.areEqual('field', firstNameNode.nodeType, 'Expected nodeType to be "field"');
         Assert.isNull(firstNameNode.left, 'Expected left to be null');
         Assert.isNull(firstNameNode.right, 'Expected right to be null');
 
-        Lexer.Node valueListNode = inNode.right;
+        Node valueListNode = inNode.right;
         Assert.areEqual('value list', valueListNode.id, 'Expected id to be "value list"');
         Assert.areEqual('value list', valueListNode.nodeType, 'Expected nodeType to be "value list"');
         Assert.isNotNull(valueListNode.left, 'Expected left to not be null');
         Assert.isNull(valueListNode.right, 'Expected right to be null');
 
-        Lexer.Node valueNode = valueListNode.left;
+        Node valueNode = valueListNode.left;
         Assert.areEqual('test', valueNode.id, 'Expected id to be "test"');
         Assert.areEqual('string', valueNode.nodeType, 'Expected nodeType to be "string"');
         Assert.isNotNull(valueNode.left, 'Expected left to not be null');
         Assert.isNull(valueNode.right, 'Expected right to be null');
 
-        Lexer.Node valueListNode2 = valueNode.left;
+        Node valueListNode2 = valueNode.left;
         Assert.areEqual('value list', valueListNode2.id, 'Expected id to be "value list"');
         Assert.areEqual('value list', valueListNode2.nodeType, 'Expected nodeType to be "value list"');
         Assert.isNotNull(valueListNode2.left, 'Expected left to not be null');
         Assert.isNull(valueListNode2.right, 'Expected right to be null');
 
-        Lexer.Node valueNode2 = valueListNode2.left;
+        Node valueNode2 = valueListNode2.left;
         Assert.areEqual('test2', valueNode2.id, 'Expected id to be "test2"');
         Assert.areEqual('string', valueNode2.nodeType, 'Expected nodeType to be "string"');
         Assert.isNull(valueNode2.left, 'Expected left to be null');
@@ -1661,26 +1661,26 @@ private with sharing class LexerTest {
     private static void testSingularCount() {
         Test.startTest();
         Lexer t = new Lexer();
-        Lexer.Node head = t.parse('SELECT COUNT() FROM Account');
+        Node head = t.parse('SELECT COUNT() FROM Account');
         Test.stopTest();
         Assert.areEqual('select', head.id, 'Expected id to be "select"');
         Assert.areEqual('select', head.nodeType, 'Expected nodeType to be "select"');
         Assert.isNotNull(head.left, 'Expected left to be not null');
         Assert.isNotNull(head.right, 'Expected right to be not null');
 
-        Lexer.Node countNode = head.left;
+        Node countNode = head.left;
         Assert.areEqual('count', countNode.id, 'Expected id to be "count"');
         Assert.areEqual('aggregate function', countNode.nodeType, 'Expected nodeType to be "aggregate function"');
         Assert.isNull(countNode.left, 'Expected left to be null');
         Assert.isNull(countNode.right, 'Expected right to be null');
  
-        Lexer.Node fromNode = head.right;
+        Node fromNode = head.right;
         Assert.areEqual('from', fromNode.id, 'Expected id to be "from"');
         Assert.areEqual('from', fromNode.nodeType, 'Expected nodeType to be "from"');
         Assert.isNotNull(fromNode.left, 'Expected left to be not null');
         Assert.isNull(fromNode.right, 'Expected right to be null');
 
-        Lexer.Node accountNode = fromNode.left;
+        Node accountNode = fromNode.left;
         Assert.areEqual('account', accountNode.id, 'Expected id to be "account"');
         Assert.areEqual('object', accountNode.nodeType, 'Expected nodeType to be "object"');
         Assert.isNull(accountNode.left, 'Expected left to be null');
@@ -1692,32 +1692,32 @@ private with sharing class LexerTest {
     private static void testSimpleAlias() {
         Test.startTest();
         Lexer t = new Lexer();
-        Lexer.Node head = t.parse('SELECT Id id FROM Account');
+        Node head = t.parse('SELECT Id id FROM Account');
         Test.stopTest();
         Assert.areEqual('select', head.id, 'Expected id to be "select"');
         Assert.areEqual('select', head.nodeType, 'Expected nodeType to be "select"');
         Assert.isNotNull(head.left, 'Expected left to be not null');
         Assert.isNotNull(head.right, 'Expected right to be not null');
 
-        Lexer.Node idNode = head.left;
+        Node idNode = head.left;
         Assert.areEqual('id', idNode.id, 'Expected id to be "id"');
         Assert.areEqual('field', idNode.nodeType, 'Expected nodeType to be "field"');
         Assert.isNull(idNode.left, 'Expected left to be null');
         Assert.isNotNull(idNode.right, 'Expected right to not be null');
 
-        Lexer.Node idAliasNode = idNode.right;
+        Node idAliasNode = idNode.right;
         Assert.areEqual('id', idAliasNode.id, 'Expected id to be "id"');
         Assert.areEqual('alias', idAliasNode.nodeType, 'Expected nodeType to be "alias"');
         Assert.isNull(idAliasNode.left, 'Expected left to be null');
         Assert.isNull(idAliasNode.right, 'Expected right to be null');
 
-        Lexer.Node fromNode = head.right;
+        Node fromNode = head.right;
         Assert.areEqual('from', fromNode.id, 'Expected id to be "from"');
         Assert.areEqual('from', fromNode.nodeType, 'Expected nodeType to be "from"');
         Assert.isNotNull(fromNode.left, 'Expected left to be not null');
         Assert.isNull(fromNode.right, 'Expected right to be null');
 
-        Lexer.Node accountNode = fromNode.left;
+        Node accountNode = fromNode.left;
         Assert.areEqual('account', accountNode.id, 'Expected id to be "account"');
         Assert.areEqual('object', accountNode.nodeType, 'Expected nodeType to be "object"');
         Assert.isNull(accountNode.left, 'Expected left to be null');
@@ -1728,68 +1728,68 @@ private with sharing class LexerTest {
     private static void testAliases() {
         Test.startTest();
         Lexer t = new Lexer();
-        Lexer.Node head = t.parse('SELECT Account.Name acctName, Name, COUNT(Id) FROM Contact GROUP BY Name, Account.Name');
+        Node head = t.parse('SELECT Account.Name acctName, Name, COUNT(Id) FROM Contact GROUP BY Name, Account.Name');
         Test.stopTest();
         Assert.areEqual('select', head.id, 'Expected id to be "select"');
         Assert.areEqual('select', head.nodeType, 'Expected nodeType to be "select"');
         Assert.isNotNull(head.left, 'Expected left to be not null');
         Assert.isNotNull(head.right, 'Expected right to be not null');
 
-        Lexer.Node accountNameNode = head.left;
+        Node accountNameNode = head.left;
         Assert.areEqual('account.name', accountNameNode.id, 'Expected id to be "account.name"');
         Assert.areEqual('field', accountNameNode.nodeType, 'Expected nodeType to be "field"');
         Assert.isNotNull(accountNameNode.left, 'Expected left to not be null');
         Assert.isNotNull(accountNameNode.right, 'Expected right to not be null');
 
-        Lexer.Node acctNameNode = accountNameNode.right;
+        Node acctNameNode = accountNameNode.right;
         Assert.areEqual('acctname', acctNameNode.id, 'Expected id to be "acctname"');
         Assert.areEqual('alias', acctNameNode.nodeType, 'Expected nodeType to be "alias"');
         Assert.isNull(acctNameNode.left, 'Expected left to be null');
         Assert.isNull(acctNameNode.right, 'Expected right to be null');
 
-        Lexer.Node nameNode = accountNameNode.left;
+        Node nameNode = accountNameNode.left;
         Assert.areEqual('name', nameNode.id, 'Expected id to be "name"');
         Assert.areEqual('field', nameNode.nodeType, 'Expected nodeType to be "field"');
         Assert.isNotNull(nameNode.left, 'Expected left to not be null');
         Assert.isNull(nameNode.right, 'Expected right to be null');
 
-        Lexer.Node countNode = nameNode.left;
+        Node countNode = nameNode.left;
         Assert.areEqual('count', countNode.id, 'Expected id to be "count"');
         Assert.areEqual('aggregate function', countNode.nodeType, 'Expected nodeType to be "aggregate function"');
         Assert.isNull(countNode.left, 'Expected left to be null');
         Assert.isNotNull(countNode.right, 'Expected right to not be null');
 
-        Lexer.Node idNode = countNode.right;
+        Node idNode = countNode.right;
         Assert.areEqual('id', idNode.id, 'Expected id to be "id"');
         Assert.areEqual('field', idNode.nodeType, 'Expected nodeType to be "field"');
         Assert.isNull(idNode.left, 'Expected left to be null');
         Assert.isNull(idNode.right, 'Expected right to be null');
 
-        Lexer.Node fromNode = head.right;
+        Node fromNode = head.right;
         Assert.areEqual('from', fromNode.id, 'Expected id to be "from"');
         Assert.areEqual('from', fromNode.nodeType, 'Expected nodeType to be "from"');
         Assert.isNotNull(fromNode.left, 'Expected left to be not null');
         Assert.isNotNull(fromNode.right, 'Expected right to be not null');
 
-        Lexer.Node contactNode = fromNode.left;
+        Node contactNode = fromNode.left;
         Assert.areEqual(contactNode.id, 'contact', 'Expected id to be "contact"');
         Assert.areEqual(contactNode.nodeType, 'object', 'Expected nodeType to be "object"');
         Assert.isNull(contactNode.left, 'Expected left to be null');
         Assert.isNull(contactNode.right, 'Expected right to be null');
 
-        Lexer.Node groupByNode = fromNode.right;
+        Node groupByNode = fromNode.right;
         Assert.areEqual(groupByNode.id, 'group by', 'Expected id to be "group by"');
         Assert.areEqual(groupByNode.nodeType, 'group by', 'Expected nodeType to be "group by"');
         Assert.isNotNull(groupByNode.left, 'Expected left to be not null');
         Assert.isNull(groupByNode.right, 'Expected right to be null');
 
-        Lexer.Node nameNode2 = groupByNode.left;
+        Node nameNode2 = groupByNode.left;
         Assert.areEqual(nameNode2.id, 'name', 'Expected id to be "name"');
         Assert.areEqual(nameNode2.nodeType, 'field', 'Expected nodeType to be "field"');
         Assert.isNotNull(nameNode2.left, 'Expected left to not be null');
         Assert.isNull(nameNode2.right, 'Expected right to be null');
 
-        Lexer.Node accountNameNode2 = nameNode2.left;
+        Node accountNameNode2 = nameNode2.left;
         Assert.areEqual(accountNameNode2.id, 'account.name', 'Expected id to be "account.name"');
         Assert.areEqual(accountNameNode2.nodeType, 'field', 'Expected nodeType to be "field"');
         Assert.isNull(accountNameNode2.left, 'Expected left to be null');
@@ -1800,74 +1800,74 @@ private with sharing class LexerTest {
     private static void testSubQueryNoAlias() {
         Test.startTest();
         Lexer t = new Lexer();
-        Lexer.Node head = t.parse('SELECT Id, Name, (SELECT Id, FirstName, LastName FROM Contacts) FROM Account');
+        Node head = t.parse('SELECT Id, Name, (SELECT Id, FirstName, LastName FROM Contacts) FROM Account');
         Test.stopTest();
         Assert.areEqual('select', head.id, 'Expected id to be "select"');
         Assert.areEqual('select', head.nodeType, 'Expected nodeType to be "select"');
         Assert.isNotNull(head.left, 'Expected left to be not null');
         Assert.isNotNull(head.right, 'Expected right to be not null');
 
-        Lexer.Node idNode = head.left;
+        Node idNode = head.left;
         Assert.areEqual('id', idNode.id, 'Expected id to be "id"');
         Assert.areEqual('field', idNode.nodeType, 'Expected nodeType to be "field"');
         Assert.isNotNull(idNode.left, 'Expected left to not be null');
         Assert.isNull(idNode.right, 'Expected right to be null');
 
-        Lexer.Node nameNode = idNode.left;
+        Node nameNode = idNode.left;
         Assert.areEqual('name', nameNode.id, 'Expected id to be "name"');
         Assert.areEqual('field', nameNode.nodeType, 'Expected nodeType to be "field"');
         Assert.isNotNull(nameNode.left, 'Expected left to not be null');
         Assert.isNull(nameNode.right, 'Expected right to be null');
 
-        Lexer.Node subQueryNode = nameNode.left;
+        Node subQueryNode = nameNode.left;
         Assert.areEqual('subquery', subQueryNode.id, 'Expected id to be "subquery"');
         Assert.areEqual('subquery', subQueryNode.nodeType, 'Expected nodeType to be "subquery"');
         Assert.isNull(subQueryNode.left, 'Expected left to be not null');
         Assert.isNotNull(subQueryNode.right, 'Expected right to not be null');
 
-        Lexer.Node selectNode2 = subQueryNode.right;
+        Node selectNode2 = subQueryNode.right;
         Assert.areEqual('select', selectNode2.id, 'Expected id to be "select"');
         Assert.areEqual('select', selectNode2.nodeType, 'Expected nodeType to be "select"');
         Assert.isNotNull(selectNode2.left, 'Expected left to be not null');
         Assert.isNotNull(selectNode2.right, 'Expected right to be not null');
 
-        Lexer.Node idNode2 = selectNode2.left;
+        Node idNode2 = selectNode2.left;
         Assert.areEqual('id', idNode2.id, 'Expected id to be "id"');
         Assert.areEqual('field', idNode2.nodeType, 'Expected nodeType to be "field"');
         Assert.isNotNull(idNode2.left, 'Expected left to not be null');
         Assert.isNull(idNode2.right, 'Expected right to be null');
 
-        Lexer.Node firstNameNode = idNode2.left;
+        Node firstNameNode = idNode2.left;
         Assert.areEqual('firstname', firstNameNode.id, 'Expected id to be "firstname"');
         Assert.areEqual('field', firstNameNode.nodeType, 'Expected nodeType to be "field"');
         Assert.isNotNull(firstNameNode.left, 'Expected left to not be null');
         Assert.isNull(firstNameNode.right, 'Expected right to be null');
 
-        Lexer.Node lastNameNode = firstNameNode.left;
+        Node lastNameNode = firstNameNode.left;
         Assert.areEqual('lastname', lastNameNode.id, 'Expected id to be "lastname"');
         Assert.areEqual('field', lastNameNode.nodeType, 'Expected nodeType to be "field"');
         Assert.isNull(lastNameNode.left, 'Expected left to be null');
         Assert.isNull(lastNameNode.right, 'Expected right to be null');
 
-        Lexer.Node fromNode = selectNode2.right;
+        Node fromNode = selectNode2.right;
         Assert.areEqual('from', fromNode.id, 'Expected id to be "from"');
         Assert.areEqual('from', fromNode.nodeType, 'Expected nodeType to be "from"');
         Assert.isNotNull(fromNode.left, 'Expected left to be not null');
         Assert.isNull(fromNode.right, 'Expected right to be null');
 
-        Lexer.Node contactsNode = fromNode.left;
+        Node contactsNode = fromNode.left;
         Assert.areEqual('contacts', contactsNode.id, 'Expected id to be "contacts"');
         Assert.areEqual('object', contactsNode.nodeType, 'Expected nodeType to be "object"');
         Assert.isNull(contactsNode.left, 'Expected left to be null');
         Assert.isNull(contactsNode.right, 'Expected right to be null');
 
-        Lexer.Node fromNode2 = head.right;
+        Node fromNode2 = head.right;
         Assert.areEqual('from', fromNode2.id, 'Expected id to be "from"');
         Assert.areEqual('from', fromNode2.nodeType, 'Expected nodeType to be "from"');
         Assert.isNotNull(fromNode2.left, 'Expected left to be not null');
         Assert.isNull(fromNode2.right, 'Expected right to be null');
 
-        Lexer.Node accountNode = fromNode2.left;
+        Node accountNode = fromNode2.left;
         Assert.areEqual('account', accountNode.id, 'Expected id to be "account"');
         Assert.areEqual('object', accountNode.nodeType, 'Expected nodeType to be "object"');
         Assert.isNull(accountNode.left, 'Expected left to be null');
@@ -1878,7 +1878,7 @@ private with sharing class LexerTest {
     private static void testHavingClauseWithMultipleConditions() {
         Test.startTest();
         Lexer t = new Lexer();
-        Lexer.Node head = t.parse('SELECT Name, COUNT(Id) FROM Account GROUP BY Name HAVING COUNT(Id) > 1 AND COUNT(Id) < 10');
+        Node head = t.parse('SELECT Name, COUNT(Id) FROM Account GROUP BY Name HAVING COUNT(Id) > 1 AND COUNT(Id) < 10');
         Test.stopTest();
 
         Assert.areEqual('select', head.id, 'Expected id to be "select"');
@@ -1886,103 +1886,103 @@ private with sharing class LexerTest {
         Assert.isNotNull(head.left, 'Expected left to be not null');
         Assert.isNotNull(head.right, 'Expected right to be not null');
 
-        Lexer.Node nameNode = head.left;
+        Node nameNode = head.left;
         Assert.areEqual('name', nameNode.id, 'Expected id to be "name"');
         Assert.areEqual('field', nameNode.nodeType, 'Expected nodeType to be "field"');
         Assert.isNotNull(nameNode.left, 'Expected left to not be null');
         Assert.isNull(nameNode.right, 'Expected right to be null');
 
-        Lexer.Node countNode = nameNode.left;
+        Node countNode = nameNode.left;
         Assert.areEqual('count', countNode.id, 'Expected id to be "count"');
         Assert.areEqual('aggregate function', countNode.nodeType, 'Expected nodeType to be "aggregate function"');
         Assert.isNull(countNode.left, 'Expected left to be null');
         Assert.isNotNull(countNode.right, 'Expected right to be not null');
 
-        Lexer.Node idNode = countNode.right;
+        Node idNode = countNode.right;
         Assert.areEqual('id', idNode.id, 'Expected id to be "id"');
         Assert.areEqual('field', idNode.nodeType, 'Expected nodeType to be "field"');
         Assert.isNull(idNode.left, 'Expected left to be null');
         Assert.isNull(idNode.right, 'Expected right to be null');
 
-        Lexer.Node fromNode = head.right;
+        Node fromNode = head.right;
         Assert.areEqual('from', fromNode.id, 'Expected id to be "from"');
         Assert.areEqual('from', fromNode.nodeType, 'Expected nodeType to be "from"');
         Assert.isNotNull(fromNode.left, 'Expected left to be not null');
         Assert.isNotNull(fromNode.right, 'Expected right to be not null');
 
-        Lexer.Node accountNode = fromNode.left;
+        Node accountNode = fromNode.left;
         Assert.areEqual('account', accountNode.id, 'Expected id to be "account"');
         Assert.areEqual('object', accountNode.nodeType, 'Expected nodeType to be "object"');
         Assert.isNull(accountNode.left, 'Expected left to be null');
         Assert.isNull(accountNode.right, 'Expected right to be null');
 
-        Lexer.Node groupByNode = fromNode.right;
+        Node groupByNode = fromNode.right;
         Assert.areEqual('group by', groupByNode.id, 'Expected id to be "group by"');
         Assert.areEqual('group by', groupByNode.nodeType, 'Expected nodeType to be "group by"');
         Assert.isNotNull(groupByNode.left, 'Expected left to be not null');
         Assert.isNotNull(groupByNode.right, 'Expected right to be not null');
 
-        Lexer.Node nameNode2 = groupByNode.left;
+        Node nameNode2 = groupByNode.left;
         Assert.areEqual('name', nameNode2.id, 'Expected id to be "name"');
         Assert.areEqual('field', nameNode2.nodeType, 'Expected nodeType to be "field"');
         Assert.isNull(nameNode2.left, 'Expected left to be null');
         Assert.isNull(nameNode2.right, 'Expected right to be null');
 
-        Lexer.Node havingNode = groupByNode.right;
+        Node havingNode = groupByNode.right;
         Assert.areEqual('having', havingNode.id, 'Expected id to be "having"');
         Assert.areEqual('having', havingNode.nodeType, 'Expected nodeType to be "having"');
         Assert.isNotNull(havingNode.left, 'Expected left to be not null');
         Assert.isNull(havingNode.right, 'Expected right to be null');
 
-        Lexer.Node andNode = havingNode.left;
+        Node andNode = havingNode.left;
         Assert.areEqual('and', andNode.id, 'Expected id to be "and"');
         Assert.areEqual('and', andNode.nodeType, 'Expected nodeType to be "operator"');
         Assert.isNotNull(andNode.left, 'Expected left to not be null');
         Assert.isNotNull(andNode.right, 'Expected right to not be null');
 
-        Lexer.Node operatorNode = andNode.left;
+        Node operatorNode = andNode.left;
         Assert.areEqual('>', operatorNode.id, 'Expected id to be ">"');
         Assert.areEqual('operator', operatorNode.nodeType, 'Expected nodeType to be "operator"');
         Assert.isNotNull(operatorNode.left, 'Expected left to not be null');
         Assert.isNotNull(operatorNode.right, 'Expected right to not be null');
 
-        Lexer.Node countNode2 = operatorNode.left;
+        Node countNode2 = operatorNode.left;
         Assert.areEqual('count', countNode2.id, 'Expected id to be "count"');
         Assert.areEqual('aggregate function', countNode2.nodeType, 'Expected nodeType to be "aggregate function"');
         Assert.isNull(countNode2.left, 'Expected left to be null');
         Assert.isNotNull(countNode2.right, 'Expected right to not be null');
 
-        Lexer.Node idNode2 = countNode2.right;
+        Node idNode2 = countNode2.right;
         Assert.areEqual('id', idNode2.id, 'Expected id to be "id"');
         Assert.areEqual('field', idNode2.nodeType, 'Expected nodeType to be "field"');
         Assert.isNull(idNode2.left, 'Expected left to be null');
         Assert.isNull(idNode2.right, 'Expected right to be null');
 
-        Lexer.Node valueNode = operatorNode.right;
+        Node valueNode = operatorNode.right;
         Assert.areEqual('1', valueNode.id, 'Expected id to be "1"');
         Assert.areEqual('number', valueNode.nodeType, 'Expected nodeType to be "number"');
         Assert.isNull(valueNode.left, 'Expected left to be null');
         Assert.isNull(valueNode.right, 'Expected right to be null');
 
-        Lexer.Node operatorNode2 = andNode.right;
+        Node operatorNode2 = andNode.right;
         Assert.areEqual('<', operatorNode2.id, 'Expected id to be "<"');
         Assert.areEqual('operator', operatorNode2.nodeType, 'Expected nodeType to be "operator"');
         Assert.isNotNull(operatorNode2.left, 'Expected left to not be null');
         Assert.isNotNull(operatorNode2.right, 'Expected right to not be null');
 
-        Lexer.Node countNode3 = operatorNode2.left;
+        Node countNode3 = operatorNode2.left;
         Assert.areEqual('count', countNode3.id, 'Expected id to be "count"');
         Assert.areEqual('aggregate function', countNode3.nodeType, 'Expected nodeType to be "aggregate function"');
         Assert.isNull(countNode3.left, 'Expected left to be null');
         Assert.isNotNull(countNode3.right, 'Expected right to not be null');
 
-        Lexer.Node idNode3 = countNode3.right;
+        Node idNode3 = countNode3.right;
         Assert.areEqual('id', idNode3.id, 'Expected id to be "id"');
         Assert.areEqual('field', idNode3.nodeType, 'Expected nodeType to be "field"');
         Assert.isNull(idNode3.left, 'Expected left to be null');
         Assert.isNull(idNode3.right, 'Expected right to be null');
 
-        Lexer.Node valueNode2 = operatorNode2.right;
+        Node valueNode2 = operatorNode2.right;
         Assert.areEqual('10', valueNode2.id, 'Expected id to be "10"');
         Assert.areEqual('number', valueNode2.nodeType, 'Expected nodeType to be "number"');
         Assert.isNull(valueNode2.left, 'Expected left to be null');
@@ -1994,7 +1994,7 @@ private with sharing class LexerTest {
         Lexer l = new Lexer();
         
         Test.startTest();
-        Lexer.Node head = l.parse('SELECT Name, SUM(NumberOfEmployees) FROM Account GROUP BY Name HAVING Name = \'Test2\' OR Name = \'Test1\' AND SUM(NumberOfEmployees) > 10');
+        Node head = l.parse('SELECT Name, SUM(NumberOfEmployees) FROM Account GROUP BY Name HAVING Name = \'Test2\' OR Name = \'Test1\' AND SUM(NumberOfEmployees) > 10');
         Test.stopTest();
 
         Assert.areEqual('select', head.id, 'Expected id to be "select"');
@@ -2002,121 +2002,121 @@ private with sharing class LexerTest {
         Assert.isNotNull(head.left, 'Expected left to be not null');
         Assert.isNotNull(head.right, 'Expected right to be not null');
 
-        Lexer.Node nameNode = head.left;
+        Node nameNode = head.left;
         Assert.areEqual('name', nameNode.id, 'Expected id to be "name"');
         Assert.areEqual('field', nameNode.nodeType, 'Expected nodeType to be "field"');
         Assert.isNotNull(nameNode.left, 'Expected left to not be null');
         Assert.isNull(nameNode.right, 'Expected right to be null');
 
-        Lexer.Node sumNode = nameNode.left;
+        Node sumNode = nameNode.left;
         Assert.areEqual('sum', sumNode.id, 'Expected id to be "sum"');
         Assert.areEqual('aggregate function', sumNode.nodeType, 'Expected nodeType to be "aggregate function"');
         Assert.isNull(sumNode.left, 'Expected left to be null');
         Assert.isNotNull(sumNode.right, 'Expected right to not be null');
 
-        Lexer.Node numberOfEmployeesNode = sumNode.right;
+        Node numberOfEmployeesNode = sumNode.right;
         Assert.areEqual('numberofemployees', numberOfEmployeesNode.id, 'Expected id to be "numberofemployees"');
         Assert.areEqual('field', numberOfEmployeesNode.nodeType, 'Expected nodeType to be "field"');
         Assert.isNull(numberOfEmployeesNode.left, 'Expected left to be null');
         Assert.isNull(numberOfEmployeesNode.right, 'Expected right to be null');
 
-        Lexer.Node fromNode = head.right;
+        Node fromNode = head.right;
         Assert.areEqual('from', fromNode.id, 'Expected id to be "from"');
         Assert.areEqual('from', fromNode.nodeType, 'Expected nodeType to be "from"');
         Assert.isNotNull(fromNode.left, 'Expected left to be not null');
         Assert.isNotNull(fromNode.right, 'Expected right to be not null');
 
-        Lexer.Node accountNode = fromNode.left;
+        Node accountNode = fromNode.left;
         Assert.areEqual('account', accountNode.id, 'Expected id to be "account"');
         Assert.areEqual('object', accountNode.nodeType, 'Expected nodeType to be "object"');
         Assert.isNull(accountNode.left, 'Expected left to be null');
         Assert.isNull(accountNode.right, 'Expected right to be null');
 
-        Lexer.Node groupByNode = fromNode.right;
+        Node groupByNode = fromNode.right;
         Assert.areEqual('group by', groupByNode.id, 'Expected id to be "group by"');
         Assert.areEqual('group by', groupByNode.nodeType, 'Expected nodeType to be "group by"');
         Assert.isNotNull(groupByNode.left, 'Expected left to be not null');
         Assert.isNotNull(groupByNode.right, 'Expected right to be not null');
 
-        Lexer.Node nameNode2 = groupByNode.left;
+        Node nameNode2 = groupByNode.left;
         Assert.areEqual('name', nameNode2.id, 'Expected id to be "name"');
         Assert.areEqual('field', nameNode2.nodeType, 'Expected nodeType to be "field"');
         Assert.isNull(nameNode2.left, 'Expected left to be null');
         Assert.isNull(nameNode2.right, 'Expected right to be null');
 
-        Lexer.Node havingNode = groupByNode.right;
+        Node havingNode = groupByNode.right;
         Assert.areEqual('having', havingNode.id, 'Expected id to be "having"');
         Assert.areEqual('having', havingNode.nodeType, 'Expected nodeType to be "having"');
         Assert.isNotNull(havingNode.left, 'Expected left to not be null');
         Assert.isNull(havingNode.right, 'Expected right to be null');
 
-        Lexer.Node orNode = havingNode.left;
+        Node orNode = havingNode.left;
         Assert.areEqual('or', orNode.id, 'Expected id to be "or"');
         Assert.areEqual('or', orNode.nodeType, 'Expected nodeType to be "or"');
         Assert.isNotNull(orNode.left, 'Expected left to not be null');
         Assert.isNotNull(orNode.right, 'Expected right to not be null');
 
-        Lexer.Node operatorNode = orNode.left;
+        Node operatorNode = orNode.left;
         Assert.areEqual('=', operatorNode.id, 'Expected id to be "="');
         Assert.areEqual('operator', operatorNode.nodeType, 'Expected nodeType to be "operator"');
         Assert.isNotNull(operatorNode.left, 'Expected left to not be null');
         Assert.isNotNull(operatorNode.right, 'Expected right to not be null');
 
-        Lexer.Node nameNode3 = operatorNode.left;
+        Node nameNode3 = operatorNode.left;
         Assert.areEqual('name', nameNode3.id, 'Expected id to be "name"');
         Assert.areEqual('field', nameNode3.nodeType, 'Expected nodeType to be "field"');
         Assert.isNull(nameNode3.left, 'Expected left to be null');
         Assert.isNull(nameNode3.right, 'Expected right to be null');
 
-        Lexer.Node valueNode = operatorNode.right;
+        Node valueNode = operatorNode.right;
         Assert.areEqual('test2', valueNode.id, 'Expected id to be "test2"');
         Assert.areEqual('string', valueNode.nodeType, 'Expected nodeType to be "string"');
         Assert.isNull(valueNode.left, 'Expected left to be null');
         Assert.isNull(valueNode.right, 'Expected right to be null');
 
-        Lexer.Node andNode = orNode.right;
+        Node andNode = orNode.right;
         Assert.areEqual('and', andNode.id, 'Expected id to be "and"');
         Assert.areEqual('and', andNode.nodeType, 'Expected nodeType to be "and"');
         Assert.isNotNull(andNode.left, 'Expected left to not be null');
         Assert.isNotNull(andNode.right, 'Expected right to not be null');
 
-        Lexer.Node operatorNode2 = andNode.left;
+        Node operatorNode2 = andNode.left;
         Assert.areEqual('=', operatorNode2.id, 'Expected id to be "="');
         Assert.areEqual('operator', operatorNode2.nodeType, 'Expected nodeType to be "operator"');
         Assert.isNotNull(operatorNode2.left, 'Expected left to not be null');
         Assert.isNotNull(operatorNode2.right, 'Expected right to not be null');
 
-        Lexer.Node nameNode4 = operatorNode2.left;
+        Node nameNode4 = operatorNode2.left;
         Assert.areEqual('name', nameNode4.id, 'Expected id to be "name"');
         Assert.areEqual('field', nameNode4.nodeType, 'Expected nodeType to be "field"');
         Assert.isNull(nameNode4.left, 'Expected left to be null');
         Assert.isNull(nameNode4.right, 'Expected right to be null');
 
-        Lexer.Node valueNode2 = operatorNode2.right;
+        Node valueNode2 = operatorNode2.right;
         Assert.areEqual('test1', valueNode2.id, 'Expected id to be "test1"');
         Assert.areEqual('string', valueNode2.nodeType, 'Expected nodeType to be "string"');
         Assert.isNull(valueNode2.left, 'Expected left to be null');
         Assert.isNull(valueNode2.right, 'Expected right to be null');
 
-        Lexer.Node operatorNode3 = andNode.right;
+        Node operatorNode3 = andNode.right;
         Assert.areEqual('>', operatorNode3.id, 'Expected id to be ">"');
         Assert.areEqual('operator', operatorNode3.nodeType, 'Expected nodeType to be "operator"');
         Assert.isNotNull(operatorNode3.left, 'Expected left to not be null');
         Assert.isNotNull(operatorNode3.right, 'Expected right to not be null');
 
-        Lexer.Node sumNode2 = operatorNode3.left;
+        Node sumNode2 = operatorNode3.left;
         Assert.areEqual('sum', sumNode2.id, 'Expected id to be "sum"');
         Assert.areEqual('aggregate function', sumNode2.nodeType, 'Expected nodeType to be "aggregate function"');
         Assert.isNull(sumNode2.left, 'Expected left to be null');
         Assert.isNotNull(sumNode2.right, 'Expected right to not be null');
 
-        Lexer.Node numberOfEmployeesNode2 = sumNode2.right;
+        Node numberOfEmployeesNode2 = sumNode2.right;
         Assert.areEqual('numberofemployees', numberOfEmployeesNode2.id, 'Expected id to be "numberofemployees"');
         Assert.areEqual('field', numberOfEmployeesNode2.nodeType, 'Expected nodeType to be "field"');
         Assert.isNull(numberOfEmployeesNode2.left, 'Expected left to be null');
         Assert.isNull(numberOfEmployeesNode2.right, 'Expected right to be null');
 
-        Lexer.Node valueNode3 = operatorNode3.right;
+        Node valueNode3 = operatorNode3.right;
         Assert.areEqual('10', valueNode3.id, 'Expected id to be "10"');
         Assert.areEqual('number', valueNode3.nodeType, 'Expected nodeType to be "number"');
         Assert.isNull(valueNode3.left, 'Expected left to be null');
@@ -2127,7 +2127,7 @@ private with sharing class LexerTest {
     private static void testOrderByDesc() {
         Test.startTest();
         Lexer t = new Lexer();
-        Lexer.Node head = t.parse('SELECT Name FROM Account ORDER BY Name DESC');
+        Node head = t.parse('SELECT Name FROM Account ORDER BY Name DESC');
         Test.stopTest();
         
         Assert.areEqual('select', head.id, 'Expected id to be "select"');
@@ -2135,37 +2135,37 @@ private with sharing class LexerTest {
         Assert.isNotNull(head.left, 'Expected left to not be null');
         Assert.isNotNull(head.right, 'Expected right to not be null');
 
-        Lexer.Node nameNode = head.left;
+        Node nameNode = head.left;
         Assert.areEqual('name', nameNode.id, 'Expected id to be "name"');
         Assert.areEqual('field', nameNode.nodeType, 'Expected nodeType to be "field"');
         Assert.isNull(nameNode.left, 'Expected left to be null');
         Assert.isNull(nameNode.right, 'Expected right to be null');
 
-        Lexer.Node fromNode = head.right;
+        Node fromNode = head.right;
         Assert.areEqual('from', fromNode.id, 'Expected id to be "from"');
         Assert.areEqual('from', fromNode.nodeType, 'Expected nodeType to be "from"');
         Assert.isNotNull(fromNode.left, 'Expected left to not be null');
         Assert.isNotNull(fromNode.right, 'Expected right to not be null');
 
-        Lexer.Node accountNode = fromNode.left;
+        Node accountNode = fromNode.left;
         Assert.areEqual('account', accountNode.id, 'Expected id to be "account"');
         Assert.areEqual('object', accountNode.nodeType, 'Expected nodeType to be "object"');
         Assert.isNull(accountNode.left, 'Expected left to be null');
         Assert.isNull(accountNode.right, 'Expected right to be null');
 
-        Lexer.Node orderByNode = fromNode.right;
+        Node orderByNode = fromNode.right;
         Assert.areEqual('order by', orderByNode.id, 'Expected id to be "order by"');
         Assert.areEqual('order by', orderByNode.nodeType, 'Expected nodeType to be "order by"');
         Assert.isNotNull(orderByNode.left, 'Expected left to not be null');
         Assert.isNull(orderByNode.right, 'Expected right to be null');
 
-        Lexer.Node nameNode2 = orderByNode.left;
+        Node nameNode2 = orderByNode.left;
         Assert.areEqual('name', nameNode2.id, 'Expected id to be "name"');
         Assert.areEqual('field', nameNode2.nodeType, 'Expected nodeType to be "field"');
         Assert.isNull(nameNode2.left, 'Expected left to be null');
         Assert.isNotNull(nameNode2.right, 'Expected right to not be null');
 
-        Lexer.Node descNode = nameNode2.right;
+        Node descNode = nameNode2.right;
         Assert.areEqual('desc', descNode.id, 'Expected id to be "desc"');
         Assert.areEqual('direction', descNode.nodeType, 'Expected nodeType to be "desc"');
         Assert.isNull(descNode.left, 'Expected left to be null');
@@ -2176,7 +2176,7 @@ private with sharing class LexerTest {
     private static void testNullsFirst() {
         Test.startTest();
         Lexer t = new Lexer();
-        Lexer.Node head = t.parse('SELECT Name FROM Account ORDER BY Name NULLS FIRST');
+        Node head = t.parse('SELECT Name FROM Account ORDER BY Name NULLS FIRST');
         Test.stopTest();
         
         Assert.areEqual('select', head.id, 'Expected id to be "select"');
@@ -2184,37 +2184,37 @@ private with sharing class LexerTest {
         Assert.isNotNull(head.left, 'Expected left to not be null');
         Assert.isNotNull(head.right, 'Expected right to not be null');
 
-        Lexer.Node nameNode = head.left;
+        Node nameNode = head.left;
         Assert.areEqual('name', nameNode.id, 'Expected id to be "name"');
         Assert.areEqual('field', nameNode.nodeType, 'Expected nodeType to be "field"');
         Assert.isNull(nameNode.left, 'Expected left to be null');
         Assert.isNull(nameNode.right, 'Expected right to be null');
 
-        Lexer.Node fromNode = head.right;
+        Node fromNode = head.right;
         Assert.areEqual('from', fromNode.id, 'Expected id to be "from"');
         Assert.areEqual('from', fromNode.nodeType, 'Expected nodeType to be "from"');
         Assert.isNotNull(fromNode.left, 'Expected left to not be null');
         Assert.isNotNull(fromNode.right, 'Expected right to not be null');
 
-        Lexer.Node accountNode = fromNode.left;
+        Node accountNode = fromNode.left;
         Assert.areEqual('account', accountNode.id, 'Expected id to be "account"');
         Assert.areEqual('object', accountNode.nodeType, 'Expected nodeType to be "object"');
         Assert.isNull(accountNode.left, 'Expected left to be null');
         Assert.isNull(accountNode.right, 'Expected right to be null');
 
-        Lexer.Node orderByNode = fromNode.right;
+        Node orderByNode = fromNode.right;
         Assert.areEqual('order by', orderByNode.id, 'Expected id to be "order by"');
         Assert.areEqual('order by', orderByNode.nodeType, 'Expected nodeType to be "order by"');
         Assert.isNotNull(orderByNode.left, 'Expected left to not be null');
         Assert.isNull(orderByNode.right, 'Expected right to be null');
 
-        Lexer.Node nameNode2 = orderByNode.left;
+        Node nameNode2 = orderByNode.left;
         Assert.areEqual('name', nameNode2.id, 'Expected id to be "name"');
         Assert.areEqual('field', nameNode2.nodeType, 'Expected nodeType to be "field"');
         Assert.isNull(nameNode2.left, 'Expected left to be null');
         Assert.isNotNull(nameNode2.right, 'Expected right to not be null');
 
-        Lexer.Node nullsFirstNode = nameNode2.right;
+        Node nullsFirstNode = nameNode2.right;
         Assert.areEqual('nulls first', nullsFirstNode.id, 'Expected id to be "nulls first"');
         Assert.areEqual('nulls direction', nullsFirstNode.nodeType, 'Expected nodeType to be "nulls first"');
         Assert.isNull(nullsFirstNode.left, 'Expected left to be null');
@@ -2226,7 +2226,7 @@ private with sharing class LexerTest {
     private static void testNullsLast() {
         Test.startTest();
         Lexer t = new Lexer();
-        Lexer.Node head = t.parse('SELECT Name FROM Account ORDER BY Name NULLS LAST');
+        Node head = t.parse('SELECT Name FROM Account ORDER BY Name NULLS LAST');
         Test.stopTest();
 
         Assert.areEqual('select', head.id, 'Expected id to be "select"');
@@ -2234,37 +2234,37 @@ private with sharing class LexerTest {
         Assert.isNotNull(head.left, 'Expected left to not be null');
         Assert.isNotNull(head.right, 'Expected right to not be null');
 
-        Lexer.Node nameNode = head.left;
+        Node nameNode = head.left;
         Assert.areEqual('name', nameNode.id, 'Expected id to be "name"');
         Assert.areEqual('field', nameNode.nodeType, 'Expected nodeType to be "field"');
         Assert.isNull(nameNode.left, 'Expected left to be null');
         Assert.isNull(nameNode.right, 'Expected right to be null');
 
-        Lexer.Node fromNode = head.right;
+        Node fromNode = head.right;
         Assert.areEqual('from', fromNode.id, 'Expected id to be "from"');
         Assert.areEqual('from', fromNode.nodeType, 'Expected nodeType to be "from"');
         Assert.isNotNull(fromNode.left, 'Expected left to not be null');
         Assert.isNotNull(fromNode.right, 'Expected right to not be null');
 
-        Lexer.Node accountNode = fromNode.left;
+        Node accountNode = fromNode.left;
         Assert.areEqual('account', accountNode.id, 'Expected id to be "account"');
         Assert.areEqual('object', accountNode.nodeType, 'Expected nodeType to be "object"');
         Assert.isNull(accountNode.left, 'Expected left to be null');
         Assert.isNull(accountNode.right, 'Expected right to be null');
 
-        Lexer.Node orderByNode = fromNode.right;
+        Node orderByNode = fromNode.right;
         Assert.areEqual('order by', orderByNode.id, 'Expected id to be "order by"');
         Assert.areEqual('order by', orderByNode.nodeType, 'Expected nodeType to be "order by"');
         Assert.isNotNull(orderByNode.left, 'Expected left to not be null');
         Assert.isNull(orderByNode.right, 'Expected right to be null');
 
-        Lexer.Node nameNode2 = orderByNode.left;
+        Node nameNode2 = orderByNode.left;
         Assert.areEqual('name', nameNode2.id, 'Expected id to be "name"');
         Assert.areEqual('field', nameNode2.nodeType, 'Expected nodeType to be "field"');
         Assert.isNull(nameNode2.left, 'Expected left to be null');
         Assert.isNotNull(nameNode2.right, 'Expected right to not be null');
 
-        Lexer.Node nullsLastNode = nameNode2.right;
+        Node nullsLastNode = nameNode2.right;
         Assert.areEqual('nulls last', nullsLastNode.id, 'Expected id to be "nulls last"');
         Assert.areEqual('nulls direction', nullsLastNode.nodeType, 'Expected nodeType to be "nulls last"');
         Assert.isNull(nullsLastNode.left, 'Expected left to be null');
@@ -2275,7 +2275,7 @@ private with sharing class LexerTest {
     private static void testOffset() {
         Test.startTest();
         Lexer t = new Lexer();
-        Lexer.Node head = t.parse('SELECT Name FROM Account OFFSET 10');
+        Node head = t.parse('SELECT Name FROM Account OFFSET 10');
         Test.stopTest();
 
         Assert.areEqual('select', head.id, 'Expected id to be "select"');
@@ -2283,35 +2283,177 @@ private with sharing class LexerTest {
         Assert.isNotNull(head.left, 'Expected left to not be null');
         Assert.isNotNull(head.right, 'Expected right to not be null');
 
-        Lexer.Node nameNode = head.left;
+        Node nameNode = head.left;
         Assert.areEqual('name', nameNode.id, 'Expected id to be "name"');
         Assert.areEqual('field', nameNode.nodeType, 'Expected nodeType to be "field"');
         Assert.isNull(nameNode.left, 'Expected left to be null');
         Assert.isNull(nameNode.right, 'Expected right to be null');
 
-        Lexer.Node fromNode = head.right;
+        Node fromNode = head.right;
         Assert.areEqual('from', fromNode.id, 'Expected id to be "from"');
         Assert.areEqual('from', fromNode.nodeType, 'Expected nodeType to be "from"');
         Assert.isNotNull(fromNode.left, 'Expected left to not be null');
         Assert.isNotNull(fromNode.right, 'Expected right to not be null');
 
-        Lexer.Node accountNode = fromNode.left;
+        Node accountNode = fromNode.left;
         Assert.areEqual('account', accountNode.id, 'Expected id to be "account"');
         Assert.areEqual('object', accountNode.nodeType, 'Expected nodeType to be "object"');
         Assert.isNull(accountNode.left, 'Expected left to be null');
         Assert.isNull(accountNode.right, 'Expected right to be null');
 
-        Lexer.Node offsetNode = fromNode.right;
+        Node offsetNode = fromNode.right;
         Assert.areEqual('offset', offsetNode.id, 'Expected id to be "offset"');
         Assert.areEqual('offset', offsetNode.nodeType, 'Expected nodeType to be "offset"');
         Assert.isNotNull(offsetNode.left, 'Expected left to be null');
         Assert.isNull(offsetNode.right, 'Expected right to not be null');
 
-        Lexer.Node valueNode = offsetNode.left;
+        Node valueNode = offsetNode.left;
         Assert.areEqual('10', valueNode.id, 'Expected id to be "10"');
         Assert.areEqual('number', valueNode.nodeType, 'Expected nodeType to be "number"');
         Assert.isNull(valueNode.left, 'Expected left to be null');
         Assert.isNull(valueNode.right, 'Expected right to be null');
         
+    }
+
+    @IsTest
+    private static void testTypeOf() {
+        Test.startTest();
+        Lexer t = new Lexer();
+        Node head = t.parse('SELECT TYPEOF What WHEN Account THEN Name WHEN Opportunity THEN Amount ELSE Name END FROM Event');
+        Test.stopTest();
+
+        Assert.areEqual('select', head.id, 'Expected id to be "select"');
+        Assert.areEqual('select', head.nodeType, 'Expected nodeType to be "select"');
+        Assert.isNotNull(head.left, 'Expected left to not be null');
+        Assert.isNotNull(head.right, 'Expected right to not be null');
+
+        Node typeofNode = head.left;
+        Assert.areEqual('what', typeofNode.id, 'Expected id to be "what"');
+        Assert.areEqual('typeof', typeofNode.nodeType, 'Expected nodeType to be "typeof"');
+        Assert.isNull(typeofNode.left, 'Expected left to be null');
+        Assert.isNotNull(typeofNode.right, 'Expected right to not be null');
+
+        Node whenNode = typeofNode.right;
+        Assert.areEqual('when', whenNode.id, 'Expected id to be "when"');
+        Assert.areEqual('when', whenNode.nodeType, 'Expected nodeType to be "when"');
+        Assert.isNotNull(whenNode.left, 'Expected left to not be null');
+        Assert.isNotNull(whenNode.right, 'Expected right to not be null');
+
+        Node accountNode = whenNode.left;
+        Assert.areEqual('account', accountNode.id, 'Expected id to be "account"');
+        Assert.areEqual('object', accountNode.nodeType, 'Expected nodeType to be "object"');
+        Assert.isNull(accountNode.left, 'Expected left to be null');
+        Assert.isNull(accountNode.right, 'Expected right to be null');
+
+        Node nameNode = whenNode.right;
+        Assert.areEqual('name', nameNode.id, 'Expected id to be "when"');
+        Assert.areEqual('field', nameNode.nodeType, 'Expected nodeType to be "when"');
+        Assert.isNull(nameNode.left, 'Expected left to be null');
+        Assert.isNotNull(nameNode.right, 'Expected right to not be null');
+
+        Node whenNode2 = nameNode.right;
+        Assert.areEqual('when', whenNode2.id, 'Expected id to be "when"');
+        Assert.areEqual('when', whenNode2.nodeType, 'Expected nodeType to be "when"');
+        Assert.isNotNull(whenNode2.left, 'Expected left to not be null');
+        Assert.isNotNull(whenNode2.right, 'Expected right to not be null');
+
+
+        Node opportunityNode = whenNode2.left;
+        Assert.areEqual('opportunity', opportunityNode.id, 'Expected id to be "opportunity"');
+        Assert.areEqual('object', opportunityNode.nodeType, 'Expected nodeType to be "object"');
+        Assert.isNull(opportunityNode.left, 'Expected left to be null');
+        Assert.isNull(opportunityNode.right, 'Expected right to be null');
+
+        Node amountNode = whenNode2.right;
+        Assert.areEqual('amount', amountNode.id, 'Expected id to be "amount"');
+        Assert.areEqual('field', amountNode.nodeType, 'Expected nodeType to be "field"');
+        Assert.isNull(amountNode.left, 'Expected left to be null');
+        Assert.isNotNull(amountNode.right, 'Expected right to not be null');
+
+        Node elseNode = amountNode.right;
+        Assert.areEqual('else', elseNode.id, 'Expected id to be "else"');
+        Assert.areEqual('else', elseNode.nodeType, 'Expected nodeType to be "else"');
+        Assert.isNull(elseNode.left, 'Expected left to not be null');
+        Assert.isNotNull(elseNode.right, 'Expected right to be null');
+
+        Node nameNode2 = elseNode.right;
+        Assert.areEqual('name', nameNode2.id, 'Expected id to be "name"');
+        Assert.areEqual('field', nameNode2.nodeType, 'Expected nodeType to be "field"');
+        Assert.isNull(nameNode2.left, 'Expected left to be null');
+        Assert.isNull(nameNode2.right, 'Expected right to be null');
+
+        Node fromNode = head.right;
+        Assert.areEqual('from', fromNode.id, 'Expected id to be "from"');
+        Assert.areEqual('from', fromNode.nodeType, 'Expected nodeType to be "from"');
+        Assert.isNotNull(fromNode.left, 'Expected left to not be null');
+        Assert.isNull(fromNode.right, 'Expected right to be null');
+
+        Node eventNode = fromNode.left;
+        Assert.areEqual('event', eventNode.id, 'Expected id to be "event"');
+        Assert.areEqual('object', eventNode.nodeType, 'Expected nodeType to be "object"');
+        Assert.isNull(eventNode.left, 'Expected left to be null');
+        Assert.isNull(eventNode.right, 'Expected right to be null');
+    }
+
+    @IsTest
+    private static void testTypeOfMultipleFields() {
+        Test.startTest();
+        Lexer t = new Lexer();
+        Node head = t.parse('SELECT TYPEOF What WHEN Account THEN Name, Phone WHEN Opportunity THEN Amount ELSE Name END FROM Event');
+        Test.stopTest();
+
+        Assert.areEqual('select', head.id, 'Expected id to be "select"');
+        Assert.areEqual('select', head.nodeType, 'Expected nodeType to be "select"');
+        Assert.isNotNull(head.left, 'Expected left to not be null');
+        Assert.isNotNull(head.right, 'Expected right to not be null');
+
+        Node typeofNode = head.left;
+        Assert.areEqual('what', typeofNode.id, 'Expected id to be "typeof"');
+        Assert.areEqual('typeof', typeofNode.nodeType, 'Expected nodeType to be "typeof"');
+        Assert.isNull(typeofNode.left, 'Expected left to be null');
+        Assert.isNotNull(typeofNode.right, 'Expected right to not be null');
+
+        Node whenNode = typeofNode.right;
+        Assert.areEqual('when', whenNode.id, 'Expected id to be "when"');
+        Assert.areEqual('when', whenNode.nodeType, 'Expected nodeType to be "when"');
+        Assert.isNotNull(whenNode.left, 'Expected left to not be null');
+        Assert.isNotNull(whenNode.right, 'Expected right to not be null');
+
+        Node accountNode = whenNode.left;
+        Assert.areEqual('account', accountNode.id, 'Expected id to be "account"');
+        Assert.areEqual('object', accountNode.nodeType, 'Expected nodeType to be "object"');
+        Assert.isNull(accountNode.left, 'Expected left to be null');
+        Assert.isNull(accountNode.right, 'Expected right to be null');
+
+        Node nameNode = whenNode.right;
+        Assert.areEqual('name', nameNode.id, 'Expected id to be "when"');
+        Assert.areEqual('field', nameNode.nodeType, 'Expected nodeType to be "when"');
+        Assert.isNotNull(nameNode.left, 'Expected left to not be null');
+        Assert.isNotNull(nameNode.right, 'Expected right to not be null');
+
+        Node phoneNode = nameNode.left;
+        Assert.areEqual('phone', phoneNode.id, 'Expected id to be "phone"');
+        Assert.areEqual('field', phoneNode.nodeType, 'Expected nodeType to be "field"');
+        Assert.isNull(phoneNode.left, 'Expected left to be null');
+        Assert.isNull(phoneNode.right, 'Expected right to be null');
+
+        Node whenNode2 = nameNode.right;
+        Assert.areEqual('when', whenNode2.id, 'Expected id to be "when"');
+        Assert.areEqual('when', whenNode2.nodeType, 'Expected nodeType to be "when"');
+        Assert.isNotNull(whenNode2.left, 'Expected left to not be null');
+        Assert.isNotNull(whenNode2.right, 'Expected right to not be null');
+
+        Node fromNode = head.right;
+        Assert.areEqual('from', fromNode.id, 'Expected id to be "from"');
+        Assert.areEqual('from', fromNode.nodeType, 'Expected nodeType to be "from"');
+        Assert.isNotNull(fromNode.left, 'Expected left to not be null');
+        Assert.isNull(fromNode.right, 'Expected right to be null');
+
+        Node eventNode = fromNode.left;
+        Assert.areEqual('event', eventNode.id, 'Expected id to be "event"');
+        Assert.areEqual('object', eventNode.nodeType, 'Expected nodeType to be "object"');
+        Assert.isNull(eventNode.left, 'Expected left to be null');
+        Assert.isNull(eventNode.right, 'Expected right to be null');
+
     }
 }

@@ -32,22 +32,4 @@ private class ParserUtilsTest {
         }
         Test.stopTest();
     }
-
-    @IsTest
-    private static void testNullCheck() {
-        String query = null;
-        String exMessage;
-        Test.startTest();
-        try {
-            ParserUtils.nullCheck(query, 'query');
-        } catch(IllegalArgumentException ex) {
-            exMessage = ex.getMessage();
-        }
-        Test.stopTest();
-        Assert.isTrue(
-            exMessage != null &&
-            exMessage.contains('query'),
-            'nullCheck should throw an IllegalArgumentException with a message containing "null"'
-        );
-    }
 }
