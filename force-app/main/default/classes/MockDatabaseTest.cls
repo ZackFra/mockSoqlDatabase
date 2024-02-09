@@ -2421,11 +2421,11 @@ private with sharing class MockDatabaseTest {
 
         String exMessage;
         Test.startTest();
-            try {
-                mockDb.query('SELECT OwnerId, TYPEOF Owner WHEN User THEN FirstName ELSE Name END FROM Case GROUP BY OwnerId');
-            } catch(Exception e) {
-                exMessage = e.getMessage();
-            }
+        try {
+            mockDb.query('SELECT OwnerId, TYPEOF Owner WHEN User THEN FirstName ELSE Name END FROM Case GROUP BY OwnerId');
+        } catch(Exception e) {
+            exMessage = e.getMessage();
+        }
         Test.stopTest();
 
         Assert.isTrue(
