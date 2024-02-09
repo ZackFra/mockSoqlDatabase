@@ -211,6 +211,7 @@ public with sharing class Lexer {
     private Intermediary parseSelectExpr(String query) {
         query = ParserUtils.skipWhitespace(query);
         Intermediary selectExpr;
+
         if(isTypeOf(query)) {
             selectExpr = parseTypeOf(query);
             query = selectExpr.subquery;
@@ -246,7 +247,8 @@ public with sharing class Lexer {
                 curr = curr.left;
             }
             curr.left = restOfExpr.head;
-            selectExpr.subquery = restOfExpr.subquery;
+            query = restOfExpr.subquery;
+            selectExpr.subquery = query;
         }
         return selectExpr;
     }
@@ -256,7 +258,10 @@ public with sharing class Lexer {
     private Intermediary parseFieldListWithAliases(String query) {
         query = ParserUtils.skipWhitespace(query);
         Intermediary nextItem;
-        if(isAggregateFunction(query)) {
+        if(isTypeOf(query)) {
+            nextItem = parseTypeOf(query);
+            query = nextItem.subquery;
+        } else if(isAggregateFunction(query)) {
             nextItem = parseAggregateFunc(query);
             query = nextItem.subquery;
         } else {

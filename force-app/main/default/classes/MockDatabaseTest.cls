@@ -2265,4 +2265,28 @@ private with sharing class MockDatabaseTest {
 
         Assert.areEqual(acct.Name, queriedTask.What.Name, 'Incorrect Name');
     }
+
+    @IsTest
+    static void testTypeOfWithOtherFields() {
+        MockDatabase mockDb = new MockDatabase();
+        Account acct = new Account(
+            Name = 'Test'
+        );
+        mockDb.doInsert(acct);
+        Task t = new Task(
+            Subject = 'Test',
+            WhatId = acct.Id
+        );
+        mockDb.doInsert(t);
+
+        Test.startTest();
+        List<Task> queriedTaskList = (List<Task>) mockDb.query('SELECT Id, Subject, TYPEOF What WHEN Account THEN Name ELSE Id END FROM Task');
+        Test.stopTest();
+
+        Task queriedTask = queriedTaskList[0];
+        System.debug(queriedTask.What);
+
+        Assert.areEqual(acct.Name, queriedTask.What.Name, 'Incorrect Name');
+        Assert.areEqual(queriedTask.Subject, 'Test', 'Incorrect Subject');
+    }
 }

@@ -259,7 +259,7 @@ public with sharing class MockDatabase {
                 // so we can't mock the subquery results directly, but we can serialize them and then deserialize them
                 // here we serialize the subquery results, which can't be instaniated,
                 // then deserialize them into a map, then add the map to the parent object
-                Map<String, Object> objMap = (Map<String, Object>) JSON.deserializeUntyped(JSON.serialize(sObj));
+                Map<String, Object> objMap = this.utils.mapFromSObject(sObj);
                 Map<String, Object> subQueryResultMap = new Map<String, Object>();
                 
                 subQueryResultMap.put('records', subQueryRecords);
@@ -267,16 +267,16 @@ public with sharing class MockDatabase {
                 subQueryResultMap.put('done', true);
 
                 objMap.put(subQueryChildRelationshipName, subQueryResultMap);
-                sObj = (sObject) JSON.deserialize(JSON.serialize(objMap), Type.forName(objApiName));
+                sObj = this.utils.sObjectFromMap(objMap, ObjApiName);
             } else if(isParentSubQuery) {
                 sObj = handleParentSubQuery(sObj, objApiName, field, params);
             } else {
                 String fieldName = field.id;
                 Object fieldValue = obj.get(fieldName);
                 if(fieldValue != null) {
-                    Map<String, Object> objMap = (Map<String, Object>) JSON.deserializeUntyped(JSON.serialize(sObj));
+                    Map<String, Object> objMap = this.utils.mapFromSObject(sObj);
                     objMap.put(fieldName, fieldValue);
-                    sObj = (sObject) JSON.deserialize(JSON.serialize(objMap), Type.forName(objApiName));
+                    sObj = this.utils.sObjectFromMap(objMap, ObjApiName);
                 }
             }
             field = field.left;
@@ -1020,15 +1020,6 @@ public with sharing class MockDatabase {
 
         String fakeId = this.utils.getFakeId(obj.getSObjectType());
         obj.put('Id', fakeId);
-        /**
-        Map<String, Object> sObjMap = this.utils.mapFromSObject(obj);
-        sObjMap.put('Id', fakeId);
-        sObjMap.put('CreatedDate', DateTime.now());
-        sObjMap.put('LastModifiedDate', DateTime.now());
-        sObjMap.put('IsDeleted', false);
-        sObjMap.put('SystemModstamp', DateTime.now());
-        obj = this.utils.sObjectFromMap(sObjMap, objName);
-        **/
 
         mockObjects = this.db.get(objName);
         if(mockObjects == null) {
