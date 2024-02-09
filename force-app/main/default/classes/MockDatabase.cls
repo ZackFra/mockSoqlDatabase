@@ -24,11 +24,24 @@ public with sharing class MockDatabase {
         return havingLogicHandler.evaluate();
     }
 
+    private Boolean isValidWhereClause(Node whereNode) {
+        if(whereNode == null) {
+            return true;
+        }
+        if(whereNode.nodeType == 'typeof') {
+            return false;
+        }
+        return isValidWhereClause(whereNode.left) && isValidWhereClause(whereNode.right);
+    }
+
     private Boolean checkWhereCondition(
         sObject sObj, 
         Node whereNode, 
         Map<String, Object> params
     ) {
+        if(!isValidWhereClause(whereNode)) {
+            throw new QueryException('TYPEOF not supported in outer join');
+        }
         WhereLogicHandler whereLogicHandler = new WhereLogicHandler(this, whereNode, sObj, params);
         return whereLogicHandler.evaluate();
     }

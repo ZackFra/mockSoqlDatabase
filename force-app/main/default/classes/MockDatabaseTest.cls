@@ -2433,4 +2433,44 @@ private with sharing class MockDatabaseTest {
             'Exception should have been thrown with the message "TYPEOF not allowed in GROUP BY query"'
         );
     }
+
+    @IsTest
+    static void testTypeOfOuterJoin() {
+        MockDatabase mockDb = new MockDatabase();
+
+        User u = new User( 
+            FirstName = 'Test',
+            LastName = 'User',
+            Username = 'test@test.com'
+        );
+        mockDb.doInsert(u);
+
+        Account acct = new Account(
+            OwnerId = u.Id,
+            Name = 'Test'
+        );
+        mockDb.doInsert(acct);
+
+        Opportunity opp = new Opportunity(
+            OwnerId = u.Id,
+            Name = 'Test Opp',
+            AccountId = acct.Id
+        );
+        mockDb.doInsert(opp);
+
+        String exMessage;
+        Test.startTest();
+        try {
+            mockDb.query('SELECT Name FROM Account WHERE Id IN (SELECT TYPEOF Owner WHEN User THEN Id ELSE Id END FROM Opportunity)');
+        } catch(Exception e) {
+            exMessage = e.getMessage();
+        }
+        Test.stopTest();
+        System.debug(exMessage);
+
+        Assert.isTrue(
+            exMessage != null && exMessage.contains('TYPEOF not supported in outer join'), 
+            'Expected exception to be thrown'
+        );        
+    }
 }
