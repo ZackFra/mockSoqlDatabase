@@ -112,7 +112,7 @@ public with sharing class MockDatabase {
                 fieldListNode = null;
                 break;
             }
-            
+
             Node objNode = curr.left;
             Node thenNode = curr.right;
             if(curr.nodeType == 'else') {
@@ -969,9 +969,14 @@ public with sharing class MockDatabase {
         Node limitNode = topLevelNodes.limitNode;
         Node offsetNode = topLevelNodes.offsetNode;
         Node forUpdateNode = topLevelNodes.forUpdateNode;
+        Node havingNode = topLevelNodes.havingNode;
 
         Boolean isAggregateQuery = isAggregateQuery(selectNode);
         Boolean isCount = isSingularCount(selectNode);
+
+        if(isTypeOfQuery(selectNode) && groupByNode != null) {
+            throw new QueryException('TYPEOF not supported with GROUP BY');
+        }
 
         if(hasDuplicateSubQueries(selectNode)) {
             throw new QueryException('Cannot follow the same aggregate relationship twice');

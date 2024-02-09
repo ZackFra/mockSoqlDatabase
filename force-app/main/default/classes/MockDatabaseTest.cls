@@ -2403,4 +2403,34 @@ private with sharing class MockDatabaseTest {
 
         Assert.areEqual(caseQueue.Name, queriedCase.Owner.Name, 'Incorrect Name');
     }
+
+    @IsTest
+    static void testTypeOfWithGroupBy() {
+        MockDatabase mockDb = new MockDatabase();
+
+        Group caseQueue = new Group(
+            Name = 'Case Queue',
+            DeveloperName = 'Case_Queue'
+        );
+
+        mockDb.doInsert(caseQueue);
+        Case c = new Case(
+            OwnerId = caseQueue.Id
+        );
+        mockDb.doInsert(c);
+
+        String exMessage;
+        Test.startTest();
+            try {
+                mockDb.query('SELECT OwnerId, TYPEOF Owner WHEN User THEN FirstName ELSE Name END FROM Case GROUP BY OwnerId');
+            } catch(Exception e) {
+                exMessage = e.getMessage();
+            }
+        Test.stopTest();
+
+        Assert.isTrue(
+            exMessage != null && exMessage.contains('TYPEOF not supported with GROUP BY'), 
+            'Exception should have been thrown with the message "TYPEOF not allowed in GROUP BY query"'
+        );
+    }
 }
