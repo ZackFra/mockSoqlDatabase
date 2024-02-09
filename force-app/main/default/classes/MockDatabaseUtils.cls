@@ -221,7 +221,6 @@ public with sharing class MockDatabaseUtils {
     }
 
     public sObject sObjectFromMap(Map<String, Object> sObjMap, String sObjApiName) {
-        System.debug('sObjMap: ' + sObjMap);
         sObject sObj = (sObject) JSON.deserialize(JSON.serialize(sObjMap), Type.forName(sObjApiName));
         return sObj;
     }
