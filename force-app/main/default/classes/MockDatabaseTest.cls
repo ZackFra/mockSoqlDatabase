@@ -2331,4 +2331,76 @@ private with sharing class MockDatabaseTest {
 
         Assert.isNull(queriedTask.What, 'Should be null');
     }
+
+    @IsTest
+    static void testTypeOfWithMultipleCases() {
+        MockDatabase mockDb = new MockDatabase();
+        Account acct = new Account(
+            Name = 'Test'
+        );
+        mockDb.doInsert(acct);
+        Task t = new Task(
+            Subject = 'Test',
+            WhatId = acct.Id
+        );
+        mockDb.doInsert(t);
+
+        Test.startTest();
+        List<Task> queriedTaskList = (List<Task>) mockDb.query('SELECT TYPEOF What WHEN Opportunity THEN Name WHEN Account THEN Name ELSE Id END FROM Task');
+        Test.stopTest();
+
+        Task queriedTask = queriedTaskList[0];
+
+        Assert.areEqual('Test', queriedTask.What.Name, 'Incorrect Name');
+    }
+
+    @IsTest
+    static void testTypeOfWithOwner() {
+        MockDatabase mockDb = new MockDatabase();
+
+        User u = new User(
+            FirstName = 'Test',
+            LastName = 'User',
+            Username = 'realemail@email.com',
+            Email = 'realemail@email.com'
+        );
+
+        mockDb.doInsert(u);
+        Case c = new Case(
+            OwnerId = u.Id
+        );
+        mockDb.doInsert(c);
+
+        Test.startTest();
+        List<Case> queriedCaseList = (List<Case>) mockDb.query('SELECT TYPEOF Owner WHEN User THEN FirstName ELSE Id END FROM Case');
+        Test.stopTest();
+
+        Case queriedCase = queriedCaseList[0];
+
+        Assert.areEqual(u.FirstName, queriedCase.Owner.FirstName, 'Incorrect Name');
+    }
+
+    @IsTest
+    static void testTypeOfWithOwnerElse() {
+        MockDatabase mockDb = new MockDatabase();
+
+        Group caseQueue = new Group(
+            Name = 'Case Queue',
+            DeveloperName = 'Case_Queue'
+        );
+
+        mockDb.doInsert(caseQueue);
+        Case c = new Case(
+            OwnerId = caseQueue.Id
+        );
+        mockDb.doInsert(c);
+
+        Test.startTest();
+        List<Case> queriedCaseList = (List<Case>) mockDb.query('SELECT TYPEOF Owner WHEN User THEN FirstName ELSE Name END FROM Case');
+        Test.stopTest();
+
+        Case queriedCase = queriedCaseList[0];
+
+        Assert.areEqual(caseQueue.Name, queriedCase.Owner.Name, 'Incorrect Name');
+    }
 }
