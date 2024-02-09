@@ -1,12 +1,2 @@
-Node numNode = new NodeBuilder()
-    .setId('1')
-    .setNodeType('number')
-    .build();
-
-Node whereNode = new NodeBuilder()
-    .setId('where')
-    .setNodeType('where')
-    .setRight(numNode)
-    .build();
-Node whereNodeClone = whereNode.clone();
-System.debug(whereNodeClone.right == numNode); // true??
+String jsonString = '{"Id":"200T00000000000", "Subject":"Test", "What":{"Id":"100100000000000AAA", "Name":"Test", "attributes": { "type":"Account", "url": "/services/data/v60.0/sobjects/Account/100100000000000AAA"}}, "WhatId":"100100000000000AAA", "attributes":{"type":"Task", "url":"/services/data/v60.0/sobjects/Task/200T00000000000"}}';
+System.debug( ((Task) JSON.deserialize(jsonString, Task.class)).What);

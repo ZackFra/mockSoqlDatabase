@@ -3,16 +3,16 @@ public with sharing class MockDatabase {
     public Map<String, Map<String, sObject>> db = new Map<String, Map<String, sObject>>();
     public MockDatabaseUtils utils = new MockDatabaseUtils(this);
     /**
+     * @description map of the top-level nodes of select nodes, is a map to account for subqueries
+     */
+    private final Map<Node, TopLevelNodes> topLevelNodes = new Map<Node, TopLevelNodes>();
+
+    /**
      * @description return all SObjects of a given type
      */
     public Map<String, sObject> get(String objApiName) {
         return this.db.get(objApiName);
     }
-    
-    /**
-     * @description map of the top-level nodes of select nodes, is a map to account for subqueries
-     */
-    private final Map<Node, TopLevelNodes> topLevelNodes = new Map<Node, TopLevelNodes>();
     
     private Boolean checkHavingCondition(
         Map<String, Object> aggr, 
@@ -67,6 +67,96 @@ public with sharing class MockDatabase {
         return this.utils.sObjectFromMap(sObjClone, objApiName);
     }
 
+    private SObject findRecord(Id recordId) {
+        Set<String> sObjectApiNames = this.db.keySet();
+        for(String sObjectApiName : sObjectApiNames) {
+            Map<String, sObject> records = this.db.get(sObjectApiName);
+            if(records.containsKey(recordId)) {
+                return records.get(recordId);
+            }
+        }
+        return null;
+    }
+
+    private SObject handlePolymorphicQuery(SObject sObj, Node fieldNode, Map<String, Object> params) {
+        if(fieldNode.nodeType != 'typeof') {
+            throw new QueryException('Unexpected error');
+        }
+
+        Node whenNode = fieldNode.right;
+        String relName = fieldNode.id;
+
+        String fieldApiName = this.utils.getFieldApiNameFromRel(sObj, relName);
+        String objApiName = sObj.getSObjectType().getDescribe().getName();
+
+        if(!this.utils.isFieldPolymorphic(objApiName, fieldApiName)) {
+            throw new QueryException('TYPEOF operand "' + fieldApiName + '" is not a polymorphic relationship field');
+        }
+
+        Id parentRecordId = (Id) sObj.get(fieldApiName);
+        System.debug(parentRecordId);
+        System.debug(sObj);
+        if(parentRecordId == null) {
+            return sObj;
+        }
+
+        SObject parentRecord = findRecord(parentRecordId);
+        if(parentRecord == null) {
+            throw new QueryException('No record found for ' + parentRecordId);
+        }
+        String parentObjApiName = parentRecord.getSObjectType().getDescribe().getName().toLowerCase();
+
+        Node curr = whenNode;
+        Node fieldListNode;
+        while(curr != null) {
+            Node objNode = curr.left;
+            Node thenNode = curr.right;
+            if(curr.nodeType == 'else') {
+                fieldListNode = curr.right;
+                break;
+            }
+
+            String expectedObjName = objNode.id;
+            if(expectedObjName == parentObjApiName) {
+                fieldListNode = thenNode;
+                break;
+            }
+
+            curr = curr.right.right;
+        }
+
+        curr = fieldListNode;
+        List<String> selectFields = new List<String>();
+        while(curr != null) {
+            String parentRecordFieldApiName = this.utils.getFieldApiName(parentRecord.getSObjectType(), curr.id);
+            selectFields.add(parentRecordFieldApiName);
+            curr = curr.left;
+        }
+
+        Map<String, Object> parentRecordData = new Map<String, Object>();
+        if(sObj.getSObject(relName) != null) {
+            parentRecordData = this.utils.mapFromSObject(sObj.getSObject(relName));
+        }
+
+        for(String parentRecordFieldApiName : selectFields) {
+            parentRecordData.put(parentRecordFieldApiName, parentRecord.get(parentRecordFieldApiName));
+        }
+        parentRecordData.put('Id', parentRecord.Id);
+        Map<String, String> attributes = new Map<String, String> {
+            'type' => parentRecord.getSObjectType().getDescribe().getName(),
+            'url' => '/' + parentRecord.Id
+        };
+        parentRecordData.put('attributes', attributes);
+        Map<String, Object> sObjClone = this.utils.mapFromSObject(sObj);
+
+        Map<String, Object> fieldData = this.utils.getFieldData(objApiName, fieldApiName);
+        String relApiName = (String) fieldData.get('relationshipName');
+        sObjClone.put(relApiName, parentRecordData);
+        sObjClone.put(fieldApiName, parentRecord.Id);
+        return this.utils.sObjectFromMap(sObjClone, objApiName);
+
+    }
+
     private sObject handleParentSubQuery(sObject sObj, String sObjApiName, Node field, Map<String, Object> params) {
         String fieldName = field.id;
 
@@ -87,7 +177,7 @@ public with sharing class MockDatabase {
         String subQueryObjName;
         String subQueryFieldName;
         SObjectType childObjectType = ((SObject)Type.forName(objApiName).newInstance()).getSObjectType();
-        for (ChildRelationship relation : childObjectType.getDescribe().getChildRelationships()) {
+        for (Schema.ChildRelationship relation : childObjectType.getDescribe().getChildRelationships()) {
             if(relation.getRelationshipName()?.toLowerCase() == subqueryChildRelationshipName) {
                 subQueryObjName = relation.getChildSObject().getDescribe().getName();
                 subQueryFieldName = relation.getField().getDescribe().getName();
@@ -154,14 +244,13 @@ public with sharing class MockDatabase {
         String objApiName = obj.getSObjectType().getDescribe().getName();
         sObj.put('Id', obj.Id);
         while(field != null) {
-            if(field.nodeType == 'aggregate function') {
-                field = field.left;
-                continue;
-            }
+            Boolean isTypeOf = (field.nodeType == 'typeof');
             Boolean isChildSubQuery = (field.nodeType == 'subquery');
             Boolean isParentSubQuery = (field.id.contains('.'));
-
-            if(isChildSubQuery) {
+            
+            if(isTypeOf) {
+                sObj = handlePolymorphicQuery(obj, field, params);
+            } else if(isChildSubQuery) {
                 Map<String, Object> subQueryResults = handleChildSubQuery(obj, objApiName, field, params);
 
                 String subQueryChildRelationshipName = (String) subQueryResults.get('subqueryRelationshipName');
@@ -229,15 +318,6 @@ public with sharing class MockDatabase {
             curr = curr.left;
         }
         return false;
-    }
-
-    private Boolean isFieldNumeric(Schema.DisplayType fieldType) {
-        Boolean isCurrency = (fieldType == Schema.DisplayType.CURRENCY);
-        Boolean isDouble = (fieldType == Schema.DisplayType.DOUBLE);
-        Boolean isInteger = (fieldType == Schema.DisplayType.INTEGER);
-        Boolean isPercent = (fieldType == Schema.DisplayType.PERCENT);
-        
-        return (isCurrency || isDouble || isInteger || isPercent);
     }
 
     private Boolean isAggregateQuery(Node selectNode) {
@@ -479,7 +559,7 @@ public with sharing class MockDatabase {
                 }
                 aggregateResult.put(alias, distinctValues.size());
             } else if(isAggrAvg) {
-                if(!isFieldNumeric(fieldType)) {
+                if(!this.utils.isFieldNumeric(fieldType)) {
                     throw new QueryException('Invalid field type');
                 }
 
@@ -499,7 +579,7 @@ public with sharing class MockDatabase {
                 aggregateResult.put(alias, currValue);
                 aggregateResult.put(alias + '__n', n + 1);
             } if(isAggrMin) {
-                if(!isFieldNumeric(fieldType)) {
+                if(!this.utils.isFieldNumeric(fieldType)) {
                     throw new QueryException('Invalid field type');
                 }
 
@@ -514,7 +594,7 @@ public with sharing class MockDatabase {
 
                 aggregateResult.put(alias, currValue);
             } else if(isAggrMax) {
-                if(!isFieldNumeric(fieldType)) {
+                if(!this.utils.isFieldNumeric(fieldType)) {
                     throw new QueryException('Invalid field type');
                 }
 
@@ -535,7 +615,7 @@ public with sharing class MockDatabase {
                 aggregateResult.put(alias, currValue + 1);
             } else if(isAggrSum) {
 
-                if(!isFieldNumeric(fieldType)) {
+                if(!this.utils.isFieldNumeric(fieldType)) {
                     throw new QueryException('Invalid field type');
                 }
 
@@ -914,13 +994,24 @@ public with sharing class MockDatabase {
         }
     }
 
+    /**
+     * @description Given a record id, verify it exists in the database
+     * @param recordId : the record id
+     * @return : whether the record exists in the database
+     */
+    private Boolean isRecordInDatabase(Id recordId) {
+        String recordApiName = this.utils.getSObjectApiName(recordId.getSObjectType().getDescribe().getName()).toLowerCase();
+        Map<String, sObject> mockObjects = this.db.get(recordApiName);
+        return mockObjects.containsKey(recordId);
+    }
+
     /** DML methods **/
 
     /**
      * @description: This method is used to insert an sObject into the mock database
      * @param obj : the sObject to insert
      */
-    public void doInsert(sObject obj) {
+    public void doInsert(SObject obj) {
         if(obj.Id != null) {
             throw new DmlException('Cannot insert an object with an Id');
         }
@@ -929,6 +1020,16 @@ public with sharing class MockDatabase {
 
         String fakeId = this.utils.getFakeId(obj.getSObjectType());
         obj.put('Id', fakeId);
+        /**
+        Map<String, Object> sObjMap = this.utils.mapFromSObject(obj);
+        sObjMap.put('Id', fakeId);
+        sObjMap.put('CreatedDate', DateTime.now());
+        sObjMap.put('LastModifiedDate', DateTime.now());
+        sObjMap.put('IsDeleted', false);
+        sObjMap.put('SystemModstamp', DateTime.now());
+        obj = this.utils.sObjectFromMap(sObjMap, objName);
+        **/
+
         mockObjects = this.db.get(objName);
         if(mockObjects == null) {
             mockObjects = new Map<String, sObject>();
@@ -965,8 +1066,23 @@ public with sharing class MockDatabase {
             throw new DmlException('Object does not exist');
         }
 
-        for(String key : obj.getPopulatedFieldsAsMap().keySet()) {
-            mockObjects.get(obj.Id).put(key, obj.get(key));
+        
+        for(String field : obj.getPopulatedFieldsAsMap().keySet()) {
+
+            // check for foreign key references
+            Schema.DisplayType fieldType = this.utils.getFieldType(obj, field);
+            Boolean isRef = (fieldType == Schema.DisplayType.REFERENCE);
+            if(!isRef) {
+                mockObjects.get(obj.Id).put(field, obj.get(field));
+                continue;
+            }
+
+            Id recordId = (Id) obj.get(field);
+
+            if(isRef && !isRecordInDatabase(recordId)) {
+                throw new DmlException('Foreign key reference does not exist');
+            }
+            mockObjects.get(obj.Id).put(field, obj.get(field));
         }
     }
 

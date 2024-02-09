@@ -2242,4 +2242,27 @@ private with sharing class MockDatabaseTest {
 
         Assert.areEqual(1, queriedQTs.size(), 'Incorrect number of quick texts queried');
     }
+
+    @IsTest
+    static void testTypeOf() {
+        MockDatabase mockDb = new MockDatabase();
+        Account acct = new Account(
+            Name = 'Test'
+        );
+        mockDb.doInsert(acct);
+        Task t = new Task(
+            Subject = 'Test',
+            WhatId = acct.Id
+        );
+        mockDb.doInsert(t);
+
+        Test.startTest();
+        List<Task> queriedTaskList = (List<Task>) mockDb.query('SELECT TYPEOF What WHEN Account THEN Name ELSE Id END FROM Task');
+        Test.stopTest();
+
+        Task queriedTask = queriedTaskList[0];
+        System.debug(queriedTask.What);
+
+        Assert.areEqual(acct.Name, queriedTask.What.Name, 'Incorrect Name');
+    }
 }

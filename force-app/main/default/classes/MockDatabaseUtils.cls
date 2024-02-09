@@ -1,3 +1,6 @@
+/**
+ * @description : utilities for a MockDatabase, contains methods that don't mutate the database
+ */
 public with sharing class MockDatabaseUtils {
 
     private MockDatabase db;
@@ -142,6 +145,20 @@ public with sharing class MockDatabaseUtils {
         };
     }
 
+    /**
+     * @description : given a field node return whether it is numeric or not
+     * @param fieldType : the field type
+     * @return : whether the field is numeric or not
+     */
+    public Boolean isFieldNumeric(Schema.DisplayType fieldType) {
+        Boolean isCurrency = (fieldType == Schema.DisplayType.CURRENCY);
+        Boolean isDouble = (fieldType == Schema.DisplayType.DOUBLE);
+        Boolean isInteger = (fieldType == Schema.DisplayType.INTEGER);
+        Boolean isPercent = (fieldType == Schema.DisplayType.PERCENT);
+        
+        return (isCurrency || isDouble || isInteger || isPercent);
+    }
+
 
     public Map<String, Object> getAggrNodeValue(Node aggrNode, Node selectNode) {
 
@@ -204,6 +221,7 @@ public with sharing class MockDatabaseUtils {
     }
 
     public sObject sObjectFromMap(Map<String, Object> sObjMap, String sObjApiName) {
+        System.debug('sObjMap: ' + sObjMap);
         sObject sObj = (sObject) JSON.deserialize(JSON.serialize(sObjMap), Type.forName(sObjApiName));
         return sObj;
     }
@@ -481,6 +499,61 @@ public with sharing class MockDatabaseUtils {
         }
 
         throw new QueryException('Invalid relationship name: ' + fieldName);
+    }
+
+    /**
+     * @description : given an sObject and a relationship name, return the field api name
+     * @param sObj : the sObject
+     * @param relName : the relationship name
+     * @return : the field api name
+     * @throws QueryException : if the relationship name is invalid
+     */
+    public String getFieldApiNameFromRel(SObject sObj, String relName) {
+        SObjectType t = ((SObject)Type.forName(sObj.getSObjectType().getDescribe().getName()).newInstance()).getSObjectType();
+        for (SObjectField f : t.getDescribe().fields.getMap().values()) {
+            if (f.getDescribe().getType() == DisplayType.Reference && f.getDescribe().getRelationshipName().toLowerCase() == relName) {
+                return f.getDescribe().getName();
+            }
+        }
+        throw new QueryException('Invalid relationship name: ' + relName);
+    }
+
+    public Boolean isFieldPolymorphic(String objApiName, String fieldApiName) {
+        /**
+         * 1. If relationshipName is not null, the field is a relationship field. 
+         * 2. If, in addition, namePointing is true, polymorphicForeignKey is true, 
+         *    and referenceTo has more than one referenced object type, then the field is polymorphic.
+         */
+        Map<String, Object> fieldData = getFieldData(objApiName, fieldApiName);
+        Boolean isNamePointing = (Boolean) fieldData.get('isNamePointing');
+        List<Schema.sObjectType> referenceTo = (List<Schema.sObjectType>) fieldData.get('referenceTo');
+        return isNamePointing && referenceTo.size() > 1;
+    }
+
+    /**
+     * @description This method is used primarily to discover if a field is polymorphic, 
+     * @param objApiName : the api name of the sObject
+     * @param fieldApiName : the api name of the field
+     * @return : a map with the field data
+     */
+    public Map<String, Object> getFieldData(String objApiName, String fieldApiName) {
+        Schema.DescribeFieldResult dfr = (
+                (SObject) Type.forName(objApiName)
+                .newInstance()
+            )
+            .getSObjectType()
+            .getDescribe()
+            .fields
+            .getMap()
+            .get(fieldApiName)
+            .getDescribe();
+        Map<String, Object> fieldData = new Map<String, Object> {
+            'name' => dfr.getName(),
+            'isNamePointing' => dfr.isNamePointing(),
+            'relationshipName' => dfr.getRelationshipName(),
+            'referenceTo' => dfr.getReferenceTo()
+        };
+        return fieldData;
     }
 
     // @description : return a parent sObject from a field name and a child sObject
