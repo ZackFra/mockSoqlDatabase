@@ -39,9 +39,6 @@ public with sharing class MockDatabase {
         Node whereNode, 
         Map<String, Object> params
     ) {
-        if(!isValidWhereClause(whereNode)) {
-            throw new QueryException('TYPEOF not supported in outer join');
-        }
         WhereLogicHandler whereLogicHandler = new WhereLogicHandler(this, whereNode, sObj, params);
         return whereLogicHandler.evaluate();
     }
@@ -983,12 +980,17 @@ public with sharing class MockDatabase {
         Node offsetNode = topLevelNodes.offsetNode;
         Node forUpdateNode = topLevelNodes.forUpdateNode;
         Node havingNode = topLevelNodes.havingNode;
+        Node whereNode = topLevelNodes.whereNode;
 
         Boolean isAggregateQuery = isAggregateQuery(selectNode);
         Boolean isCount = isSingularCount(selectNode);
 
         if(isTypeOfQuery(selectNode) && groupByNode != null) {
             throw new QueryException('TYPEOF not supported with GROUP BY');
+        }
+
+        if(!isValidWhereClause(whereNode)) {
+            throw new QueryException('TYPEOF not supported in outer join');
         }
 
         if(hasDuplicateSubQueries(selectNode)) {
