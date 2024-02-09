@@ -94,8 +94,7 @@ public with sharing class MockDatabase {
         }
 
         Id parentRecordId = (Id) sObj.get(fieldApiName);
-        System.debug(parentRecordId);
-        System.debug(sObj);
+
         if(parentRecordId == null) {
             return sObj;
         }
@@ -108,7 +107,12 @@ public with sharing class MockDatabase {
 
         Node curr = whenNode;
         Node fieldListNode;
-        while(curr != null) {
+        while(true) {
+            if(curr == null) {
+                fieldListNode = null;
+                break;
+            }
+            
             Node objNode = curr.left;
             Node thenNode = curr.right;
             if(curr.nodeType == 'else') {
@@ -123,6 +127,10 @@ public with sharing class MockDatabase {
             }
 
             curr = curr.right.right;
+        }
+
+        if(fieldListNode == null) {
+            return sObj;
         }
 
         curr = fieldListNode;

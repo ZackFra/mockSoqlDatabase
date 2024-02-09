@@ -1180,7 +1180,6 @@ public with sharing class Lexer {
 
         Intermediary whenExpr = parseWhenList(query);
         query = whenExpr.subquery;
-        query = consume(query, ' ');
         query = ParserUtils.skipWhitespace(query);
         query = consume(query, 'end');
         query = consume(query, ' ');

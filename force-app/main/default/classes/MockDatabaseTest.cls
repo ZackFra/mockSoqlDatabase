@@ -2261,7 +2261,6 @@ private with sharing class MockDatabaseTest {
         Test.stopTest();
 
         Task queriedTask = queriedTaskList[0];
-        System.debug(queriedTask.What);
 
         Assert.areEqual(acct.Name, queriedTask.What.Name, 'Incorrect Name');
     }
@@ -2284,9 +2283,52 @@ private with sharing class MockDatabaseTest {
         Test.stopTest();
 
         Task queriedTask = queriedTaskList[0];
-        System.debug(queriedTask.What);
 
         Assert.areEqual(acct.Name, queriedTask.What.Name, 'Incorrect Name');
         Assert.areEqual(queriedTask.Subject, 'Test', 'Incorrect Subject');
+    }
+
+    @IsTest
+    static void testTypeOfNoElse() {
+        MockDatabase mockDb = new MockDatabase();
+        Account acct = new Account(
+            Name = 'Test'
+        );
+        mockDb.doInsert(acct);
+        Task t = new Task(
+            Subject = 'Test',
+            WhatId = acct.Id
+        );
+        mockDb.doInsert(t);
+
+        Test.startTest();
+        List<Task> queriedTaskList = (List<Task>) mockDb.query('SELECT TYPEOF What WHEN Account THEN Name END FROM Task');
+        Test.stopTest();
+
+        Task queriedTask = queriedTaskList[0];
+
+        Assert.areEqual('Test', queriedTask.What.Name, 'Should be null');
+    }
+
+    @IsTest
+    static void testTypeOfNoCaseMet() {
+        MockDatabase mockDb = new MockDatabase();
+        Account acct = new Account(
+            Name = 'Test'
+        );
+        mockDb.doInsert(acct);
+        Task t = new Task(
+            Subject = 'Test',
+            WhatId = acct.Id
+        );
+        mockDb.doInsert(t);
+
+        Test.startTest();
+        List<Task> queriedTaskList = (List<Task>) mockDb.query('SELECT TYPEOF What WHEN Opportunity THEN Name END FROM Task');
+        Test.stopTest();
+
+        Task queriedTask = queriedTaskList[0];
+
+        Assert.isNull(queriedTask.What, 'Should be null');
     }
 }
