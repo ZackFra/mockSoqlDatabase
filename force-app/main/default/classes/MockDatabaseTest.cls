@@ -2573,4 +2573,51 @@ private with sharing class MockDatabaseTest {
         Assert.areEqual('User', queriedCase.Owner.Type, 'Incorrect Type');
         Assert.areEqual('Test', queriedCase.Owner.FirstName, 'Incorrect Name');
     }
+
+    @IsTest
+    static void testFirstNameQueueAndUser() {
+        MockDatabase mockDb = new MockDatabase();
+        User u = new User(
+            FirstName = 'Test',
+            LastName = 'User',
+            Username = 'fakeemail@email.com'
+        );
+
+        Group caseQueue = new Group(
+            Name = 'Case Queue',
+            DeveloperName = 'Case_Queue'
+        );
+
+        List<SObject> owners = new List<SObject>{u, caseQueue};
+
+        mockDb.doInsert(owners);
+
+        case c1 = new Case(
+            OwnerId = caseQueue.Id,
+            Subject = 'Test',
+            Status = 'New'
+        );
+
+        Case c2 = new Case(
+            OwnerId = u.Id,
+            Subject = 'Test',
+            Status = 'New'
+        );
+
+        List<Case> caseList = new List<Case>{c1, c2};
+
+        mockDb.doInsert(caseList);
+
+        Test.startTest();
+        List<Case> queriedCaseList = (List<Case>) mockDb.query('SELECT Id, Subject, OwnerId, Owner.FirstName, Owner.Type FROM Case');
+        Test.stopTest();
+
+        for(case c: queriedCaseList) {
+            if(c.Owner.Type == 'User') {
+                Assert.areEqual('Test', c.Owner.FirstName, 'Incorrect Name');
+            } else {
+                Assert.areEqual(null, c.Owner.FirstName, 'Incorrect Name');
+            }
+        }
+    }
 }
