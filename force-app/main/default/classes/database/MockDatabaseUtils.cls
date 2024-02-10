@@ -73,7 +73,7 @@ public with sharing class MockDatabaseUtils {
      *              : and the relationship name
      * @param obj : the sObject
      * @param field : the field name
-     * @return : a map with the comparable sObject, the field api name, and the relationship name
+     * @return : a map with the comparable sObject, the field api name, and the relationship name, and whether the field is polymorphic
      * @throws QueryException : if the field name is invalid
      */
     public Map<String, Object> getComparables(sObject obj, String field) {
