@@ -2473,4 +2473,105 @@ private with sharing class MockDatabaseTest {
             'Expected exception to be thrown'
         );        
     }
+
+    @IsTest
+    static void testNormalPolymorphic() {
+        MockDatabase mockDb = new MockDatabase();
+        Opportunity opp = new Opportunity(
+            Name = 'Test'
+        );
+
+        mockDb.doInsert(opp);
+
+        Task t = new Task(
+            Subject = 'Test',
+            WhatId = opp.Id
+        );
+        mockDb.doInsert(t);
+
+        Test.startTest();
+        List<Task> queriedTaskList = (List<Task>) mockDb.query('SELECT Id, Subject, WhatId, What.Name FROM Task');
+        Test.stopTest();
+
+        Task queriedTask = queriedTaskList[0];
+        Assert.areEqual('Test', queriedTask.What.Name, 'Incorrect Name');
+    }
+
+    @IsTest
+    static void testWhatType() {
+        MockDatabase mockDb = new MockDatabase();
+        Opportunity opp = new Opportunity(
+            Name = 'Test'
+        );
+
+        mockDb.doInsert(opp);
+
+        Task t = new Task(
+            Subject = 'Test',
+            WhatId = opp.Id
+        );
+        mockDb.doInsert(t);
+
+        Test.startTest();
+        List<Task> queriedTaskList = (List<Task>) mockDb.query('SELECT Id, Subject, WhatId, What.Type FROM Task');
+        Test.stopTest();
+
+        Task queriedTask = queriedTaskList[0];
+        Assert.areEqual('Opportunity', queriedTask.What.Type, 'Incorrect Name');
+    }
+
+    @IsTest
+    static void testOwnerType() {
+        MockDatabase mockDb = new MockDatabase();
+        User u = new User(
+            FirstName = 'Test',
+            LastName = 'User',
+            Username = 'fakeemail@email.com'
+        );
+
+        mockDb.doInsert(u);
+
+        case c = new Case(
+            OwnerId = u.Id,
+            Subject = 'Test',
+            Status = 'New'
+        );
+
+        mockDb.doInsert(c);
+
+        Test.startTest();
+        List<Case> queriedCaseList = (List<Case>) mockDb.query('SELECT Id, Subject, OwnerId, Owner.Type FROM Case');
+        Test.stopTest();
+
+        Case queriedCase = queriedCaseList[0];
+        Assert.areEqual('User', queriedCase.Owner.Type, 'Incorrect Type');
+    }
+
+    @IsTest
+    static void testOwnerTypeAndName() {
+        MockDatabase mockDb = new MockDatabase();
+        User u = new User(
+            FirstName = 'Test',
+            LastName = 'User',
+            Username = 'fakeemail@email.com'
+        );
+
+        mockDb.doInsert(u);
+
+        case c = new Case(
+            OwnerId = u.Id,
+            Subject = 'Test',
+            Status = 'New'
+        );
+
+        mockDb.doInsert(c);
+
+        Test.startTest();
+        List<Case> queriedCaseList = (List<Case>) mockDb.query('SELECT Id, Subject, OwnerId, Owner.FirstName, Owner.Type FROM Case');
+        Test.stopTest();
+
+        Case queriedCase = queriedCaseList[0];
+        Assert.areEqual('User', queriedCase.Owner.Type, 'Incorrect Type');
+        Assert.areEqual('Test', queriedCase.Owner.FirstName, 'Incorrect Name');
+    }
 }

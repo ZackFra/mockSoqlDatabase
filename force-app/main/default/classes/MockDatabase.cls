@@ -1,6 +1,6 @@
 public with sharing class MockDatabase {
 
-    public Map<String, Map<String, sObject>> db = new Map<String, Map<String, sObject>>();
+    public Map<String, Map<Id, sObject>> db = new Map<String, Map<Id, sObject>>();
     public MockDatabaseUtils utils = new MockDatabaseUtils(this);
     /**
      * @description map of the top-level nodes of select nodes, is a map to account for subqueries
@@ -10,7 +10,7 @@ public with sharing class MockDatabase {
     /**
      * @description return all SObjects of a given type
      */
-    public Map<String, sObject> get(String objApiName) {
+    public Map<Id, sObject> get(String objApiName) {
         return this.db.get(objApiName);
     }
     
@@ -48,6 +48,7 @@ public with sharing class MockDatabase {
         String fieldPart = fieldParts[0];
 
         Map<String, Object> parentInfo = this.utils.getParentObject(sObj, fieldPart);
+
         sObject parentRecord = (sObject) parentInfo.get('parentRecord');
         String fieldApiName = (String) parentInfo.get('fieldApiName');
         String fieldRelationshipName = (String) parentInfo.get('fieldRelationshipName');
@@ -64,28 +65,82 @@ public with sharing class MockDatabase {
             sObjClone.put(fieldApiName, nextParent.Id);
             sObjClone.put(fieldRelationshipName, nextParent);
         } else {
-            Map<String, sObject> mockRecords = this.db.get(parentRecordApiName);
-            String finalFieldApiName = this.utils.getFieldApiName(parentRecord.getSObjectType(), finalField);
-            if(sObjClone.containsKey(fieldRelationshipName)) {
-                parentRecord = this.utils.sObjectFromMap((Map<String, Object>)sObjClone.get(fieldRelationshipName), parentRecordApiName);
+            Map<Id, sObject> mockRecords = this.db.get(parentRecordApiName);
+            
+            Boolean isRelationshipPolymorphic = this.utils.isRelationshipPolymorphic(objApiName, fieldRelationshipName);
+            
+            /** There is a hidden object called "Name", it exists for polymorphic parent relationships, these are its fields */
+            Map<String, String> nameFields = new Map<String, String> {
+                'alias' => 'Alias',
+                'email' => 'Email',
+                'firstname' => 'FirstName',
+                'isactive' => 'IsActive',
+                'lastname' => 'LastName',
+                'lastreferenceddata' => 'LastReferencedDate',
+                'lastvieweddate' => 'LastViewedDate',
+                'middlename' => 'MiddleName',
+                'name' => 'Name',
+                'phone' => 'Phone',
+                'profile' => 'Profile',
+                'profileid' => 'ProfileId',
+                'suffix' =>'Suffix',
+                'title' => 'Title',
+                'type' => 'Type',
+                'username' => 'Username',
+                'userrole' => 'UserRole',
+                'userroleid' => 'UserRoleId'
+            };
+
+            Boolean isNameField = nameFields.containsKey(finalField);
+            String finalFieldApiName;
+            if(isRelationshipPolymorphic && isNameField)  {
+                finalFieldApiName = nameFields.get(finalField);
+            } else {
+                finalFieldApiName = this.utils.getFieldApiName(parentRecord.getSObjectType(), finalField);
             }
 
-            parentRecord.put(finalFieldApiName, mockRecords.get(parentRecord.Id).get(finalFieldApiName));
+            Map<String, Object> parentRecordData = this.utils.mapFromSObject(parentRecord);
+
+            if(sObjClone.containsKey(fieldRelationshipName)) {
+                parentRecordData = (Map<String, Object>) sObjClone.get(fieldRelationshipName);
+            } 
+            
+            if(isRelationshipPolymorphic) {
+                if(finalFieldApiName == 'Type') {
+                    parentRecordData.put(finalFieldApiName, parentRecordApiName);
+                } else {
+                    SObject parentRecordFromDatabase = mockRecords.get(parentRecord.Id);
+                    try {
+                        parentRecordData.put(finalFieldApiName, parentRecordFromDatabase.get(finalFieldApiName));
+                    } catch(System.SObjectException e) {
+                        parentRecordData.put(finalFieldApiName, null);
+                    } catch(Exception e) {
+                        throw e;
+                    }
+                }
+
+                // the "Name" object is a hidden SF object for polymorphic relationships
+                Map<String, String> attributes = new Map<String, String> {
+                    'type' => 'Name',
+                    'url' => '/' + parentRecord.Id
+                };
+                parentRecordData.put('attributes', attributes);
+            } else {
+                parentRecordData.put(finalFieldApiName, mockRecords.get(parentRecord.Id).get(finalFieldApiName));
+            }
             sObjClone.put(fieldApiName, parentRecord.Id);
-            sObjClone.put(fieldRelationshipName, parentRecord);
+            sObjClone.put(fieldRelationshipName, parentRecordData);
         }
         return this.utils.sObjectFromMap(sObjClone, objApiName);
     }
 
     private SObject findRecord(Id recordId) {
-        Set<String> sObjectApiNames = this.db.keySet();
-        for(String sObjectApiName : sObjectApiNames) {
-            Map<String, sObject> records = this.db.get(sObjectApiName);
-            if(records.containsKey(recordId)) {
-                return records.get(recordId);
-            }
+        String objApiName = recordId.getSObjectType().getDescribe().getName();
+        try {
+            return this.db.get(objApiName).get(recordId);
+        } catch(Exception e) {
+            throw new QueryException('No record found for ' + recordId);
         }
-        return null;
     }
 
     private SObject handlePolymorphicQuery(SObject sObj, Node fieldNode, Map<String, Object> params) {
@@ -96,7 +151,7 @@ public with sharing class MockDatabase {
         Node whenNode = fieldNode.right;
         String relName = fieldNode.id;
 
-        String fieldApiName = this.utils.getFieldApiNameFromRel(sObj, relName);
+        String fieldApiName = this.utils.getFieldApiNameFromRelationship(sObj, relName);
         String objApiName = sObj.getSObjectType().getDescribe().getName();
 
         if(!this.utils.isFieldPolymorphic(objApiName, fieldApiName)) {
@@ -108,7 +163,6 @@ public with sharing class MockDatabase {
         if(parentRecordId == null) {
             return sObj;
         }
-
         SObject parentRecord = findRecord(parentRecordId);
         if(parentRecord == null) {
             throw new QueryException('No record found for ' + parentRecordId);
@@ -160,6 +214,7 @@ public with sharing class MockDatabase {
             parentRecordData.put(parentRecordFieldApiName, parentRecord.get(parentRecordFieldApiName));
         }
         parentRecordData.put('Id', parentRecord.Id);
+
         Map<String, String> attributes = new Map<String, String> {
             'type' => parentRecord.getSObjectType().getDescribe().getName(),
             'url' => '/' + parentRecord.Id
@@ -171,6 +226,7 @@ public with sharing class MockDatabase {
         String relApiName = (String) fieldData.get('relationshipName');
         sObjClone.put(relApiName, parentRecordData);
         sObjClone.put(fieldApiName, parentRecord.Id);
+        System.debug(this.utils.sObjectFromMap(sObjClone, objApiName));
         return this.utils.sObjectFromMap(sObjClone, objApiName);
 
     }
@@ -291,6 +347,7 @@ public with sharing class MockDatabase {
             } else {
                 String fieldName = field.id;
                 Object fieldValue = obj.get(fieldName);
+
                 if(fieldValue != null) {
                     Map<String, Object> objMap = this.utils.mapFromSObject(sObj);
                     objMap.put(fieldName, fieldValue);
@@ -1029,7 +1086,7 @@ public with sharing class MockDatabase {
      */
     private Boolean isRecordInDatabase(Id recordId) {
         String recordApiName = this.utils.getSObjectApiName(recordId.getSObjectType().getDescribe().getName()).toLowerCase();
-        Map<String, sObject> mockObjects = this.db.get(recordApiName);
+        Map<Id, sObject> mockObjects = this.db.get(recordApiName);
         return mockObjects.containsKey(recordId);
     }
 
@@ -1044,14 +1101,14 @@ public with sharing class MockDatabase {
             throw new DmlException('Cannot insert an object with an Id');
         }
         String objName = obj.getSObjectType().getDescribe().getName();
-        Map<String, sObject> mockObjects = this.db.get(objName);
+        Map<Id, sObject> mockObjects = this.db.get(objName);
 
-        String fakeId = this.utils.getFakeId(obj.getSObjectType());
+        String fakeId = fflib_IDGenerator.generate(obj.getSObjectType());
         obj.put('Id', fakeId);
 
         mockObjects = this.db.get(objName);
         if(mockObjects == null) {
-            mockObjects = new Map<String, sObject>();
+            mockObjects = new Map<Id, sObject>();
             this.db.put(objName, mockObjects);
         }
         mockObjects.put(obj.Id, obj);
@@ -1077,7 +1134,7 @@ public with sharing class MockDatabase {
         }
 
         String objName = obj.getSObjectType().getDescribe().getName();
-        Map<String, sObject> mockObjects = this.db.get(objName);
+        Map<Id, sObject> mockObjects = this.db.get(objName);
 
         if (mockObjects == null) {
             throw new DmlException('Object does not exist');
@@ -1121,7 +1178,7 @@ public with sharing class MockDatabase {
      */
     public void doDelete(sObject obj) {
         String objName = obj.getSObjectType().getDescribe().getName();
-        Map<String, sObject> mockObjects = this.db.get(objName);
+        Map<Id, sObject> mockObjects = this.db.get(objName);
 
         if (mockObjects == null) {
             throw new DmlException('Object does not exist');
@@ -1208,7 +1265,7 @@ public with sharing class MockDatabase {
         String objName = objNode.id;
         String objApiName = this.utils.getSObjectApiName(objName);
 
-        Map<String, sObject> mockObjects = this.db.get(objApiName);
+        Map<Id, sObject> mockObjects = this.db.get(objApiName);
         if (mockObjects == null) {
             return new List<sObject>();
         }

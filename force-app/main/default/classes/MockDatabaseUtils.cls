@@ -8,18 +8,6 @@ public with sharing class MockDatabaseUtils {
         this.db = db;
     }
 
-    private Integer sObjnum = 1;
-    /**
-     * @description : given a schema sObjectType, return a fake id
-     * @param sot : the schema sObjectType
-     * @return : a fake id
-     */
-    public String getFakeId(Schema.SObjectType sot) {
-        String result = String.valueOf(sObjNum++);
-        String fakeId = result + sot.getDescribe().getKeyPrefix().rightPad(15 - result.length(), '0');
-        return fakeId;
-    }
-
     /**
      * @description : given an sObject and a field name (which may be a relationon i.e. Account.Name),
      *              : return a map with the comparable sObject (i.e. the parent), the field api name of that object, 
@@ -450,10 +438,11 @@ public with sharing class MockDatabaseUtils {
         return false;
     }
 
-    // @description : return a parent sObject from a field name and a child sObject
-    // @param sObj : the child sObject
-    // @param fieldName : the field name of the parent sObject from the child
-    //                  : ex. OpportunityLineItem, the field is Opportunity
+    /** @description : return a parent sObject from a field name and a child sObject
+      * @param sObj : the child sObject
+      * @param fieldName : the field name of the parent sObject from the child
+      *                  : ex. OpportunityLineItem, the field is Opportunity
+      */
     public Map<String, Object> getParentObject(sObject sObj, String fieldName) {
         // api name of the child sObject
         String objApiName = sObj.getSObjectType().getDescribe().getName();
@@ -470,11 +459,16 @@ public with sharing class MockDatabaseUtils {
         for (SObjectField f : t.getDescribe().fields.getMap().values()) {
             if (f.getDescribe().getType() == DisplayType.Reference && f.getDescribe().getRelationshipName().toLowerCase() == fieldName) {
                 List<Schema.sObjectType> objTypeList = f.getDescribe().getReferenceTo();
-            
+
                 if(objTypeList.size() == 1) {
                     parentObjApiName = objTypeList[0].getDescribe().getName();
                 } else {
-                    // TODO: handle polymorphic
+                    String childFieldApiName = f.getDescribe().getName();
+                    parentObjApiName = ((Id) sObj.get(childFieldApiName)).getSobjectType().getDescribe().getName();
+                }
+                
+                if(parentObjApiName == null) {
+                    throw new QueryException('Invalid relationship name: ' + fieldName);
                 }
 
                 fieldApiName = f.getDescribe().getName();
@@ -482,7 +476,7 @@ public with sharing class MockDatabaseUtils {
 
                 sObject parentRecord = ((sObject) Type.forName(parentObjApiName).newInstance()).getSObjectType().newSObject();
                 
-                Map<String, sObject> mockRecordsChild = this.db.get(objApiName);
+                Map<Id, sObject> mockRecordsChild = this.db.get(objApiName);
                 Id parentId = (Id) mockRecordsChild.get(sObj.Id).get(fieldApiName);
 
                 parentRecord.put('Id', parentId);
@@ -507,7 +501,7 @@ public with sharing class MockDatabaseUtils {
      * @return : the field api name
      * @throws QueryException : if the relationship name is invalid
      */
-    public String getFieldApiNameFromRel(SObject sObj, String relName) {
+    public String getFieldApiNameFromRelationship(SObject sObj, String relName) {
         SObjectType t = ((SObject)Type.forName(sObj.getSObjectType().getDescribe().getName()).newInstance()).getSObjectType();
         for (SObjectField f : t.getDescribe().fields.getMap().values()) {
             if (f.getDescribe().getType() == DisplayType.Reference && f.getDescribe().getRelationshipName().toLowerCase() == relName) {
@@ -515,6 +509,28 @@ public with sharing class MockDatabaseUtils {
             }
         }
         throw new QueryException('Invalid relationship name: ' + relName);
+    }
+
+    public Boolean isRelationshipPolymorphic(String sObjApiName, String relationshipName) {
+        relationshipName = relationshipName.toLowerCase();
+        SObjectType t = ((SObject)Type.forName(sObjApiName).newInstance()).getSObjectType();
+        for (SObjectField f : t.getDescribe().fields.getMap().values()) {
+            Schema.DescribeFieldResult dfr = f.getDescribe();
+            
+            Schema.DisplayType dfrDisplayType = dfr.getType();
+            String dfrRelationshipName = dfr.getRelationshipName();
+            if(dfrRelationshipName == null) {
+                continue;
+            }
+
+            Boolean isReference = (dfrDisplayType == DisplayType.Reference);
+            Boolean isRelationship = (dfrRelationshipName.toLowerCase() == relationshipName);
+            if (isReference && isRelationship) {
+                List<Schema.sObjectType> objTypeList = f.getDescribe().getReferenceTo();
+                return objTypeList.size() > 1;
+            }
+        }
+        throw new QueryException('Invalid relationship name: ' + relationshipName);
     }
 
     public Boolean isFieldPolymorphic(String objApiName, String fieldApiName) {
@@ -579,7 +595,8 @@ public with sharing class MockDatabaseUtils {
                 if(objTypeList.size() == 1) {
                     parentObjApiName = objTypeList[0].getDescribe().getName();
                 } else {
-                    // TODO: handle polymorphic
+                    String childFieldApiName = f.getDescribe().getName();
+                    parentObjApiName = ((Id) sObj.get(childFieldApiName)).getSobjectType().getDescribe().getName();
                 }
 
                 fieldApiName = f.getDescribe().getName();
