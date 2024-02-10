@@ -2466,7 +2466,6 @@ private with sharing class MockDatabaseTest {
             exMessage = e.getMessage();
         }
         Test.stopTest();
-        System.debug(exMessage);
 
         Assert.isTrue(
             exMessage != null && exMessage.contains('TYPEOF not supported in outer join'), 

@@ -226,7 +226,6 @@ public with sharing class MockDatabase {
         String relApiName = (String) fieldData.get('relationshipName');
         sObjClone.put(relApiName, parentRecordData);
         sObjClone.put(fieldApiName, parentRecord.Id);
-        System.debug(this.utils.sObjectFromMap(sObjClone, objApiName));
         return this.utils.sObjectFromMap(sObjClone, objApiName);
 
     }
