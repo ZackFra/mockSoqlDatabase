@@ -47,7 +47,7 @@ public with sharing class MockDatabase {
         fieldParts = new List<String>(fieldParts);
         String fieldPart = fieldParts[0];
 
-        Map<String, Object> parentInfo = this.utils.getParentObject(sObj, fieldPart);
+        Map<String, Object> parentInfo = this.utils.getParentObject(findRecord(sObj.Id), fieldPart);
 
         sObject parentRecord = (sObject) parentInfo.get('parentRecord');
         String fieldApiName = (String) parentInfo.get('fieldApiName');
@@ -67,34 +67,13 @@ public with sharing class MockDatabase {
         } else {
             Map<Id, sObject> mockRecords = this.db.get(parentRecordApiName);
             
-            Boolean isRelationshipPolymorphic = this.utils.isRelationshipPolymorphic(objApiName, fieldRelationshipName);
-            
-            /** There is a hidden object called "Name", it exists for polymorphic parent relationships, these are its fields */
-            Map<String, String> nameFields = new Map<String, String> {
-                'alias' => 'Alias',
-                'email' => 'Email',
-                'firstname' => 'FirstName',
-                'isactive' => 'IsActive',
-                'lastname' => 'LastName',
-                'lastreferenceddata' => 'LastReferencedDate',
-                'lastvieweddate' => 'LastViewedDate',
-                'middlename' => 'MiddleName',
-                'name' => 'Name',
-                'phone' => 'Phone',
-                'profile' => 'Profile',
-                'profileid' => 'ProfileId',
-                'suffix' =>'Suffix',
-                'title' => 'Title',
-                'type' => 'Type',
-                'username' => 'Username',
-                'userrole' => 'UserRole',
-                'userroleid' => 'UserRoleId'
-            };
+            Schema.SObjectType parentRecordSObjType = parentRecord.getSObjectType();
+            Boolean isRelationshipPolymorphic = (Boolean) parentInfo.get('isPolymorphic');
 
-            Boolean isNameField = nameFields.containsKey(finalField);
+            Boolean isNameField = MockDatabaseUtils.POLYMORPHIC_FIELDS.containsKey(finalField);
             String finalFieldApiName;
             if(isRelationshipPolymorphic && isNameField)  {
-                finalFieldApiName = nameFields.get(finalField);
+                finalFieldApiName = MockDatabaseUtils.POLYMORPHIC_FIELDS.get(finalField);
             } else {
                 finalFieldApiName = this.utils.getFieldApiName(parentRecord.getSObjectType(), finalField);
             }
@@ -151,7 +130,7 @@ public with sharing class MockDatabase {
         Node whenNode = fieldNode.right;
         String relName = fieldNode.id;
 
-        String fieldApiName = this.utils.getFieldApiNameFromRelationship(sObj, relName);
+        String fieldApiName = this.utils.getFieldApiNameFromRelationship(sObj.getSObjectType(), relName);
         String objApiName = sObj.getSObjectType().getDescribe().getName();
 
         if(!this.utils.isFieldPolymorphic(objApiName, fieldApiName)) {
@@ -395,6 +374,9 @@ public with sharing class MockDatabase {
     }
 
     private Boolean isAggregateQuery(Node selectNode) {
+        TopLevelNodes topLevelNodes = getTopLevelNodes(selectNode);
+        Node groupByNode = topLevelNodes.groupByNode;
+
         if(isSingularCount(selectNode)) {
             return false;
         }
@@ -406,6 +388,11 @@ public with sharing class MockDatabase {
             }
             curr = curr.left;
         }
+
+        if(groupByNode != null) {
+            return true;
+        }
+
         return false;
     }
 
@@ -572,7 +559,22 @@ public with sharing class MockDatabase {
                 sObject comparableRecord = (sObject) comparableInfo.get('comparableRecord');
                 String comparableField = (String) comparableInfo.get('comparableField');
 
-                aggregateResult.put(comparableField, comparableRecord.get(comparableField));
+                Boolean isPolymorphic = (Boolean) comparableInfo.get('isPolymorphic');
+                Boolean isType = (comparableField == 'Type');
+                if(isPolymorphic && isType) {
+                    String type = comparableRecord.getSObjectType().getDescribe().getName();
+                    aggregateResult.put(comparableField, type);
+                } else if(isPolymorphic) {
+                    try {
+                        aggregateResult.put(comparableField, comparableRecord.get(comparableField));
+                    } catch(System.SObjectException e) {
+                        aggregateResult.put(comparableField, null);
+                    } catch(Exception e) {
+                        throw e;
+                    }
+                } else {
+                    aggregateResult.put(comparableField, comparableRecord.get(comparableField));
+                }
             }
             // pointer logic, we won't have to add this again
             aggregateResults.add(aggregateResult);

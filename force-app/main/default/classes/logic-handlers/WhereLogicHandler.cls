@@ -22,6 +22,10 @@ public with sharing class WhereLogicHandler extends BooleanLogicHandler {
         // so we'll need to store our object and field name in a variable
         sObject parentRecord = sObj;
         String finalField = fieldName;
+
+        // the Type field on a polymorphic relationship is a special case
+        Boolean isPolyType = false;
+
         if(!isParentField) {
             sObjectFieldValue = sObj.get(fieldName);
         } else {
@@ -31,21 +35,51 @@ public with sharing class WhereLogicHandler extends BooleanLogicHandler {
             
             Map<String, Object> parentInfo;
             String parentObjApiName;
+            SObject childRecord;
             do {
                 String field = fieldParts[0];
+                childRecord = parentRecord;
                 parentInfo = this.db.utils.getParentObject(parentRecord, field);
                 parentRecord = (sObject) parentInfo.get('parentRecord');
                 parentObjApiName = (String) parentInfo.get('parentObjApiName');
                 fieldParts.remove(0);
             } while(!fieldParts.isEmpty());
-            parentRecord = this.db.get(parentObjApiName).get(parentRecord.Id);
-            sObjectFieldValue = parentRecord.get(finalField);
+            
+            String finalFieldApiName;
+            String fieldRelationshipName = (String) parentInfo.get('fieldRelationshipName');
+            Schema.SObjectType childRecordSObjType = childRecord.getSObjectType();
+            Boolean isPolymorphic = this.db.utils.isRelationshipPolymorphic(childRecordSObjType, fieldRelationshipName);
+            Boolean isPolyField = MockDatabaseUtils.POLYMORPHIC_FIELDS.containsKey(finalField);
+            if(isPolymorphic && isPolyField) {
+                finalFieldApiName = MockDatabaseUtils.POLYMORPHIC_FIELDS.get(finalField);
+            } else {
+                finalFieldApiName = this.db.utils.getFieldApiName(parentRecord.getSObjectType(), finalField);
+            }
+
+            if(finalFieldApiName == 'Type') {
+                isPolyType = true;
+                sObjectFieldValue = parentRecord.getSObjectType().getDescribe().getName();
+            } else if(isPolymorphic && isPolyField) {
+                try {
+                    sObjectFieldValue = parentRecord.get(finalField);
+                } catch(Exception e) {
+                    sObjectFieldValue = null;
+                }
+            } else {
+                parentRecord = this.db.get(parentObjApiName).get(parentRecord.Id);
+                sObjectFieldValue = parentRecord.get(finalFieldApiName);
+            }
         }
 
         MockDatabaseUtils.OperatorHandlerFactory handlerFactory = new MockDatabaseUtils.OperatorHandlerFactory();
 
-        Schema.DisplayType fieldType = this.db.utils.getFieldType(parentRecord, finalField);
         MockDatabaseUtils.OperatorHandler handler = handlerFactory.getHandler(operatorNode.id);
+        if(isPolyType) {
+            return handler.handle(sObjectFieldValue, fieldValue);
+        }
+
+        Schema.DisplayType fieldType = this.db.utils.getFieldType(parentRecord, finalField);
+        
         if(handler instanceof MockDatabaseUtils.IncludesHandler) {
             if(fieldType != Schema.DisplayType.MULTIPICKLIST) {
                 throw new QueryException('Invalid field type for INCLUDES operator');

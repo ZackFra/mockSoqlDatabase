@@ -1,4 +1,1 @@
-List<Task> taskList = [SELECT TYPEOF What WHEN Opportunity THEN Name END FROM Task];
-for(Task t : taskList) {
-    System.debug(t.What);
-}
+System.debug(Case.getSObjectType().getDescribe().fields.getMap().get('OwnerId').getDescribe().getReferenceTo());
