@@ -409,6 +409,7 @@ public with sharing class SchemaService {
             'relationshipName' => relationshipName
         };
         Common.nullCheck(args);
+        relationshipName = relationshipName.toLowerCase();
 
         String relationshipFieldApiName = getFieldNameForRelationship(sot, relationshipName);
         Schema.SObjectField relationshipField = getField(sot, relationshipFieldApiName);
