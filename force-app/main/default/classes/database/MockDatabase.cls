@@ -2,6 +2,7 @@ public with sharing class MockDatabase {
 
     public Map<String, Map<Id, sObject>> db = new Map<String, Map<Id, sObject>>();
     public MockDatabaseUtils utils = new MockDatabaseUtils(this);
+
     /**
      * @description map of the top-level nodes of select nodes, is a map to account for subqueries
      */
@@ -67,7 +68,7 @@ public with sharing class MockDatabase {
         } else {
             Map<Id, sObject> mockRecords = this.db.get(parentRecordApiName);
             
-            Schema.SObjectType parentRecordSObjType = parentRecord.getSObjectType();
+            Schema.SObjectType parentRecordSObjType = SchemaService.getSObjectType(parentRecord);
             Boolean isRelationshipPolymorphic = (Boolean) parentInfo.get('isPolymorphic');
 
             Boolean isNameField = MockDatabaseUtils.POLYMORPHIC_FIELDS.containsKey(finalField);
@@ -130,10 +131,12 @@ public with sharing class MockDatabase {
         Node whenNode = fieldNode.right;
         String relName = fieldNode.id;
 
-        String fieldApiName = this.utils.getFieldApiNameFromRelationship(sObj.getSObjectType(), relName);
-        String objApiName = sObj.getSObjectType().getDescribe().getName();
+        String fieldApiName = SchemaService.getFieldNameForRelationship(sObj.getSObjectType(), relName);
+        String objApiName = SchemaService.getSObjectName(sObj);
+        Schema.SObjectType sot = SchemaService.getSObjectType(sObj);
+        Schema.SObjectField field = SchemaService.getField(sot, fieldApiName);
 
-        if(!this.utils.isFieldPolymorphic(objApiName, fieldApiName)) {
+        if(!SchemaService.isFieldPolymorphic(field)) {
             throw new QueryException('TYPEOF operand "' + fieldApiName + '" is not a polymorphic relationship field');
         }
 
@@ -201,8 +204,9 @@ public with sharing class MockDatabase {
         parentRecordData.put('attributes', attributes);
         Map<String, Object> sObjClone = this.utils.mapFromSObject(sObj);
 
-        Map<String, Object> fieldData = this.utils.getFieldData(objApiName, fieldApiName);
-        String relApiName = (String) fieldData.get('relationshipName');
+        Schema.DescribeFieldResult dfr = SchemaService.describeField(objApiName, fieldApiName);
+        String relApiName = dfr.getRelationshipName();
+
         sObjClone.put(relApiName, parentRecordData);
         sObjClone.put(fieldApiName, parentRecord.Id);
         return this.utils.sObjectFromMap(sObjClone, objApiName);
@@ -228,12 +232,22 @@ public with sharing class MockDatabase {
         Boolean isValidRelationship = false;
         String subQueryObjName;
         String subQueryFieldName;
-        SObjectType childObjectType = ((SObject)Type.forName(objApiName).newInstance()).getSObjectType();
-        for (Schema.ChildRelationship relation : childObjectType.getDescribe().getChildRelationships()) {
-            if(relation.getRelationshipName()?.toLowerCase() == subqueryChildRelationshipName) {
-                subQueryObjName = relation.getChildSObject().getDescribe().getName();
-                subQueryFieldName = relation.getField().getDescribe().getName();
-                subqueryChildRelationshipName = relation.getRelationshipName();
+
+        Schema.SObjectType childObjectType = SchemaService.getSObjectType(objApiName);
+        List<Schema.ChildRelationship> childRelationships = SchemaService.getChildRelationships(childObjectType);
+
+        for (Schema.ChildRelationship childRelationship : childRelationships) {
+            String childRelationshipName = SchemaService.getChildRelationshipName(childRelationship);
+            if(childRelationshipName == null) {
+                continue;
+            }
+
+            String lowerCaseChildRelationshipName = childRelationshipName.toLowerCase();
+            Boolean isRelationshipNamesEqual = (lowerCaseChildRelationshipName == subqueryChildRelationshipName);
+            if(isRelationshipNamesEqual) {
+                subQueryObjName = SchemaService.getChildRelationshipChildSObjectName(childRelationship);
+                subQueryFieldName = SchemaService.getChildRelationshipFieldName(childRelationship);
+                subqueryChildRelationshipName = childRelationshipName;
                 isValidRelationship = true;
                 break;
             }
@@ -605,11 +619,8 @@ public with sharing class MockDatabase {
             sObject comparableRecord = (sObject) comparableInfo.get('comparableRecord');
             String comparableField = (String) comparableInfo.get('comparableField');
 
-            Map<String, Schema.SObjectField> fieldMap = comparableRecord.getSObjectType().getDescribe().fields.getMap();
-            Schema.DisplayType fieldType = fieldMap
-                .get(comparableField)
-                .getDescribe()
-                .getType();
+            Schema.SObjectType sot = SchemaService.getSObjectType(comparableRecord);
+            Schema.DisplayType fieldType = SchemaService.getFieldType(sot, comparableField);
             
             String alias = 'expr' + exprNumber;
 
@@ -617,6 +628,12 @@ public with sharing class MockDatabase {
                 alias = aliasNode.id;
             } else {
                 exprNumber++;
+            }
+
+            Boolean isFieldNumeric = SchemaService.isFieldNumeric(fieldType);
+            Boolean isExpectingNumeric = (isAggrSum || isAggrAvg || isAggrMax || isAggrMin);
+            if(isExpectingNumeric && !isFieldNumeric) {
+                throw new QueryException('Invalid field type');
             }
 
             if(isAggrCountDistinct) {
@@ -635,10 +652,6 @@ public with sharing class MockDatabase {
                 }
                 aggregateResult.put(alias, distinctValues.size());
             } else if(isAggrAvg) {
-                if(!this.utils.isFieldNumeric(fieldType)) {
-                    throw new QueryException('Invalid field type');
-                }
-
                 Decimal currValue = (Decimal) aggregateResult.get(alias);
                 Decimal newValue = (Decimal) comparableRecord.get(comparableField);
                 Decimal n = (Decimal) aggregateResult.get(alias + '__n');
@@ -655,10 +668,6 @@ public with sharing class MockDatabase {
                 aggregateResult.put(alias, currValue);
                 aggregateResult.put(alias + '__n', n + 1);
             } if(isAggrMin) {
-                if(!this.utils.isFieldNumeric(fieldType)) {
-                    throw new QueryException('Invalid field type');
-                }
-
                 Decimal currValue = (Decimal) aggregateResult.get(alias);
                 Decimal newValue = (Decimal) comparableRecord.get(comparableField);
 
@@ -670,9 +679,6 @@ public with sharing class MockDatabase {
 
                 aggregateResult.put(alias, currValue);
             } else if(isAggrMax) {
-                if(!this.utils.isFieldNumeric(fieldType)) {
-                    throw new QueryException('Invalid field type');
-                }
 
                 Decimal currValue = (Decimal) aggregateResult.get(alias);
                 Decimal newValue = (Decimal) comparableRecord.get(comparableField);
@@ -690,10 +696,6 @@ public with sharing class MockDatabase {
                 }
                 aggregateResult.put(alias, currValue + 1);
             } else if(isAggrSum) {
-
-                if(!this.utils.isFieldNumeric(fieldType)) {
-                    throw new QueryException('Invalid field type');
-                }
 
                 Decimal currValue = (Decimal) aggregateResult.get(alias);
                 Decimal newValue = (Decimal) comparableRecord.get(comparableField);
@@ -1147,7 +1149,8 @@ public with sharing class MockDatabase {
         for(String field : obj.getPopulatedFieldsAsMap().keySet()) {
 
             // check for foreign key references
-            Schema.DisplayType fieldType = this.utils.getFieldType(obj, field);
+            Schema.SObjectType  sot = SchemaService.getSObjectType(obj);
+            Schema.DisplayType fieldType = SchemaService.getFieldType(sot, field);
             Boolean isRef = (fieldType == Schema.DisplayType.REFERENCE);
             if(!isRef) {
                 mockObjects.get(obj.Id).put(field, obj.get(field));
@@ -1178,7 +1181,7 @@ public with sharing class MockDatabase {
      * @param obj : the sObject to delete
      */
     public void doDelete(sObject obj) {
-        String objName = obj.getSObjectType().getDescribe().getName();
+        String objName = SchemaService.getSObjectName(obj);
         Map<Id, sObject> mockObjects = this.db.get(objName);
 
         if (mockObjects == null) {

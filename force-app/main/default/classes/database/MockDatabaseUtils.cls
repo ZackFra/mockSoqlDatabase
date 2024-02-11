@@ -33,41 +33,6 @@ public with sharing class MockDatabaseUtils {
     }
 
     /**
-     * @description Given an sObject and a lowercase relationship name, case-insensitive, return the relationship api name
-     * @param sObjType : the child sObject
-     * @param relationshipName : the relationship name
-     * @return : the field api name
-     * @throws QueryException : if the relationship name is invalid
-     */
-    public String getRelationshipApiName(Schema.SObjectType sObjType, String relationshipName) {
-        Map<String, Object> args = new Map<String, Object> {
-            'sObjType' => sObjType,
-            'relationshipName' => relationshipName
-        };
-        Common.nullCheck(args);
-
-        relationshipName = relationshipName.toLowerCase();
-        List<Schema.SObjectField> sObjFields = sObjType.getDescribe().fields.getMap().values();
-        for(Schema.SObjectField field : sObjFields) {
-            Schema.DescribeFieldResult dfr = field.getDescribe();
-            List<Schema.sObjectType> relatedSObjs = dfr.getReferenceTo();
-            if(relatedSObjs.isEmpty()) {
-                continue;
-            }
-            String fieldRelationshipApiName = dfr.getRelationshipName();
-            if(fieldRelationshipApiName == null) {
-                continue;
-            }
-
-            if(fieldRelationshipApiName.toLowerCase() != relationshipName) {
-                continue;
-            }
-            return fieldRelationshipApiName;
-        }
-        throw new QueryException('Invalid relationship name: ' + relationshipName);
-    }
-
-    /**
      * @description : given an sObject and a field name (which may be a relationon i.e. Account.Name),
      *              : return a map with the comparable sObject (i.e. the parent), the field api name of that object, 
      *              : and the relationship name
@@ -212,20 +177,6 @@ public with sharing class MockDatabaseUtils {
             'comparableField' => comparableField,
             'relationshipName' => relationshipName
         };
-    }
-
-    /**
-     * @description : given a field node return whether it is numeric or not
-     * @param fieldType : the field type
-     * @return : whether the field is numeric or not
-     */
-    public Boolean isFieldNumeric(Schema.DisplayType fieldType) {
-        Boolean isCurrency = (fieldType == Schema.DisplayType.CURRENCY);
-        Boolean isDouble = (fieldType == Schema.DisplayType.DOUBLE);
-        Boolean isInteger = (fieldType == Schema.DisplayType.INTEGER);
-        Boolean isPercent = (fieldType == Schema.DisplayType.PERCENT);
-        
-        return (isCurrency || isDouble || isInteger || isPercent);
     }
 
 
@@ -600,85 +551,6 @@ public with sharing class MockDatabaseUtils {
         }
 
         throw new QueryException('Invalid relationship name: ' + fieldName);
-    }
-
-    /**
-     * @description : given an sObject and a relationship name, return the field api name
-     * @param sObj : the sObject
-     * @param relName : the relationship name
-     * @return : the field api name
-     * @throws QueryException : if the relationship name is invalid
-     */
-    public String getFieldApiNameFromRelationship(SObjectType sObjType, String relName) {
-        for (SObjectField f : sObjType.getDescribe().fields.getMap().values()) {
-            if (f.getDescribe().getType() == DisplayType.Reference && f.getDescribe().getRelationshipName().toLowerCase() == relName) {
-                return f.getDescribe().getName();
-            }
-        }
-        throw new QueryException('Invalid relationship name: ' + relName);
-    }
-
-    public Boolean isRelationshipPolymorphic(SObjectType sObjType, String relationshipName) {
-        Map<String, Object> args = new Map<String, Object> {
-            'sObjType' => sObjType,
-            'relationshipName' => relationshipName
-        };
-        Common.nullCheck(args);
-
-        String relationshipApiName = getRelationshipApiName(sObjType, relationshipName);
-        String relationshipFieldApiName = getFieldApiNameFromRelationship(sObjType, relationshipApiName);
-        List<Schema.SObjectType> relatedSObjs = sObjType.getDescribe().fields.getMap().get(relationshipFieldApiName).getDescribe().getReferenceTo();
-        return relatedSObjs.size() > 1;
-    }
-
-    public Boolean isFieldPolymorphic(String objApiName, String fieldApiName) {
-        /**
-         * 1. If relationshipName is not null, the field is a relationship field. 
-         * 2. If, in addition, namePointing is true, polymorphicForeignKey is true, 
-         *    and referenceTo has more than one referenced object type, then the field is polymorphic.
-         */
-        Map<String, Object> args = new Map<String, Object> {
-            'objApiName' => objApiName,
-            'fieldApiName' => fieldApiName
-        };
-        Common.nullCheck(args);
-
-        Map<String, Object> fieldData = getFieldData(objApiName, fieldApiName);
-        Boolean isNamePointing = (Boolean) fieldData.get('isNamePointing');
-        List<Schema.sObjectType> referenceTo = (List<Schema.sObjectType>) fieldData.get('referenceTo');
-        return isNamePointing && referenceTo.size() > 1;
-    }
-
-    /**
-     * @description This method is used primarily to discover if a field is polymorphic, 
-     * @param objApiName : the api name of the sObject
-     * @param fieldApiName : the api name of the field
-     * @return : a map with the field data
-     */
-    public Map<String, Object> getFieldData(String objApiName, String fieldApiName) {
-        Map<String, Object> args = new Map<String, Object> {
-            'objApiName' => objApiName,
-            'fieldApiName' => fieldApiName
-        };
-        Common.nullCheck(args);
-
-        Schema.DescribeFieldResult dfr = (
-                (SObject) Type.forName(objApiName)
-                .newInstance()
-            )
-            .getSObjectType()
-            .getDescribe()
-            .fields
-            .getMap()
-            .get(fieldApiName)
-            .getDescribe();
-        Map<String, Object> fieldData = new Map<String, Object> {
-            'name' => dfr.getName(),
-            'isNamePointing' => dfr.isNamePointing(),
-            'relationshipName' => dfr.getRelationshipName(),
-            'referenceTo' => dfr.getReferenceTo()
-        };
-        return fieldData;
     }
 
     // @description : return a parent sObject from a field name and a child sObject

@@ -47,18 +47,22 @@ public with sharing class WhereLogicHandler extends BooleanLogicHandler {
             
             String finalFieldApiName;
             String fieldRelationshipName = (String) parentInfo.get('fieldRelationshipName');
-            Schema.SObjectType childRecordSObjType = childRecord.getSObjectType();
-            Boolean isPolymorphic = this.db.utils.isRelationshipPolymorphic(childRecordSObjType, fieldRelationshipName);
+
+            Schema.SObjectType childRecordSObjType = SchemaService.getSObjectType(childRecord);
+            Boolean isPolymorphic = SchemaService.isRelationshipPolymorphic(childRecordSObjType, fieldRelationshipName);
             Boolean isPolyField = MockDatabaseUtils.POLYMORPHIC_FIELDS.containsKey(finalField);
+            
             if(isPolymorphic && isPolyField) {
                 finalFieldApiName = MockDatabaseUtils.POLYMORPHIC_FIELDS.get(finalField);
             } else {
-                finalFieldApiName = this.db.utils.getFieldApiName(parentRecord.getSObjectType(), finalField);
+                Schema.SObjectType parentSot = SchemaService.getSObjectType(parentRecord);
+                Schema.SObjectField parentField = SchemaService.getField(parentSot, finalField);
+                finalFieldApiName = SchemaService.getFieldName(parentField);
             }
 
             if(finalFieldApiName == 'Type') {
                 isPolyType = true;
-                sObjectFieldValue = parentRecord.getSObjectType().getDescribe().getName();
+                sObjectFieldValue = SchemaService.getSObjectName(parentRecord);
             } else if(isPolymorphic && isPolyField) {
                 try {
                     sObjectFieldValue = parentRecord.get(finalField);
@@ -77,8 +81,9 @@ public with sharing class WhereLogicHandler extends BooleanLogicHandler {
         if(isPolyType) {
             return handler.handle(sObjectFieldValue, fieldValue);
         }
-
-        Schema.DisplayType fieldType = this.db.utils.getFieldType(parentRecord, finalField);
+        
+        Schema.SObjectType parentSot = SchemaService.getSObjectType(parentRecord);
+        Schema.DisplayType fieldType = SchemaService.getFieldType(parentSot, finalField);
         
         if(handler instanceof MockDatabaseUtils.IncludesHandler) {
             if(fieldType != Schema.DisplayType.MULTIPICKLIST) {
