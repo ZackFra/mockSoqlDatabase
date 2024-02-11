@@ -6,7 +6,7 @@
  *              every argument is understood to be non-null
  */
 public with sharing class SchemaService {
-    final private static List<Schema.DisplayType> numericFieldTypes = new List<Schema.DisplayType> {
+    final private static List<Schema.DisplayType> NUMERIC_FIELD_TYPES = new List<Schema.DisplayType> {
         Schema.DisplayType.CURRENCY,
         Schema.DisplayType.DOUBLE,
         Schema.DisplayType.INTEGER,
@@ -319,7 +319,7 @@ public with sharing class SchemaService {
         };
         Common.nullCheck(args);
 
-        return numericFieldTypes.contains(fieldType);
+        return NUMERIC_FIELD_TYPES.contains(fieldType);
     }
 
     /**
