@@ -196,9 +196,9 @@ public with sharing class MockDatabase {
             parentRecordData.put(parentRecordFieldApiName, parentRecord.get(parentRecordFieldApiName));
         }
         parentRecordData.put('Id', parentRecord.Id);
-
+        
         Map<String, String> attributes = new Map<String, String> {
-            'type' => parentRecord.getSObjectType().getDescribe().getName(),
+            'type' => SchemaService.getSObjectName(parentRecord),
             'url' => '/' + parentRecord.Id
         };
         parentRecordData.put('attributes', attributes);
