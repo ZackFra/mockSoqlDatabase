@@ -3,6 +3,7 @@
 	<types>
 		<members>MockDatabase</members>
 		<members>MockDatabaseUtils</members>
+		<members>SchemaService</members>
 		<members>WhereLogicHandler</members>
 		<name>ApexClass</name>
 	</types>

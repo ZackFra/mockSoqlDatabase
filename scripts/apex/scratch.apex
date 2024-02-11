@@ -1,1 +1,1 @@
-System.debug(Case.getSObjectType().getDescribe().fields.getMap().get('OwnerId').getDescribe().getReferenceTo());
+System.debug(Case.getSObjectType().getDescribe().fields.getMap().get('casenumber'));
