@@ -76,7 +76,7 @@ public with sharing class MockDatabase {
             if(isRelationshipPolymorphic && isNameField)  {
                 finalFieldApiName = MockDatabaseUtils.POLYMORPHIC_FIELDS.get(finalField);
             } else {
-                finalFieldApiName = this.utils.getFieldApiName(parentRecord.getSObjectType(), finalField);
+                finalFieldApiName = SchemaService.getFieldName(parentRecordSObjType, finalField);
             }
 
             Map<String, Object> parentRecordData = this.utils.mapFromSObject(parentRecord);
@@ -100,10 +100,14 @@ public with sharing class MockDatabase {
                 }
 
                 // the "Name" object is a hidden SF object for polymorphic relationships
+                Schema.SObjectType polymorphicObjectSot = SchemaService.getPolymorphicSObjectType();
+                String polymorphicObjectName = SchemaService.getSObjectName(polymorphicObjectSot);
+
                 Map<String, String> attributes = new Map<String, String> {
-                    'type' => 'Name',
+                    'type' => polymorphicObjectName,
                     'url' => '/' + parentRecord.Id
                 };
+                
                 parentRecordData.put('attributes', attributes);
             } else {
                 parentRecordData.put(finalFieldApiName, mockRecords.get(parentRecord.Id).get(finalFieldApiName));
@@ -182,7 +186,8 @@ public with sharing class MockDatabase {
         curr = fieldListNode;
         List<String> selectFields = new List<String>();
         while(curr != null) {
-            String parentRecordFieldApiName = this.utils.getFieldApiName(parentRecord.getSObjectType(), curr.id);
+            Schema.SObjectType parentRecordSot = SchemaService.getSObjectType(parentRecord);
+            String parentRecordFieldApiName = SchemaService.getFieldName(parentRecordSot, curr.id);
             selectFields.add(parentRecordFieldApiName);
             curr = curr.left;
         }

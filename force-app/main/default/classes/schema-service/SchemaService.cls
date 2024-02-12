@@ -95,6 +95,41 @@ public with sharing class SchemaService {
     }
 
     /**
+     * @description this method returns the field name of a given field
+     * @param sot the sobject type
+     * @param fieldApiName the field api name
+     * @return the field name
+     */
+    public static String getFieldName(Schema.SObjectType sot, String fieldApiName) {
+        Map<String, Object> args = new Map<String, Object> {
+            'sot' => sot,
+            'fieldApiName' => fieldApiName
+        };
+        Common.nullCheck(args);
+
+        fieldApiName = fieldApiName.toLowerCase();
+        Schema.SObjectField field = sot.getDescribe().fields.getMap().get(fieldApiName);
+        return field.getDescribe().getName();
+    }
+
+    /**
+     * @description this method returns the field name of a given field
+     * @param sObj the sobject
+     * @param fieldApiName the field api name
+     * @return the field name
+     */
+    public static String getFieldName(SObject sObj, String fieldApiName) {
+        Map<String, Object> args = new Map<String, Object> {
+            'sObj' => sObj,
+            'fieldApiName' => fieldApiName
+        };
+        Common.nullCheck(args);
+
+        Schema.SObjectType sot = getSObjectType(sObj);
+        return getFieldName(sot, fieldApiName);
+    }
+
+    /**
      * @description this method returns the type of a given SObject
      * @param sObj the sobject
      * @return the sobject type
@@ -106,6 +141,20 @@ public with sharing class SchemaService {
         Common.nullCheck(args);
 
         return sObj.getSObjectType();
+    }
+
+    /**
+     * @description this method returns the type of a given record id
+     * @param recordId the record id
+     * @return the sobject type
+     */
+    public static Schema.SObjectType getSObjectType(Id recordId) {
+        Map<String, Object> args = new Map<String, Object> {
+            'recordId' => recordId
+        };
+        Common.nullCheck(args);
+
+        return recordId.getSObjectType();
     }
 
     /**
@@ -353,6 +402,37 @@ public with sharing class SchemaService {
     }
 
     /**
+     * @description Given an sObject and a field api name, return the field
+     * @param sot : the sObject type
+     * @param fieldApiName : the field api name
+     * @return : the field
+     */
+    public static Schema.SObjectField getField(SObject sObj, String fieldApiName) {
+        Map<String, Object> args = new Map<String, Object> {
+            'sObj' => sObj,
+            'fieldApiName' => fieldApiName
+        };
+        Common.nullCheck(args);
+        fieldApiName = fieldApiName.toLowerCase();
+
+        Schema.SObjectType sot = getSObjectType(sObj);
+        return getField(sot, fieldApiName);
+    }
+
+    public static Schema.SObjectField getField(String sObjApiName, String fieldApiName) {
+        Map<String, Object> args = new Map<String, Object> {
+            'sObjApiName' => sObjApiName,
+            'fieldApiName' => fieldApiName
+        };
+        Common.nullCheck(args);
+        sObjApiName = sObjApiName.toLowerCase();
+        fieldApiName = fieldApiName.toLowerCase();
+
+        Schema.SObjectType sot = getSObjectType(sObjApiName);
+        return getField(sot, fieldApiName);
+    }
+
+    /**
      * @description Given an SObjectField, return the list of objects that the field references
      * @param field : the field
      * @return : the list of objects that the field references
@@ -429,5 +509,50 @@ public with sharing class SchemaService {
 
         List<Schema.SObjectType> relatedSObjs = getReferenceTo(field);
         return relatedSObjs.size() > 1;
+    }
+
+    /**
+     * @description Returns the "Name" fields, where "Name" is the special SObject for polymorphic relationships
+     * @return the name fields
+     */
+    public static List<Schema.SObjectField> getPolymorphicFields() {
+        Schema.SObjectType sot = getSObjectType('Name');
+        return getFields(sot);
+    }
+
+    /**
+     * @description Returns the "Name" SObjectType
+     * @return the name sobject type
+     */
+    public static Schema.SObjectType getPolymorphicSObjectType() {
+        Schema.SObjectType sot = getSObjectType('Name');
+        return sot;
+    }
+
+    /**
+     * @description Given a field object, return the SObjectType of the SObject the field is from
+     * @param field : the field
+     * @return : the SObjectType of the SObject the field is from
+     */
+    public static Schema.SObjectType getFieldSObjectType(Schema.SObjectField field) {
+        Map<String, Object> args = new Map<String, Object> {
+            'field' => field
+        };
+        Common.nullCheck(args);
+
+        return field.getDescribe().getSObjectType();
+    }
+
+    /**
+     * @description Given two fields, return whether they reference the same SObject
+     * @param field1 : the first id or reference field
+     * @param field2 : the second id or reference field
+     * @return : whether the fields reference the same SObject
+     * @throws QueryException : if the sObject or field names are invalid
+     */
+    public static Boolean idsReferenceSameSObject(Schema.SObjectField field1, Schema.SObjectField field2) {
+
+        Comparator<Schema.SObjectField> comparator = IdFieldComparatorFactory.create(field1, field2);
+        return comparator.compare(field1, field2) == 0;
     }
 }

@@ -46,7 +46,9 @@ public with sharing class MockDatabaseUtils {
         String comparableField = field;
 
         if(!comparableField.contains('.')) {
-            comparableField = getFieldApiName(comparableRecord.getSObjectType(), comparableField);
+            Schema.SObjectType comparableSot = SchemaService.getSObjectType(comparableRecord);
+            Schema.SObjectField parentRecordField = SchemaService.getField(comparableSot, comparableField);
+            comparableField = SchemaService.getFieldName(parentRecordField);
             return new Map<String, Object> {
                 'comparableRecord' => comparableRecord,
                 'comparableField' => comparableField,
@@ -95,10 +97,12 @@ public with sharing class MockDatabaseUtils {
                 comparableField = MockDatabaseUtils.POLYMORPHIC_FIELDS.get(finalField.toLowerCase());
                 comparables.put('isPolymorphic', true);
             } else {
-                comparableField = getFieldApiName(comparableRecord.getSObjectType(), finalField);
+                Schema.SObjectType comparableSot = SchemaService.getSObjectType(comparableRecord);
+                comparableField = SchemaService.getFieldName(comparableSot, finalField);
             }
         } else {
-            comparableField = getFieldApiName(comparableRecord.getSObjectType(), finalField);
+            Schema.SObjectType comparableSot = SchemaService.getSObjectType(comparableRecord);
+            comparableField = SchemaService.getFieldName(comparableSot, finalField);
         }
         relationshipName += comparableField;
         comparables.put('comparableRecord', comparableRecord);
@@ -142,7 +146,8 @@ public with sharing class MockDatabaseUtils {
         sObject comparableRecord = obj;
         String comparableField = field;
         if(!comparableField.contains('.')) {
-            comparableField = getFieldApiName(comparableRecord.getSObjectType(), comparableField);
+            Schema.SObjectType comparableSot = SchemaService.getSObjectType(comparableRecord);
+            comparableField = SchemaService.getFieldName(comparableSot, comparableField);
             return new Map<String, Object> {
                 'comparableRecord' => comparableRecord,
                 'comparableField' => comparableField,
@@ -169,7 +174,8 @@ public with sharing class MockDatabaseUtils {
             }
         }
         comparableRecord = parentRecord;
-        comparableField = getFieldApiName(comparableRecord.getSObjectType(), finalField);
+        Schema.SObjectType comparableSot = SchemaService.getSObjectType(comparableRecord);
+        comparableField = SchemaService.getFieldName(comparableSot, finalField);
         relationshipName += comparableField;
 
         return new Map<String, Object> {
@@ -295,20 +301,19 @@ public with sharing class MockDatabaseUtils {
 
             String fieldName = subqueryFieldNode.id;
             String objName = subqueryObjNode.id;
-            String objApiName = getSObjectApiName(objName);
-            Type t = type.forName(objApiName);
-            if(t == null) {
-                throw new QueryException('Invalid object name: ' + objName);
-            }
-            sObject childObj = ((SObject)t.newInstance()).getSObjectType().newSObject();
+
+            String objApiName = SchemaService.getSObjectName(objName);
+            sObject childObj = SchemaService.blankSObjectFrom(objApiName);
             if(childObj == null) {
                 throw new QueryException('Invalid object name: ' + objName);
             }
-            Schema.DescribeSObjectResult fieldDsor = childObj.getSObjectType().getDescribe();
             String fieldApiName = null;
-            for(Schema.SObjectField field : fieldDsor.fields.getMap().values()) {
-                if(field.getDescribe().getName() == fieldName) {
-                    fieldApiName = field.getDescribe().getName();
+            Schema.SObjectType childObjSot = SchemaService.getSObjectType(childObj);
+            List<Schema.SObjectField> childObjFields = SchemaService.getFields(childObjSot);
+            for(Schema.SObjectField field : childObjFields) {
+                fieldApiName = SchemaService.getFieldName(field);
+                if(fieldApiName == fieldName) {
+                    fieldApiName = fieldApiName;
                     break;
                 }
             }
@@ -316,27 +321,23 @@ public with sharing class MockDatabaseUtils {
                 throw new QueryException('Invalid field name: ' + fieldName);
             }
 
-            Schema.SObjectField childObjField = childObj.getSObjectType().getDescribe().fields.getMap().get(fieldApiName);
+            Schema.SObjectField childObjField = SchemaService.getField(childObjSot, fieldApiName);
             if(childObjField == null) {
                 throw new QueryException('Invalid field name: ' + fieldName);
             }
 
-
-
-            Schema.DisplayType childObjFieldType = childObjField.getDescribe().getType();
+            Schema.DisplayType childObjFieldType = SchemaService.getFieldType(childObjField);
 
             if(childObjFieldType != Schema.DisplayType.REFERENCE && childObjFieldType != Schema.DisplayType.ID) {
                 throw new QueryException('Subquery must select an ID field');
             }
-            String parentFieldApiName = getFieldApiName(childObj.getSObjectType(), fieldName);
-            Schema.SObjectField parentField = childObj.getSObjectType().getDescribe().fields.getMap().get(parentFieldApiName);
-            if(parentField == null) {
-                throw new QueryException('Invalid field name: ' + fieldName);
-            }
+            String parentFieldApiName = SchemaService.getFieldName(childObj, fieldName);
+            Schema.SObjectField parentField = SchemaService.getField(childObj, parentFieldApiName);
             
-            String childObjFieldName = childObjField.getDescribe().getName();
-            String childObjApiName = childObj.getSObjectType().getDescribe().getName();
-            Boolean isSameType = idsReferenceSameSObject(objApiName, fieldName, childObjApiName, childObjfieldName);
+            String childObjFieldName = SchemaService.getFieldName(childObjField);
+            String childObjApiName = SchemaService.getSObjectName(childObj);
+
+            Boolean isSameType = SchemaService.idsReferenceSameSObject(parentField, childObjField);
 
             if(!isSameType) {
                 throw new QueryException('Subquery must select a field of the same type as the parent object');
@@ -368,122 +369,6 @@ public with sharing class MockDatabaseUtils {
         return objApiName;
     }
 
-    public Schema.DisplayType getFieldType(SObject sObj, String fieldName) {
-        Schema.SObjectType sObjType = sObj.getSObjectType();
-        Schema.DescribeSObjectResult dsor = sObjType.getDescribe();
-        Schema.SObjectField field = dsor.fields.getMap().get(fieldName);
-        if(field == null) {
-            throw new QueryException('Invalid field name: ' + fieldName);
-        }
-        return field.getDescribe().getType();
-    }
-
-    /**
-     * @description Given an sObject and a field name, return the field api name
-     *              DOES NOT worth with polymorphic fields
-     * @param sObj the sObject
-     * @param fieldName the field name
-     * @return the field api name
-     */
-    public String getFieldApiName(Schema.SObjectType sObjType, String fieldName) {
-        Map<String, Object> args = new Map<String, Object> {
-            'sObjType' => sObjType,
-            'fieldName' => fieldName
-        };
-        Common.nullCheck(args);
-
-        fieldName = fieldName.toLowerCase();
-        Schema.DescribeSObjectResult fieldDsor = sObjType.getDescribe();
-        for(Schema.SObjectField field : fieldDsor.fields.getMap().values()) {
-            if(field.getDescribe().getName().toLowerCase() == fieldName) {
-                return field.getDescribe().getName();
-            }
-        }
-
-        throw new QueryException('Invalid field name: ' + fieldName);
-    }
-
-    public Boolean idsReferenceSameSObject(String sObj1ApiName, String field1, String sObj2ApiName, String field2) {
-
-        Type t1 = type.forName(sObj1ApiName);
-        Type t2 = type.forName(sObj2ApiName);
-
-        if(t1 == null || t2 == null) {
-            throw new QueryException('Invalid object name');
-        }
-
-        sObject sObj1Instance = (sObject) t1.newInstance();
-        sObject sObj2Instance = (sObject) t2.newInstance();
-
-        Schema.DescribeSObjectResult sObj1Dsor = sObj1Instance.getSObjectType().getDescribe();
-        Schema.DescribeSObjectResult sObj2Dsor = sObj2Instance.getSObjectType().getDescribe();
-
-        Schema.SObjectField sObj1Field = sObj1Dsor.fields.getMap().get(field1);
-        Schema.SObjectField sObj2Field = sObj2Dsor.fields.getMap().get(field2);
-
-        if(sObj1Field == null || sObj2Field == null) {
-            throw new QueryException('Invalid field name');
-        }
-
-        Schema.DisplayType sObj1FieldType = sObj1Field.getDescribe().getType();
-        Schema.DisplayType sObj2FieldType = sObj2Field.getDescribe().getType();
-
-        List<Schema.DisplayType> validTypes = new List<Schema.DisplayType> {
-            Schema.DisplayType.REFERENCE,
-            Schema.DisplayType.ID
-        };
-
-        if(!validTypes.contains(sObj1FieldType) || !validTypes.contains(sObj2FieldType)) {
-            throw new QueryException('Invalid field type');
-        }
-
-        // if both are IDs, check that they refer to the same object type
-        if(sObj1FieldType == Schema.DisplayType.ID && sObj2FieldType == Schema.DisplayType.ID) {
-            // NOTE: as the code exists now, we shouldn't get here, but I'm leaving this here in case we change the code
-            // a query where both fields are IDs should throw an exception before getting here
-            return sObj1Instance.getSObjectType() == sObj2Instance.getSObjectType();
-        }
-
-        // if one is a reference and the other is an ID, check that the ID is a reference to the reference's object type
-        if(sObj1FieldType == Schema.DisplayType.REFERENCE && sObj2FieldType == Schema.DisplayType.ID) {
-            List<Schema.sObjectType> sObj1FieldRefs = sObj1Field.getDescribe().getReferenceTo();
-            for(Schema.SObjectType ref : sObj1FieldRefs) {
-                if(ref == sObj2Instance.getSObjectType()) {
-                    return true;
-                }
-            }
-            return false;
-        }
-
-        // check that for the other way around too
-        if(sObj1FieldType == Schema.DisplayType.ID && sObj2FieldType == Schema.DisplayType.REFERENCE) {
-            List<Schema.sObjectType> sObj2FieldRefs = sObj2Field.getDescribe().getReferenceTo();
-            for(Schema.SObjectType ref : sObj2FieldRefs) {
-                if(ref == sObj1Instance.getSObjectType()) {
-                    return true;
-                }
-            }
-            return false;
-        }
-
-        // if they're both references then check that they can refer to the same object type
-        if(sObj1FieldType == Schema.DisplayType.REFERENCE && sObj2FieldType == Schema.DisplayType.REFERENCE) {
-            List<Schema.sObjectType> sObj1FieldRefs = sObj1Field.getDescribe().getReferenceTo();
-            List<Schema.sObjectType> sObj2FieldRefs = sObj2Field.getDescribe().getReferenceTo();
-
-            for(Schema.SObjectType ref1 : sObj1FieldRefs) {
-                for(Schema.SObjectType ref2 : sObj2FieldRefs) {
-                    if(ref1 == ref2) {
-                        return true;
-                    }
-                }
-            }
-            return false;
-        }
-
-        return false;
-    }
-
     /** @description : return a parent sObject from a field name and a child sObject
       * @param sObj : the child sObject
       * @param fieldName : the field name of the parent sObject from the child
@@ -505,6 +390,7 @@ public with sharing class MockDatabaseUtils {
         String sObjApiName = sObj.getSObjectType().getDescribe().getName();
         SObjectType t = ((SObject)Type.forName(sObjApiName).newInstance()).getSObjectType();
         
+        List<Schema.SObjectField> fields = SchemaService.getFields(t);
         for (SObjectField f : t.getDescribe().fields.getMap().values()) {
             Schema.DescribeFieldResult dfr = f.getDescribe();
             Schema.DisplayType dfrFieldType = dfr.getType();
@@ -557,7 +443,7 @@ public with sharing class MockDatabaseUtils {
     // @param sObj : the child sObject
     // @param fieldName : the field name of the parent sObject from the child
     //                  : ex. OpportunityLineItem, the field is Opportunity
-    public Map<String, Object> getParentObjectData(sObject sObj, String fieldName) {
+    public Map<String, Object> getParentObjectData(SObject sObj, String fieldName) {
         // api name of the child sObject
         String objApiName = sObj.getSObjectType().getDescribe().getName();
         // api name of the id object on the child (i.e. OpportunityId)
