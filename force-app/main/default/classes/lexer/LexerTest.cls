@@ -2456,4 +2456,54 @@ private with sharing class LexerTest {
         Assert.isNull(eventNode.right, 'Expected right to be null');
 
     }
+
+    @IsTest
+    private static void testScope() {
+        Test.startTest();
+        Lexer t = new Lexer();
+        Node head = t.parse('SELECT Id, Name FROM Account USING SCOPE everything');
+        Test.stopTest();
+
+        Assert.areEqual('select', head.id, 'Expected id to be "select"');
+        Assert.areEqual('select', head.nodeType, 'Expected nodeType to be "select"');
+        Assert.isNotNull(head.left, 'Expected left to not be null');
+        Assert.isNotNull(head.right, 'Expected right to not be null');
+
+        Node idNode = head.left;
+        Assert.areEqual('id', idNode.id, 'Expected id to be "id"');
+        Assert.areEqual('field', idNode.nodeType, 'Expected nodeType to be "field"');
+        Assert.isNotNull(idNode.left, 'Expected left to not be null');
+        Assert.isNull(idNode.right, 'Expected right to be null');
+
+        Node nameNode = idNode.left;
+        Assert.areEqual('name', nameNode.id, 'Expected id to be "name"');
+        Assert.areEqual('field', nameNode.nodeType, 'Expected nodeType to be "field"');
+        Assert.isNull(nameNode.left, 'Expected left to be null');
+        Assert.isNull(nameNode.right, 'Expected right to be null');
+
+        Node fromNode = head.right;
+        Assert.areEqual('from', fromNode.id, 'Expected id to be "from"');
+        Assert.areEqual('from', fromNode.nodeType, 'Expected nodeType to be "from"');
+        Assert.isNotNull(fromNode.left, 'Expected left to not be null');
+        Assert.isNotNull(fromNode.right, 'Expected right to be null');
+
+        Node accountNode = fromNode.left;
+        Assert.areEqual('account', accountNode.id, 'Expected id to be "account"');
+        Assert.areEqual('object', accountNode.nodeType, 'Expected nodeType to be "object"');
+        Assert.isNull(accountNode.left, 'Expected left to be null');
+        Assert.isNull(accountNode.right, 'Expected right to be null');
+
+        Node usingNode = fromNode.right;
+        Assert.areEqual('using scope', usingNode.id, 'Expected id to be "using"');
+        Assert.areEqual('using scope', usingNode.nodeType, 'Expected nodeType to be "using"');
+        Assert.isNotNull(usingNode.left, 'Expected left to not be null');
+        Assert.isNull(usingNode.right, 'Expected right to be null');
+
+        Node scopeNode = usingNode.left;
+        Assert.areEqual('everything', scopeNode.id, 'Expected id to be "everything"');
+        Assert.areEqual('scope', scopeNode.nodeType, 'Expected nodeType to be "scope"');
+        Assert.isNull(scopeNode.left, 'Expected left to be null');
+        Assert.isNull(scopeNode.right, 'Expected right to be null');
+
+    }
 }
