@@ -535,6 +535,39 @@ public with sharing class SchemaService {
     }
 
     /**
+     * @description Returns map of polymorphic field lowercase name to API name
+     * @return : the map of polymorphic field lowercase name to API name
+     */
+    public static Map<String, String> getPolymorphicFieldMap() {
+        List<Schema.SObjectField> fields = getPolymorphicFields();
+        Map<String, String> fieldMap = new Map<String, String>();
+        for(Schema.SObjectField field : fields) {
+            String fieldName = getFieldName(field);
+            fieldMap.put(fieldName.toLowerCase(), fieldName);
+        }
+        return fieldMap;
+    }
+
+    /**
+     * @description Given a list of fields, return their api names
+     * @param fields : the fields
+     * @return : the field api names
+     * @throws QueryException : if the sObject or field names are invalid
+     */
+    public static List<String> getFieldNames(List<Schema.SObjectField> fields) {
+        Map<String, Object> args = new Map<String, Object> {
+            'fields' => fields
+        };
+        Common.nullCheck(args);
+
+        List<String> fieldNames = new List<String>();
+        for(Schema.SObjectField field : fields) {
+            fieldNames.add(getFieldName(field));
+        }
+        return fieldNames;
+    }
+
+    /**
      * @description Returns the "Name" SObjectType
      * @return the name sobject type
      */

@@ -70,11 +70,11 @@ public with sharing class MockDatabase {
             
             Schema.SObjectType parentRecordSObjType = SchemaService.getSObjectType(parentRecord);
             Boolean isRelationshipPolymorphic = (Boolean) parentInfo.get('isPolymorphic');
-
-            Boolean isNameField = MockDatabaseUtils.POLYMORPHIC_FIELDS.containsKey(finalField);
+            Map<String, String> polymorphicFieldMap = SchemaService.getPolymorphicFieldMap();
+            Boolean isNameField = polymorphicFieldMap.containsKey(finalField);
             String finalFieldApiName;
             if(isRelationshipPolymorphic && isNameField)  {
-                finalFieldApiName = MockDatabaseUtils.POLYMORPHIC_FIELDS.get(finalField);
+                finalFieldApiName = polymorphicFieldMap.get(finalField);
             } else {
                 finalFieldApiName = SchemaService.getFieldName(parentRecordSObjType, finalField);
             }

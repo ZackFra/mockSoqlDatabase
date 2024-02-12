@@ -50,10 +50,11 @@ public with sharing class WhereLogicHandler extends BooleanLogicHandler {
 
             Schema.SObjectType childRecordSObjType = SchemaService.getSObjectType(childRecord);
             Boolean isPolymorphic = SchemaService.isRelationshipPolymorphic(childRecordSObjType, fieldRelationshipName);
-            Boolean isPolyField = MockDatabaseUtils.POLYMORPHIC_FIELDS.containsKey(finalField);
+            Map<String, String> polymorphicFieldMap = SchemaService.getPolymorphicFieldMap();
+            Boolean isPolyField = polymorphicFieldMap.containsKey(finalField);
             
             if(isPolymorphic && isPolyField) {
-                finalFieldApiName = MockDatabaseUtils.POLYMORPHIC_FIELDS.get(finalField);
+                finalFieldApiName = polymorphicFieldMap.get(finalField);
             } else {
                 Schema.SObjectType parentSot = SchemaService.getSObjectType(parentRecord);
                 Schema.SObjectField parentField = SchemaService.getField(parentSot, finalField);

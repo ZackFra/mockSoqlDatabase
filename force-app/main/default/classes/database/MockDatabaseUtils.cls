@@ -3,30 +3,6 @@
  */
 public with sharing class MockDatabaseUtils {
 
-    /**
-     * @description : a map of lowercase "Name" fields to their actual field names, "Name" being the hidden SObject for polymorphism
-     */
-    public final static Map<String, String> POLYMORPHIC_FIELDS = new Map<String, String> {
-        'alias' => 'Alias',
-        'email' => 'Email',
-        'firstname' => 'FirstName',
-        'isactive' => 'IsActive',
-        'lastname' => 'LastName',
-        'lastreferenceddata' => 'LastReferencedDate',
-        'lastvieweddate' => 'LastViewedDate',
-        'middlename' => 'MiddleName',
-        'name' => 'Name',
-        'phone' => 'Phone',
-        'profile' => 'Profile',
-        'profileid' => 'ProfileId',
-        'suffix' =>'Suffix',
-        'title' => 'Title',
-        'type' => 'Type',
-        'username' => 'Username',
-        'userrole' => 'UserRole',
-        'userroleid' => 'UserRoleId'
-    };
-
     private MockDatabase db;
     public MockDatabaseUtils(MockDatabase db) {
         this.db = db;
@@ -93,9 +69,10 @@ public with sharing class MockDatabaseUtils {
             'isPolymorphic' => false
         };
         if(isPolymorphic) {
-            Boolean isPolyField = (MockDatabaseUtils.POLYMORPHIC_FIELDS.containsKey(finalField.toLowerCase()));
+            Map<String, String> polymorphicFieldMap = SchemaService.getPolymorphicFieldMap();
+            Boolean isPolyField = (polymorphicFieldMap.containsKey(finalField.toLowerCase()));
             if(isPolyField) {
-                comparableField = MockDatabaseUtils.POLYMORPHIC_FIELDS.get(finalField.toLowerCase());
+                comparableField = polymorphicFieldMap.get(finalField.toLowerCase());
                 comparables.put('isPolymorphic', true);
             } else {
                 Schema.SObjectType comparableSot = SchemaService.getSObjectType(comparableRecord);
