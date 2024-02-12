@@ -761,7 +761,7 @@ private with sharing class MockDatabaseUtilsTest {
         OperatorHandlerFactory opHandlerFactory = new OperatorHandlerFactory();
         IOperatorHandler handler = opHandlerFactory.getHandler('>=');
         Test.startTest();
-        Boolean isGreaterThanOrEqual = handler.handle(DateTime.newInstance(2020, 1, 1, 1, 1, 1), '2020-01-01T01:01:01-08:00');
+        Boolean isGreaterThanOrEqual = handler.handle(DateTime.newInstance(2020, 1, 1, 1, 1, 1), '2020-01-01T01:01:01+08:00');
         Test.stopTest();
 
         Assert.isTrue(
