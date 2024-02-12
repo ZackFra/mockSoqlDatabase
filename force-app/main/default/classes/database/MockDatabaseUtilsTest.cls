@@ -16,8 +16,8 @@ private with sharing class MockDatabaseUtilsTest {
 
     @IsTest
     static void testEqualityHandlerInteger() {
-        MockDatabaseUtils.OperatorHandlerFactory opHandlerFactory = new MockDatabaseUtils.OperatorHandlerFactory();
-        MockDatabaseUtils.OperatorHandler handler = opHandlerFactory.getHandler('=');
+        OperatorHandlerFactory opHandlerFactory = new OperatorHandlerFactory();
+        IOperatorHandler handler = opHandlerFactory.getHandler('=');
         Test.startTest();
         Boolean isEqual = handler.handle(1, '1');
         Test.stopTest();
@@ -30,8 +30,8 @@ private with sharing class MockDatabaseUtilsTest {
 
     @IsTest
     static void testEqualityHandlerString() {
-        MockDatabaseUtils.OperatorHandlerFactory opHandlerFactory = new MockDatabaseUtils.OperatorHandlerFactory();
-        MockDatabaseUtils.OperatorHandler handler = opHandlerFactory.getHandler('=');
+        OperatorHandlerFactory opHandlerFactory = new OperatorHandlerFactory();
+        IOperatorHandler handler = opHandlerFactory.getHandler('=');
         Test.startTest();
         Boolean isEqual = handler.handle('test', 'test');
         Test.stopTest();
@@ -44,8 +44,8 @@ private with sharing class MockDatabaseUtilsTest {
 
     @IsTest
     static void testEqualityHandlerBoolean() {
-        MockDatabaseUtils.OperatorHandlerFactory opHandlerFactory = new MockDatabaseUtils.OperatorHandlerFactory();
-        MockDatabaseUtils.OperatorHandler handler = opHandlerFactory.getHandler('=');
+        OperatorHandlerFactory opHandlerFactory = new OperatorHandlerFactory();
+        IOperatorHandler handler = opHandlerFactory.getHandler('=');
         Test.startTest();
         Boolean isEqual = handler.handle(true, 'true');
         Test.stopTest();
@@ -58,8 +58,8 @@ private with sharing class MockDatabaseUtilsTest {
 
     @IsTest
     static void testEqualityHandlerNull() {
-        MockDatabaseUtils.OperatorHandlerFactory opHandlerFactory = new MockDatabaseUtils.OperatorHandlerFactory();
-        MockDatabaseUtils.OperatorHandler handler = opHandlerFactory.getHandler('=');
+        OperatorHandlerFactory opHandlerFactory = new OperatorHandlerFactory();
+        IOperatorHandler handler = opHandlerFactory.getHandler('=');
         Test.startTest();
         Boolean isEqual = handler.handle(null, null);
         Test.stopTest();
@@ -72,8 +72,8 @@ private with sharing class MockDatabaseUtilsTest {
 
     @IsTest
     static void testEqualityHandlerDate() {
-        MockDatabaseUtils.OperatorHandlerFactory opHandlerFactory = new MockDatabaseUtils.OperatorHandlerFactory();
-        MockDatabaseUtils.OperatorHandler handler = opHandlerFactory.getHandler('=');
+        OperatorHandlerFactory opHandlerFactory = new OperatorHandlerFactory();
+        IOperatorHandler handler = opHandlerFactory.getHandler('=');
         Test.startTest();
         Boolean isEqual = handler.handle(Date.newInstance(2020, 1, 1), '2020-01-01');
         Test.stopTest();
@@ -86,8 +86,8 @@ private with sharing class MockDatabaseUtilsTest {
 
     @IsTest
     static void testEqualityHandlerDateTime1() {
-        MockDatabaseUtils.OperatorHandlerFactory opHandlerFactory = new MockDatabaseUtils.OperatorHandlerFactory();
-        MockDatabaseUtils.OperatorHandler handler = opHandlerFactory.getHandler('=');
+        OperatorHandlerFactory opHandlerFactory = new OperatorHandlerFactory();
+        IOperatorHandler handler = opHandlerFactory.getHandler('=');
         Test.startTest();
         Boolean isEqual = handler.handle(DateTime.newInstanceGmt(2020, 1, 1, 1, 1, 1), '2020-01-01T01:01:01+00:00');
         Test.stopTest();
@@ -100,8 +100,8 @@ private with sharing class MockDatabaseUtilsTest {
 
     @IsTest
     static void testEqualityHandlerDateTime2() {
-        MockDatabaseUtils.OperatorHandlerFactory opHandlerFactory = new MockDatabaseUtils.OperatorHandlerFactory();
-        MockDatabaseUtils.OperatorHandler handler = opHandlerFactory.getHandler('=');
+        OperatorHandlerFactory opHandlerFactory = new OperatorHandlerFactory();
+        IOperatorHandler handler = opHandlerFactory.getHandler('=');
         Test.startTest();
         Boolean isEqual = handler.handle(DateTime.newInstanceGmt(2020, 1, 1, 1, 1, 1), '2020-01-01T01:01:01-00:00');
         Test.stopTest();
@@ -114,8 +114,8 @@ private with sharing class MockDatabaseUtilsTest {
 
     @IsTest
     static void testEqualityHandlerDateTime3() {
-        MockDatabaseUtils.OperatorHandlerFactory opHandlerFactory = new MockDatabaseUtils.OperatorHandlerFactory();
-        MockDatabaseUtils.OperatorHandler handler = opHandlerFactory.getHandler('=');
+        OperatorHandlerFactory opHandlerFactory = new OperatorHandlerFactory();
+        IOperatorHandler handler = opHandlerFactory.getHandler('=');
         Test.startTest();
         Boolean isEqual = handler.handle(DateTime.newInstanceGmt(2020, 1, 1, 1, 1, 1), '2020-01-01T01:01:01Z');
         Test.stopTest();
@@ -128,8 +128,8 @@ private with sharing class MockDatabaseUtilsTest {
 
     @IsTest
     static void testEqualityHandlerTime() {
-        MockDatabaseUtils.OperatorHandlerFactory opHandlerFactory = new MockDatabaseUtils.OperatorHandlerFactory();
-        MockDatabaseUtils.OperatorHandler handler = opHandlerFactory.getHandler('=');
+        OperatorHandlerFactory opHandlerFactory = new OperatorHandlerFactory();
+        IOperatorHandler handler = opHandlerFactory.getHandler('=');
         Test.startTest();
         Boolean isEqual = handler.handle(Time.newInstance(1, 1, 1, 1), '01:01:01.001Z');
         Test.stopTest();
@@ -142,8 +142,8 @@ private with sharing class MockDatabaseUtilsTest {
 
     @IsTest
     static void testInequalityHandlerDate() {
-        MockDatabaseUtils.OperatorHandlerFactory opHandlerFactory = new MockDatabaseUtils.OperatorHandlerFactory();
-        MockDatabaseUtils.OperatorHandler handler = opHandlerFactory.getHandler('!=');
+        OperatorHandlerFactory opHandlerFactory = new OperatorHandlerFactory();
+        IOperatorHandler handler = opHandlerFactory.getHandler('!=');
         Test.startTest();
         Boolean isNotEqual = handler.handle(Date.newInstance(2019, 1, 1), '2020-01-01');
         Test.stopTest();
@@ -156,8 +156,8 @@ private with sharing class MockDatabaseUtilsTest {
 
     @IsTest
     static void testInequalityHandlerDateTime1() {
-        MockDatabaseUtils.OperatorHandlerFactory opHandlerFactory = new MockDatabaseUtils.OperatorHandlerFactory();
-        MockDatabaseUtils.OperatorHandler handler = opHandlerFactory.getHandler('!=');
+        OperatorHandlerFactory opHandlerFactory = new OperatorHandlerFactory();
+        IOperatorHandler handler = opHandlerFactory.getHandler('!=');
         Test.startTest();
         Boolean isNotEqual = handler.handle(DateTime.newInstance(1999, 1, 1, 23, 1, 1), '2020-01-01T01:01:01+01:00');
         Test.stopTest();
@@ -170,8 +170,8 @@ private with sharing class MockDatabaseUtilsTest {
 
     @IsTest
     static void testInequalityHandlerDateTime2() {
-        MockDatabaseUtils.OperatorHandlerFactory opHandlerFactory = new MockDatabaseUtils.OperatorHandlerFactory();
-        MockDatabaseUtils.OperatorHandler handler = opHandlerFactory.getHandler('!=');
+        OperatorHandlerFactory opHandlerFactory = new OperatorHandlerFactory();
+        IOperatorHandler handler = opHandlerFactory.getHandler('!=');
         Test.startTest();
         Boolean isNotEqual = handler.handle(DateTime.newInstance(1999, 1, 1, 23, 1, 1), '2020-01-01T01:01:01-08:00');
         Test.stopTest();
@@ -184,8 +184,8 @@ private with sharing class MockDatabaseUtilsTest {
 
     @IsTest
     static void testInequalityHandlerDateTime3() {
-        MockDatabaseUtils.OperatorHandlerFactory opHandlerFactory = new MockDatabaseUtils.OperatorHandlerFactory();
-        MockDatabaseUtils.OperatorHandler handler = opHandlerFactory.getHandler('!=');
+        OperatorHandlerFactory opHandlerFactory = new OperatorHandlerFactory();
+        IOperatorHandler handler = opHandlerFactory.getHandler('!=');
         Test.startTest();
         Boolean isNotEqual = handler.handle(DateTime.newInstance(1999, 1, 1, 23, 1, 1), '2020-01-01T01:01:01Z');
         Test.stopTest();
@@ -198,8 +198,8 @@ private with sharing class MockDatabaseUtilsTest {
 
     @IsTest
     static void testInequalityHandlerTime() {
-        MockDatabaseUtils.OperatorHandlerFactory opHandlerFactory = new MockDatabaseUtils.OperatorHandlerFactory();
-        MockDatabaseUtils.OperatorHandler handler = opHandlerFactory.getHandler('!=');
+        OperatorHandlerFactory opHandlerFactory = new OperatorHandlerFactory();
+        IOperatorHandler handler = opHandlerFactory.getHandler('!=');
         Test.startTest();
         Boolean isNotEqual = handler.handle(Time.newInstance(0, 0, 0, 0), '01:01:01.000Z');
         Test.stopTest();
@@ -212,8 +212,8 @@ private with sharing class MockDatabaseUtilsTest {
 
     @IsTest
     static void testNotEqual1() {
-        MockDatabaseUtils.OperatorHandlerFactory opHandlerFactory = new MockDatabaseUtils.OperatorHandlerFactory();
-        MockDatabaseUtils.OperatorHandler handler = opHandlerFactory.getHandler('!=');
+        OperatorHandlerFactory opHandlerFactory = new OperatorHandlerFactory();
+        IOperatorHandler handler = opHandlerFactory.getHandler('!=');
         Test.startTest();
         Boolean isNotEqual = handler.handle('test1', 'test');
         Test.stopTest();
@@ -226,8 +226,8 @@ private with sharing class MockDatabaseUtilsTest {
 
     @IsTest
     static void testNotEqual2() {
-        MockDatabaseUtils.OperatorHandlerFactory opHandlerFactory = new MockDatabaseUtils.OperatorHandlerFactory();
-        MockDatabaseUtils.OperatorHandler handler = opHandlerFactory.getHandler('<>');
+        OperatorHandlerFactory opHandlerFactory = new OperatorHandlerFactory();
+        IOperatorHandler handler = opHandlerFactory.getHandler('<>');
         Test.startTest();
         Boolean isNotEqual = handler.handle('test1', 'test');
         Test.stopTest();
@@ -240,8 +240,8 @@ private with sharing class MockDatabaseUtilsTest {
 
     @IsTest
     static void testLike() {
-        MockDatabaseUtils.OperatorHandlerFactory opHandlerFactory = new MockDatabaseUtils.OperatorHandlerFactory();
-        MockDatabaseUtils.OperatorHandler handler = opHandlerFactory.getHandler('like');
+        OperatorHandlerFactory opHandlerFactory = new OperatorHandlerFactory();
+        IOperatorHandler handler = opHandlerFactory.getHandler('like');
         Test.startTest();
         Boolean isLike = handler.handle('test', '%tes_');
         Test.stopTest();
@@ -254,8 +254,8 @@ private with sharing class MockDatabaseUtilsTest {
 
     @IsTest
     static void testIn() {
-        MockDatabaseUtils.OperatorHandlerFactory opHandlerFactory = new MockDatabaseUtils.OperatorHandlerFactory();
-        MockDatabaseUtils.OperatorHandler handler = opHandlerFactory.getHandler('in');
+        OperatorHandlerFactory opHandlerFactory = new OperatorHandlerFactory();
+        IOperatorHandler handler = opHandlerFactory.getHandler('in');
         Test.startTest();
         Boolean isIn = handler.handle('test', new List<String>{'test', 'test1'});
         Test.stopTest();
@@ -268,8 +268,8 @@ private with sharing class MockDatabaseUtilsTest {
 
     @IsTest
     static void testNotIn() {
-        MockDatabaseUtils.OperatorHandlerFactory opHandlerFactory = new MockDatabaseUtils.OperatorHandlerFactory();
-        MockDatabaseUtils.OperatorHandler handler = opHandlerFactory.getHandler('not in');
+        OperatorHandlerFactory opHandlerFactory = new OperatorHandlerFactory();
+        IOperatorHandler handler = opHandlerFactory.getHandler('not in');
         Test.startTest();
         Boolean isNotIn = handler.handle('test', new List<String>{'test1', 'test2'});
         Test.stopTest();
@@ -282,8 +282,8 @@ private with sharing class MockDatabaseUtilsTest {
 
     @IsTest
     static void testGreaterThanHandler() {
-        MockDatabaseUtils.OperatorHandlerFactory opHandlerFactory = new MockDatabaseUtils.OperatorHandlerFactory();
-        MockDatabaseUtils.OperatorHandler handler = opHandlerFactory.getHandler('>');
+        OperatorHandlerFactory opHandlerFactory = new OperatorHandlerFactory();
+        IOperatorHandler handler = opHandlerFactory.getHandler('>');
         Test.startTest();
         Boolean isGreaterThan = handler.handle('test1', 'test');
         Test.stopTest();
@@ -296,8 +296,8 @@ private with sharing class MockDatabaseUtilsTest {
 
     @IsTest
     static void testLessThanHandler() {
-        MockDatabaseUtils.OperatorHandlerFactory opHandlerFactory = new MockDatabaseUtils.OperatorHandlerFactory();
-        MockDatabaseUtils.OperatorHandler handler = opHandlerFactory.getHandler('<');
+        OperatorHandlerFactory opHandlerFactory = new OperatorHandlerFactory();
+        IOperatorHandler handler = opHandlerFactory.getHandler('<');
         Test.startTest();
         Boolean isLessThan = handler.handle('test', 'test1');
         Test.stopTest();
@@ -310,8 +310,8 @@ private with sharing class MockDatabaseUtilsTest {
 
     @IsTest
     static void testGreaterThanOrEqualHandler() {
-        MockDatabaseUtils.OperatorHandlerFactory opHandlerFactory = new MockDatabaseUtils.OperatorHandlerFactory();
-        MockDatabaseUtils.OperatorHandler handler = opHandlerFactory.getHandler('>=');
+        OperatorHandlerFactory opHandlerFactory = new OperatorHandlerFactory();
+        IOperatorHandler handler = opHandlerFactory.getHandler('>=');
         Test.startTest();
         Boolean isGreaterThanOrEqual = handler.handle('test', 'test');
         Test.stopTest();
@@ -324,8 +324,8 @@ private with sharing class MockDatabaseUtilsTest {
 
     @IsTest
     static void testLessThanOrEqualHandler() {
-        MockDatabaseUtils.OperatorHandlerFactory opHandlerFactory = new MockDatabaseUtils.OperatorHandlerFactory();
-        MockDatabaseUtils.OperatorHandler handler = opHandlerFactory.getHandler('<=');
+        OperatorHandlerFactory opHandlerFactory = new OperatorHandlerFactory();
+        IOperatorHandler handler = opHandlerFactory.getHandler('<=');
         Test.startTest();
         Boolean isLessThanOrEqual = handler.handle('test', 'test');
         Test.stopTest();
@@ -338,8 +338,8 @@ private with sharing class MockDatabaseUtilsTest {
 
     @IsTest
     static void testNull() {
-        MockDatabaseUtils.OperatorHandlerFactory opHandlerFactory = new MockDatabaseUtils.OperatorHandlerFactory();
-        MockDatabaseUtils.OperatorHandler handler = opHandlerFactory.getHandler('=');
+        OperatorHandlerFactory opHandlerFactory = new OperatorHandlerFactory();
+        IOperatorHandler handler = opHandlerFactory.getHandler('=');
         Test.startTest();
         Boolean isNull = handler.handle(null, null);
         Test.stopTest();
@@ -352,8 +352,8 @@ private with sharing class MockDatabaseUtilsTest {
 
     @IsTest
     static void testGreaterThanHandlerString() {
-        MockDatabaseUtils.OperatorHandlerFactory opHandlerFactory = new MockDatabaseUtils.OperatorHandlerFactory();
-        MockDatabaseUtils.OperatorHandler handler = opHandlerFactory.getHandler('>');
+        OperatorHandlerFactory opHandlerFactory = new OperatorHandlerFactory();
+        IOperatorHandler handler = opHandlerFactory.getHandler('>');
         Test.startTest();
         Boolean isGreaterThan = handler.handle('test1', 'test');
         Test.stopTest();
@@ -366,8 +366,8 @@ private with sharing class MockDatabaseUtilsTest {
 
     @IsTest
     static void testGreaterThanHandlerNull() {
-        MockDatabaseUtils.OperatorHandlerFactory opHandlerFactory = new MockDatabaseUtils.OperatorHandlerFactory();
-        MockDatabaseUtils.OperatorHandler handler = opHandlerFactory.getHandler('>');
+        OperatorHandlerFactory opHandlerFactory = new OperatorHandlerFactory();
+        IOperatorHandler handler = opHandlerFactory.getHandler('>');
         Test.startTest();
         Boolean isGreaterThan = handler.handle(null, 'test');
         Test.stopTest();
@@ -380,8 +380,8 @@ private with sharing class MockDatabaseUtilsTest {
 
     @IsTest
     static void testGreaterThanHandlerDouble() {
-        MockDatabaseUtils.OperatorHandlerFactory opHandlerFactory = new MockDatabaseUtils.OperatorHandlerFactory();
-        MockDatabaseUtils.OperatorHandler handler = opHandlerFactory.getHandler('>');
+        OperatorHandlerFactory opHandlerFactory = new OperatorHandlerFactory();
+        IOperatorHandler handler = opHandlerFactory.getHandler('>');
         Test.startTest();
         Boolean isGreaterThan = handler.handle((Double) 2.0, '1.0');
         Test.stopTest();
@@ -394,8 +394,8 @@ private with sharing class MockDatabaseUtilsTest {
 
     @IsTest 
     static void testGreaterThanHandlerInteger() {
-        MockDatabaseUtils.OperatorHandlerFactory opHandlerFactory = new MockDatabaseUtils.OperatorHandlerFactory();
-        MockDatabaseUtils.OperatorHandler handler = opHandlerFactory.getHandler('>');
+        OperatorHandlerFactory opHandlerFactory = new OperatorHandlerFactory();
+        IOperatorHandler handler = opHandlerFactory.getHandler('>');
         Test.startTest();
         Boolean isGreaterThan = handler.handle(2, '1');
         Test.stopTest();
@@ -408,8 +408,8 @@ private with sharing class MockDatabaseUtilsTest {
 
     @IsTest 
     static void testGreaterThanHandlerDecimal() {
-        MockDatabaseUtils.OperatorHandlerFactory opHandlerFactory = new MockDatabaseUtils.OperatorHandlerFactory();
-        MockDatabaseUtils.OperatorHandler handler = opHandlerFactory.getHandler('>');
+        OperatorHandlerFactory opHandlerFactory = new OperatorHandlerFactory();
+        IOperatorHandler handler = opHandlerFactory.getHandler('>');
         Test.startTest();
         Boolean isGreaterThan = handler.handle( (Decimal) 2.0, '1.0');
         Test.stopTest();
@@ -422,8 +422,8 @@ private with sharing class MockDatabaseUtilsTest {
 
     @IsTest
     static void testGreaterThanHandlerDate() {
-        MockDatabaseUtils.OperatorHandlerFactory opHandlerFactory = new MockDatabaseUtils.OperatorHandlerFactory();
-        MockDatabaseUtils.OperatorHandler handler = opHandlerFactory.getHandler('>');
+        OperatorHandlerFactory opHandlerFactory = new OperatorHandlerFactory();
+        IOperatorHandler handler = opHandlerFactory.getHandler('>');
         Test.startTest();
         Boolean isGreaterThan = handler.handle(Date.newInstance(2020, 1, 1), '2019-01-01');
         Test.stopTest();
@@ -436,8 +436,8 @@ private with sharing class MockDatabaseUtilsTest {
 
     @IsTest
     static void testGreaterThanHandlerDateTime1() {
-        MockDatabaseUtils.OperatorHandlerFactory opHandlerFactory = new MockDatabaseUtils.OperatorHandlerFactory();
-        MockDatabaseUtils.OperatorHandler handler = opHandlerFactory.getHandler('>');
+        OperatorHandlerFactory opHandlerFactory = new OperatorHandlerFactory();
+        IOperatorHandler handler = opHandlerFactory.getHandler('>');
         Test.startTest();
         Boolean isGreaterThan = handler.handle(DateTime.newInstance(2020, 1, 1, 1, 1, 1), '1999-01-01T23:01:01+01:00');
         Test.stopTest();
@@ -450,8 +450,8 @@ private with sharing class MockDatabaseUtilsTest {
 
     @IsTest
     static void testGreaterThanHandlerDateTime2() {
-        MockDatabaseUtils.OperatorHandlerFactory opHandlerFactory = new MockDatabaseUtils.OperatorHandlerFactory();
-        MockDatabaseUtils.OperatorHandler handler = opHandlerFactory.getHandler('>');
+        OperatorHandlerFactory opHandlerFactory = new OperatorHandlerFactory();
+        IOperatorHandler handler = opHandlerFactory.getHandler('>');
         Test.startTest();
         Boolean isGreaterThan = handler.handle(DateTime.newInstance(2020, 1, 1, 1, 1, 1), '1999-01-01T23:01:01-08:00');
         Test.stopTest();
@@ -464,8 +464,8 @@ private with sharing class MockDatabaseUtilsTest {
 
     @IsTest
     static void testGreaterThanHandlerDateTime3() {
-        MockDatabaseUtils.OperatorHandlerFactory opHandlerFactory = new MockDatabaseUtils.OperatorHandlerFactory();
-        MockDatabaseUtils.OperatorHandler handler = opHandlerFactory.getHandler('>');
+        OperatorHandlerFactory opHandlerFactory = new OperatorHandlerFactory();
+        IOperatorHandler handler = opHandlerFactory.getHandler('>');
         Test.startTest();
         Boolean isGreaterThan = handler.handle(DateTime.newInstance(2020, 1, 1, 1, 1, 1), '1999-01-01T23:01:01Z');
         Test.stopTest();
@@ -478,8 +478,8 @@ private with sharing class MockDatabaseUtilsTest {
 
     @IsTest
     static void testGreaterThanHandlerTime() {
-        MockDatabaseUtils.OperatorHandlerFactory opHandlerFactory = new MockDatabaseUtils.OperatorHandlerFactory();
-        MockDatabaseUtils.OperatorHandler handler = opHandlerFactory.getHandler('>');
+        OperatorHandlerFactory opHandlerFactory = new OperatorHandlerFactory();
+        IOperatorHandler handler = opHandlerFactory.getHandler('>');
         Test.startTest();
         Boolean isGreaterThan = handler.handle(Time.newInstance(1, 1, 1, 1), '00:00:00.000Z');
         Test.stopTest();
@@ -492,8 +492,8 @@ private with sharing class MockDatabaseUtilsTest {
 
     @IsTest
     static void testGreaterThanHandlerLong() {
-        MockDatabaseUtils.OperatorHandlerFactory opHandlerFactory = new MockDatabaseUtils.OperatorHandlerFactory();
-        MockDatabaseUtils.OperatorHandler handler = opHandlerFactory.getHandler('>');
+        OperatorHandlerFactory opHandlerFactory = new OperatorHandlerFactory();
+        IOperatorHandler handler = opHandlerFactory.getHandler('>');
         Test.startTest();
         Boolean isGreaterThan = handler.handle( (Long) 2L, '1');
         Test.stopTest();
@@ -506,8 +506,8 @@ private with sharing class MockDatabaseUtilsTest {
 
     @IsTest
     static void testLessThanHandlerString() {
-        MockDatabaseUtils.OperatorHandlerFactory opHandlerFactory = new MockDatabaseUtils.OperatorHandlerFactory();
-        MockDatabaseUtils.OperatorHandler handler = opHandlerFactory.getHandler('<');
+        OperatorHandlerFactory opHandlerFactory = new OperatorHandlerFactory();
+        IOperatorHandler handler = opHandlerFactory.getHandler('<');
         Test.startTest();
         Boolean isLessThan = handler.handle('test', 'test1');
         Test.stopTest();
@@ -520,8 +520,8 @@ private with sharing class MockDatabaseUtilsTest {
 
     @IsTest
     static void testLessThanHandlerNull() {
-        MockDatabaseUtils.OperatorHandlerFactory opHandlerFactory = new MockDatabaseUtils.OperatorHandlerFactory();
-        MockDatabaseUtils.OperatorHandler handler = opHandlerFactory.getHandler('<');
+        OperatorHandlerFactory opHandlerFactory = new OperatorHandlerFactory();
+        IOperatorHandler handler = opHandlerFactory.getHandler('<');
         Test.startTest();
         Boolean isLessThan = handler.handle(null, 'test');
         Test.stopTest();
@@ -534,8 +534,8 @@ private with sharing class MockDatabaseUtilsTest {
 
     @IsTest
     static void testLessThanHandlerDouble() {
-        MockDatabaseUtils.OperatorHandlerFactory opHandlerFactory = new MockDatabaseUtils.OperatorHandlerFactory();
-        MockDatabaseUtils.OperatorHandler handler = opHandlerFactory.getHandler('<');
+        OperatorHandlerFactory opHandlerFactory = new OperatorHandlerFactory();
+        IOperatorHandler handler = opHandlerFactory.getHandler('<');
         Test.startTest();
         Boolean isLessThan = handler.handle((Double) 1.0, '2.0');
         Test.stopTest();
@@ -548,8 +548,8 @@ private with sharing class MockDatabaseUtilsTest {
 
     @IsTest
     static void testLessThanHandlerInteger() {
-        MockDatabaseUtils.OperatorHandlerFactory opHandlerFactory = new MockDatabaseUtils.OperatorHandlerFactory();
-        MockDatabaseUtils.OperatorHandler handler = opHandlerFactory.getHandler('<');
+        OperatorHandlerFactory opHandlerFactory = new OperatorHandlerFactory();
+        IOperatorHandler handler = opHandlerFactory.getHandler('<');
         Test.startTest();
         Boolean isLessThan = handler.handle(1, '2');
         Test.stopTest();
@@ -562,8 +562,8 @@ private with sharing class MockDatabaseUtilsTest {
 
     @IsTest
     static void testLessThanHandlerDecimal() {
-        MockDatabaseUtils.OperatorHandlerFactory opHandlerFactory = new MockDatabaseUtils.OperatorHandlerFactory();
-        MockDatabaseUtils.OperatorHandler handler = opHandlerFactory.getHandler('<');
+        OperatorHandlerFactory opHandlerFactory = new OperatorHandlerFactory();
+        IOperatorHandler handler = opHandlerFactory.getHandler('<');
         Test.startTest();
         Boolean isLessThan = handler.handle( (Decimal) 1.0, '2.0');
         Test.stopTest();
@@ -576,8 +576,8 @@ private with sharing class MockDatabaseUtilsTest {
 
     @IsTest
     static void testLessThanHandlerDate() {
-        MockDatabaseUtils.OperatorHandlerFactory opHandlerFactory = new MockDatabaseUtils.OperatorHandlerFactory();
-        MockDatabaseUtils.OperatorHandler handler = opHandlerFactory.getHandler('<');
+        OperatorHandlerFactory opHandlerFactory = new OperatorHandlerFactory();
+        IOperatorHandler handler = opHandlerFactory.getHandler('<');
         Test.startTest();
         Boolean isLessThan = handler.handle(Date.newInstance(2019, 1, 1), '2020-01-01');
         Test.stopTest();
@@ -590,8 +590,8 @@ private with sharing class MockDatabaseUtilsTest {
 
     @IsTest
     static void testLessThanHandlerDateTime1() {
-        MockDatabaseUtils.OperatorHandlerFactory opHandlerFactory = new MockDatabaseUtils.OperatorHandlerFactory();
-        MockDatabaseUtils.OperatorHandler handler = opHandlerFactory.getHandler('<');
+        OperatorHandlerFactory opHandlerFactory = new OperatorHandlerFactory();
+        IOperatorHandler handler = opHandlerFactory.getHandler('<');
         Test.startTest();
         Boolean isLessThan = handler.handle(DateTime.newInstance(1999, 1, 1, 23, 1, 1), '2020-01-01T01:01:01+01:00');
         Test.stopTest();
@@ -604,8 +604,8 @@ private with sharing class MockDatabaseUtilsTest {
     
     @IsTest
     static void testLessThanHandlerDateTime2() {
-        MockDatabaseUtils.OperatorHandlerFactory opHandlerFactory = new MockDatabaseUtils.OperatorHandlerFactory();
-        MockDatabaseUtils.OperatorHandler handler = opHandlerFactory.getHandler('<');
+        OperatorHandlerFactory opHandlerFactory = new OperatorHandlerFactory();
+        IOperatorHandler handler = opHandlerFactory.getHandler('<');
         Test.startTest();
         Boolean isLessThan = handler.handle(DateTime.newInstance(1999, 1, 1, 23, 1, 1), '2020-01-01T01:01:01-08:00');
         Test.stopTest();
@@ -618,8 +618,8 @@ private with sharing class MockDatabaseUtilsTest {
 
     @IsTest
     static void testLessThanHandlerDateTime3() {
-        MockDatabaseUtils.OperatorHandlerFactory opHandlerFactory = new MockDatabaseUtils.OperatorHandlerFactory();
-        MockDatabaseUtils.OperatorHandler handler = opHandlerFactory.getHandler('<');
+        OperatorHandlerFactory opHandlerFactory = new OperatorHandlerFactory();
+        IOperatorHandler handler = opHandlerFactory.getHandler('<');
         Test.startTest();
         Boolean isLessThan = handler.handle(DateTime.newInstance(1999, 1, 1, 23, 1, 1), '2020-01-01T01:01:01Z');
         Test.stopTest();
@@ -632,8 +632,8 @@ private with sharing class MockDatabaseUtilsTest {
 
     @IsTest
     static void testLessThanHandlerTime() {
-        MockDatabaseUtils.OperatorHandlerFactory opHandlerFactory = new MockDatabaseUtils.OperatorHandlerFactory();
-        MockDatabaseUtils.OperatorHandler handler = opHandlerFactory.getHandler('<');
+        OperatorHandlerFactory opHandlerFactory = new OperatorHandlerFactory();
+        IOperatorHandler handler = opHandlerFactory.getHandler('<');
         Test.startTest();
         Boolean isLessThan = handler.handle(Time.newInstance(0, 0, 0, 0), '01:01:01.000Z');
         Test.stopTest();
@@ -646,8 +646,8 @@ private with sharing class MockDatabaseUtilsTest {
 
     @IsTest
     static void testLessThanHandlerLong() {
-        MockDatabaseUtils.OperatorHandlerFactory opHandlerFactory = new MockDatabaseUtils.OperatorHandlerFactory();
-        MockDatabaseUtils.OperatorHandler handler = opHandlerFactory.getHandler('<');
+        OperatorHandlerFactory opHandlerFactory = new OperatorHandlerFactory();
+        IOperatorHandler handler = opHandlerFactory.getHandler('<');
         Test.startTest();
         Boolean isLessThan = handler.handle( (Long) 1L, '2');
         Test.stopTest();
@@ -660,8 +660,8 @@ private with sharing class MockDatabaseUtilsTest {
 
     @IsTest
     static void testGreaterThanOrEqualHandlerString() {
-        MockDatabaseUtils.OperatorHandlerFactory opHandlerFactory = new MockDatabaseUtils.OperatorHandlerFactory();
-        MockDatabaseUtils.OperatorHandler handler = opHandlerFactory.getHandler('>=');
+        OperatorHandlerFactory opHandlerFactory = new OperatorHandlerFactory();
+        IOperatorHandler handler = opHandlerFactory.getHandler('>=');
         Test.startTest();
         Boolean isGreaterThanOrEqual = handler.handle('test', 'test');
         Test.stopTest();
@@ -674,8 +674,8 @@ private with sharing class MockDatabaseUtilsTest {
 
     @IsTest
     static void testGreaterThanOrEqualHandlerNull() {
-        MockDatabaseUtils.OperatorHandlerFactory opHandlerFactory = new MockDatabaseUtils.OperatorHandlerFactory();
-        MockDatabaseUtils.OperatorHandler handler = opHandlerFactory.getHandler('>=');
+        OperatorHandlerFactory opHandlerFactory = new OperatorHandlerFactory();
+        IOperatorHandler handler = opHandlerFactory.getHandler('>=');
         Test.startTest();
         Boolean isGreaterThanOrEqual = handler.handle(null, 'test');
         Test.stopTest();
@@ -688,8 +688,8 @@ private with sharing class MockDatabaseUtilsTest {
 
     @IsTest
     static void testGreaterThanOrEqualHandlerDouble() {
-        MockDatabaseUtils.OperatorHandlerFactory opHandlerFactory = new MockDatabaseUtils.OperatorHandlerFactory();
-        MockDatabaseUtils.OperatorHandler handler = opHandlerFactory.getHandler('>=');
+        OperatorHandlerFactory opHandlerFactory = new OperatorHandlerFactory();
+        IOperatorHandler handler = opHandlerFactory.getHandler('>=');
         Test.startTest();
         Boolean isGreaterThanOrEqual = handler.handle((Double) 2.0, '1.0');
         Test.stopTest();
@@ -702,8 +702,8 @@ private with sharing class MockDatabaseUtilsTest {
 
     @IsTest
     static void testGreaterThanOrEqualHandlerInteger() {
-        MockDatabaseUtils.OperatorHandlerFactory opHandlerFactory = new MockDatabaseUtils.OperatorHandlerFactory();
-        MockDatabaseUtils.OperatorHandler handler = opHandlerFactory.getHandler('>=');
+        OperatorHandlerFactory opHandlerFactory = new OperatorHandlerFactory();
+        IOperatorHandler handler = opHandlerFactory.getHandler('>=');
         Test.startTest();
         Boolean isGreaterThanOrEqual = handler.handle(2, '1');
         Test.stopTest();
@@ -716,8 +716,8 @@ private with sharing class MockDatabaseUtilsTest {
 
     @IsTest
     static void testGreaterThanOrEqualHandlerDecimal() {
-        MockDatabaseUtils.OperatorHandlerFactory opHandlerFactory = new MockDatabaseUtils.OperatorHandlerFactory();
-        MockDatabaseUtils.OperatorHandler handler = opHandlerFactory.getHandler('>=');
+        OperatorHandlerFactory opHandlerFactory = new OperatorHandlerFactory();
+        IOperatorHandler handler = opHandlerFactory.getHandler('>=');
         Test.startTest();
         Boolean isGreaterThanOrEqual = handler.handle( (Decimal) 2.0, '1.0');
         Test.stopTest();
@@ -730,8 +730,8 @@ private with sharing class MockDatabaseUtilsTest {
 
     @IsTest
     static void testGreaterThanOrEqualHandlerDate() {
-        MockDatabaseUtils.OperatorHandlerFactory opHandlerFactory = new MockDatabaseUtils.OperatorHandlerFactory();
-        MockDatabaseUtils.OperatorHandler handler = opHandlerFactory.getHandler('>=');
+        OperatorHandlerFactory opHandlerFactory = new OperatorHandlerFactory();
+        IOperatorHandler handler = opHandlerFactory.getHandler('>=');
         Test.startTest();
         Boolean isGreaterThanOrEqual = handler.handle(Date.newInstance(2020, 1, 1), '2020-01-01');
         Test.stopTest();
@@ -744,8 +744,8 @@ private with sharing class MockDatabaseUtilsTest {
 
     @IsTest
     static void testGreaterThanOrEqualHandlerDateTime1() {
-        MockDatabaseUtils.OperatorHandlerFactory opHandlerFactory = new MockDatabaseUtils.OperatorHandlerFactory();
-        MockDatabaseUtils.OperatorHandler handler = opHandlerFactory.getHandler('>=');
+        OperatorHandlerFactory opHandlerFactory = new OperatorHandlerFactory();
+        IOperatorHandler handler = opHandlerFactory.getHandler('>=');
         Test.startTest();
         Boolean isGreaterThanOrEqual = handler.handle(DateTime.newInstance(2020, 1, 1, 1, 1, 1), '2020-01-01T01:01:01+01:00');
         Test.stopTest();
@@ -758,8 +758,8 @@ private with sharing class MockDatabaseUtilsTest {
 
     @IsTest
     static void testGreaterThanOrEqualHandlerDateTime2() {
-        MockDatabaseUtils.OperatorHandlerFactory opHandlerFactory = new MockDatabaseUtils.OperatorHandlerFactory();
-        MockDatabaseUtils.OperatorHandler handler = opHandlerFactory.getHandler('>=');
+        OperatorHandlerFactory opHandlerFactory = new OperatorHandlerFactory();
+        IOperatorHandler handler = opHandlerFactory.getHandler('>=');
         Test.startTest();
         Boolean isGreaterThanOrEqual = handler.handle(DateTime.newInstance(2020, 1, 1, 1, 1, 1), '2020-01-01T01:01:01-08:00');
         Test.stopTest();
@@ -772,8 +772,8 @@ private with sharing class MockDatabaseUtilsTest {
 
     @IsTest
     static void testGreaterThanOrEqualHandlerDateTime3() {
-        MockDatabaseUtils.OperatorHandlerFactory opHandlerFactory = new MockDatabaseUtils.OperatorHandlerFactory();
-        MockDatabaseUtils.OperatorHandler handler = opHandlerFactory.getHandler('>=');
+        OperatorHandlerFactory opHandlerFactory = new OperatorHandlerFactory();
+        IOperatorHandler handler = opHandlerFactory.getHandler('>=');
         Test.startTest();
         Boolean isGreaterThanOrEqual = handler.handle(DateTime.newInstance(2020, 1, 1, 1, 1, 1), '2020-01-01T01:01:01Z');
         Test.stopTest();
@@ -786,8 +786,8 @@ private with sharing class MockDatabaseUtilsTest {
 
     @IsTest
     static void testGreaterThanOrEqualHandlerTime() {
-        MockDatabaseUtils.OperatorHandlerFactory opHandlerFactory = new MockDatabaseUtils.OperatorHandlerFactory();
-        MockDatabaseUtils.OperatorHandler handler = opHandlerFactory.getHandler('>=');
+        OperatorHandlerFactory opHandlerFactory = new OperatorHandlerFactory();
+        IOperatorHandler handler = opHandlerFactory.getHandler('>=');
         Test.startTest();
         Boolean isGreaterThanOrEqual = handler.handle(Time.newInstance(1, 1, 1, 1), '01:01:01.000Z');
         Test.stopTest();
@@ -800,8 +800,8 @@ private with sharing class MockDatabaseUtilsTest {
 
     @IsTest
     static void testGreaterThanOrEqualHandlerLong() {
-        MockDatabaseUtils.OperatorHandlerFactory opHandlerFactory = new MockDatabaseUtils.OperatorHandlerFactory();
-        MockDatabaseUtils.OperatorHandler handler = opHandlerFactory.getHandler('>=');
+        OperatorHandlerFactory opHandlerFactory = new OperatorHandlerFactory();
+        IOperatorHandler handler = opHandlerFactory.getHandler('>=');
         Test.startTest();
         Boolean isGreaterThanOrEqual = handler.handle( (Long) 2L, '1');
         Test.stopTest();
@@ -814,8 +814,8 @@ private with sharing class MockDatabaseUtilsTest {
 
     @IsTest
     static void testLessThanOrEqualHandlerString() {
-        MockDatabaseUtils.OperatorHandlerFactory opHandlerFactory = new MockDatabaseUtils.OperatorHandlerFactory();
-        MockDatabaseUtils.OperatorHandler handler = opHandlerFactory.getHandler('<=');
+        OperatorHandlerFactory opHandlerFactory = new OperatorHandlerFactory();
+        IOperatorHandler handler = opHandlerFactory.getHandler('<=');
         Test.startTest();
         Boolean isLessThanOrEqual = handler.handle('test', 'test');
         Test.stopTest();
@@ -828,8 +828,8 @@ private with sharing class MockDatabaseUtilsTest {
 
     @IsTest
     static void testLessThanOrEqualHandlerNull() {
-        MockDatabaseUtils.OperatorHandlerFactory opHandlerFactory = new MockDatabaseUtils.OperatorHandlerFactory();
-        MockDatabaseUtils.OperatorHandler handler = opHandlerFactory.getHandler('<=');
+        OperatorHandlerFactory opHandlerFactory = new OperatorHandlerFactory();
+        IOperatorHandler handler = opHandlerFactory.getHandler('<=');
         Test.startTest();
         Boolean isLessThanOrEqual = handler.handle(null, 'test');
         Test.stopTest();
@@ -842,8 +842,8 @@ private with sharing class MockDatabaseUtilsTest {
 
     @IsTest
     static void testLessThanOrEqualHandlerDouble() {
-        MockDatabaseUtils.OperatorHandlerFactory opHandlerFactory = new MockDatabaseUtils.OperatorHandlerFactory();
-        MockDatabaseUtils.OperatorHandler handler = opHandlerFactory.getHandler('<=');
+        OperatorHandlerFactory opHandlerFactory = new OperatorHandlerFactory();
+        IOperatorHandler handler = opHandlerFactory.getHandler('<=');
         Test.startTest();
         Boolean isLessThanOrEqual = handler.handle((Double) 1.0, '2.0');
         Test.stopTest();
@@ -856,8 +856,8 @@ private with sharing class MockDatabaseUtilsTest {
 
     @IsTest
     static void testLessThanOrEqualHandlerInteger() {
-        MockDatabaseUtils.OperatorHandlerFactory opHandlerFactory = new MockDatabaseUtils.OperatorHandlerFactory();
-        MockDatabaseUtils.OperatorHandler handler = opHandlerFactory.getHandler('<=');
+        OperatorHandlerFactory opHandlerFactory = new OperatorHandlerFactory();
+        IOperatorHandler handler = opHandlerFactory.getHandler('<=');
         Test.startTest();
         Boolean isLessThanOrEqual = handler.handle(1, '2');
         Test.stopTest();
@@ -870,8 +870,8 @@ private with sharing class MockDatabaseUtilsTest {
 
     @IsTest
     static void testLessThanOrEqualHandlerDecimal() {
-        MockDatabaseUtils.OperatorHandlerFactory opHandlerFactory = new MockDatabaseUtils.OperatorHandlerFactory();
-        MockDatabaseUtils.OperatorHandler handler = opHandlerFactory.getHandler('<=');
+        OperatorHandlerFactory opHandlerFactory = new OperatorHandlerFactory();
+        IOperatorHandler handler = opHandlerFactory.getHandler('<=');
         Test.startTest();
         Boolean isLessThanOrEqual = handler.handle( (Decimal) 1.0, '2.0');
         Test.stopTest();
@@ -884,8 +884,8 @@ private with sharing class MockDatabaseUtilsTest {
 
     @IsTest
     static void testLessThanOrEqualHandlerDate() {
-        MockDatabaseUtils.OperatorHandlerFactory opHandlerFactory = new MockDatabaseUtils.OperatorHandlerFactory();
-        MockDatabaseUtils.OperatorHandler handler = opHandlerFactory.getHandler('<=');
+        OperatorHandlerFactory opHandlerFactory = new OperatorHandlerFactory();
+        IOperatorHandler handler = opHandlerFactory.getHandler('<=');
         Test.startTest();
         Boolean isLessThanOrEqual = handler.handle(Date.newInstance(2019, 1, 1), '2020-01-01');
         Test.stopTest();
@@ -898,8 +898,8 @@ private with sharing class MockDatabaseUtilsTest {
 
     @IsTest
     static void testLessThanOrEqualHandlerDateTime1() {
-        MockDatabaseUtils.OperatorHandlerFactory opHandlerFactory = new MockDatabaseUtils.OperatorHandlerFactory();
-        MockDatabaseUtils.OperatorHandler handler = opHandlerFactory.getHandler('<=');
+        OperatorHandlerFactory opHandlerFactory = new OperatorHandlerFactory();
+        IOperatorHandler handler = opHandlerFactory.getHandler('<=');
         Test.startTest();
         Boolean isLessThanOrEqual = handler.handle(DateTime.newInstance(1999, 1, 1, 23, 1, 1), '2020-01-01T01:01:01+01:00');
         Test.stopTest();
@@ -912,8 +912,8 @@ private with sharing class MockDatabaseUtilsTest {
 
     @IsTest
     static void testLessThanOrEqualHandlerDateTime2() {
-        MockDatabaseUtils.OperatorHandlerFactory opHandlerFactory = new MockDatabaseUtils.OperatorHandlerFactory();
-        MockDatabaseUtils.OperatorHandler handler = opHandlerFactory.getHandler('<=');
+        OperatorHandlerFactory opHandlerFactory = new OperatorHandlerFactory();
+        IOperatorHandler handler = opHandlerFactory.getHandler('<=');
         Test.startTest();
         Boolean isLessThanOrEqual = handler.handle(DateTime.newInstance(1999, 1, 1, 23, 1, 1), '2020-01-01T01:01:01-08:00');
         Test.stopTest();
@@ -926,8 +926,8 @@ private with sharing class MockDatabaseUtilsTest {
 
     @IsTest
     static void testLessThanOrEqualHandlerDateTime3() {
-        MockDatabaseUtils.OperatorHandlerFactory opHandlerFactory = new MockDatabaseUtils.OperatorHandlerFactory();
-        MockDatabaseUtils.OperatorHandler handler = opHandlerFactory.getHandler('<=');
+        OperatorHandlerFactory opHandlerFactory = new OperatorHandlerFactory();
+        IOperatorHandler handler = opHandlerFactory.getHandler('<=');
         Test.startTest();
         Boolean isLessThanOrEqual = handler.handle(DateTime.newInstance(1999, 1, 1, 23, 1, 1), '2020-01-01T01:01:01Z');
         Test.stopTest();
@@ -940,8 +940,8 @@ private with sharing class MockDatabaseUtilsTest {
 
     @IsTest
     static void testLessThanOrEqualHandlerTime() {
-        MockDatabaseUtils.OperatorHandlerFactory opHandlerFactory = new MockDatabaseUtils.OperatorHandlerFactory();
-        MockDatabaseUtils.OperatorHandler handler = opHandlerFactory.getHandler('<=');
+        OperatorHandlerFactory opHandlerFactory = new OperatorHandlerFactory();
+        IOperatorHandler handler = opHandlerFactory.getHandler('<=');
         Test.startTest();
         Boolean isLessThanOrEqual = handler.handle(Time.newInstance(0, 0, 0, 0), '01:01:01.000Z');
         Test.stopTest();
@@ -954,8 +954,8 @@ private with sharing class MockDatabaseUtilsTest {
 
     @IsTest
     static void testLessThanOrEqualHandlerLong() {
-        MockDatabaseUtils.OperatorHandlerFactory opHandlerFactory = new MockDatabaseUtils.OperatorHandlerFactory();
-        MockDatabaseUtils.OperatorHandler handler = opHandlerFactory.getHandler('<=');
+        OperatorHandlerFactory opHandlerFactory = new OperatorHandlerFactory();
+        IOperatorHandler handler = opHandlerFactory.getHandler('<=');
         Test.startTest();
         Boolean isLessThanOrEqual = handler.handle( (Long) 1L, '2');
         Test.stopTest();
@@ -968,8 +968,8 @@ private with sharing class MockDatabaseUtilsTest {
 
     @IsTest
     static void testNotEqualHandlerString() {
-        MockDatabaseUtils.OperatorHandlerFactory opHandlerFactory = new MockDatabaseUtils.OperatorHandlerFactory();
-        MockDatabaseUtils.OperatorHandler handler = opHandlerFactory.getHandler('!=');
+        OperatorHandlerFactory opHandlerFactory = new OperatorHandlerFactory();
+        IOperatorHandler handler = opHandlerFactory.getHandler('!=');
         Test.startTest();
         Boolean isNotEqual = handler.handle('test1', 'test');
         Test.stopTest();
@@ -982,8 +982,8 @@ private with sharing class MockDatabaseUtilsTest {
 
     @IsTest
     static void testNotEqualHandlerNull() {
-        MockDatabaseUtils.OperatorHandlerFactory opHandlerFactory = new MockDatabaseUtils.OperatorHandlerFactory();
-        MockDatabaseUtils.OperatorHandler handler = opHandlerFactory.getHandler('!=');
+        OperatorHandlerFactory opHandlerFactory = new OperatorHandlerFactory();
+        IOperatorHandler handler = opHandlerFactory.getHandler('!=');
         Test.startTest();
         Boolean isNotEqual = handler.handle(null, 'test');
         Test.stopTest();
@@ -996,8 +996,8 @@ private with sharing class MockDatabaseUtilsTest {
 
     @IsTest
     static void testNotEqualHandlerDouble() {
-        MockDatabaseUtils.OperatorHandlerFactory opHandlerFactory = new MockDatabaseUtils.OperatorHandlerFactory();
-        MockDatabaseUtils.OperatorHandler handler = opHandlerFactory.getHandler('!=');
+        OperatorHandlerFactory opHandlerFactory = new OperatorHandlerFactory();
+        IOperatorHandler handler = opHandlerFactory.getHandler('!=');
         Test.startTest();
         Boolean isNotEqual = handler.handle((Double) 1.0, '2.0');
         Test.stopTest();
@@ -1010,8 +1010,8 @@ private with sharing class MockDatabaseUtilsTest {
 
     @IsTest
     static void testNotEqualHandlerInteger() {
-        MockDatabaseUtils.OperatorHandlerFactory opHandlerFactory = new MockDatabaseUtils.OperatorHandlerFactory();
-        MockDatabaseUtils.OperatorHandler handler = opHandlerFactory.getHandler('!=');
+        OperatorHandlerFactory opHandlerFactory = new OperatorHandlerFactory();
+        IOperatorHandler handler = opHandlerFactory.getHandler('!=');
         Test.startTest();
         Boolean isNotEqual = handler.handle(1, '2');
         Test.stopTest();
@@ -1024,8 +1024,8 @@ private with sharing class MockDatabaseUtilsTest {
 
     @IsTest
     static void testNotEqualHandlerDecimal() {
-        MockDatabaseUtils.OperatorHandlerFactory opHandlerFactory = new MockDatabaseUtils.OperatorHandlerFactory();
-        MockDatabaseUtils.OperatorHandler handler = opHandlerFactory.getHandler('!=');
+        OperatorHandlerFactory opHandlerFactory = new OperatorHandlerFactory();
+        IOperatorHandler handler = opHandlerFactory.getHandler('!=');
         Test.startTest();
         Boolean isNotEqual = handler.handle( (Decimal) 1.0, '2.0');
         Test.stopTest();
@@ -1038,8 +1038,8 @@ private with sharing class MockDatabaseUtilsTest {
 
     @IsTest
     static void testNotEqualHandlerDate() {
-        MockDatabaseUtils.OperatorHandlerFactory opHandlerFactory = new MockDatabaseUtils.OperatorHandlerFactory();
-        MockDatabaseUtils.OperatorHandler handler = opHandlerFactory.getHandler('!=');
+        OperatorHandlerFactory opHandlerFactory = new OperatorHandlerFactory();
+        IOperatorHandler handler = opHandlerFactory.getHandler('!=');
         Test.startTest();
         Boolean isNotEqual = handler.handle(Date.newInstance(2019, 1, 1), '2020-01-01');
         Test.stopTest();
@@ -1052,8 +1052,8 @@ private with sharing class MockDatabaseUtilsTest {
 
     @IsTest
     static void testNotEqualHandlerDateTime1() {
-        MockDatabaseUtils.OperatorHandlerFactory opHandlerFactory = new MockDatabaseUtils.OperatorHandlerFactory();
-        MockDatabaseUtils.OperatorHandler handler = opHandlerFactory.getHandler('!=');
+        OperatorHandlerFactory opHandlerFactory = new OperatorHandlerFactory();
+        IOperatorHandler handler = opHandlerFactory.getHandler('!=');
         Test.startTest();
         Boolean isNotEqual = handler.handle(DateTime.newInstance(1999, 1, 1, 23, 1, 1), '2020-01-01T01:01:01+01:00');
         Test.stopTest();
@@ -1066,8 +1066,8 @@ private with sharing class MockDatabaseUtilsTest {
 
     @IsTest
     static void testNotEqualHandlerDateTime2() {
-        MockDatabaseUtils.OperatorHandlerFactory opHandlerFactory = new MockDatabaseUtils.OperatorHandlerFactory();
-        MockDatabaseUtils.OperatorHandler handler = opHandlerFactory.getHandler('!=');
+        OperatorHandlerFactory opHandlerFactory = new OperatorHandlerFactory();
+        IOperatorHandler handler = opHandlerFactory.getHandler('!=');
         Test.startTest();
         Boolean isNotEqual = handler.handle(DateTime.newInstance(1999, 1, 1, 23, 1, 1), '2020-01-01T01:01:01-08:00');
         Test.stopTest();
@@ -1080,8 +1080,8 @@ private with sharing class MockDatabaseUtilsTest {
 
     @IsTest
     static void testNotEqualHandlerDateTime3() {
-        MockDatabaseUtils.OperatorHandlerFactory opHandlerFactory = new MockDatabaseUtils.OperatorHandlerFactory();
-        MockDatabaseUtils.OperatorHandler handler = opHandlerFactory.getHandler('!=');
+        OperatorHandlerFactory opHandlerFactory = new OperatorHandlerFactory();
+        IOperatorHandler handler = opHandlerFactory.getHandler('!=');
         Test.startTest();
         Boolean isNotEqual = handler.handle(DateTime.newInstance(1999, 1, 1, 23, 1, 1), '2020-01-01T01:01:01Z');
         Test.stopTest();
@@ -1094,8 +1094,8 @@ private with sharing class MockDatabaseUtilsTest {
 
     @IsTest
     static void testNotEqualHandlerTime() {
-        MockDatabaseUtils.OperatorHandlerFactory opHandlerFactory = new MockDatabaseUtils.OperatorHandlerFactory();
-        MockDatabaseUtils.OperatorHandler handler = opHandlerFactory.getHandler('!=');
+        OperatorHandlerFactory opHandlerFactory = new OperatorHandlerFactory();
+        IOperatorHandler handler = opHandlerFactory.getHandler('!=');
         Test.startTest();
         Boolean isNotEqual = handler.handle(Time.newInstance(0, 0, 0, 0), '01:01:01.000Z');
         Test.stopTest();
@@ -1108,8 +1108,8 @@ private with sharing class MockDatabaseUtilsTest {
 
     @IsTest
     static void testNotEqualHandlerLong() {
-        MockDatabaseUtils.OperatorHandlerFactory opHandlerFactory = new MockDatabaseUtils.OperatorHandlerFactory();
-        MockDatabaseUtils.OperatorHandler handler = opHandlerFactory.getHandler('!=');
+        OperatorHandlerFactory opHandlerFactory = new OperatorHandlerFactory();
+        IOperatorHandler handler = opHandlerFactory.getHandler('!=');
         Test.startTest();
         Boolean isNotEqual = handler.handle( (Long) 1L, '2');
         Test.stopTest();
@@ -1122,8 +1122,8 @@ private with sharing class MockDatabaseUtilsTest {
 
     @IsTest
     static void testLikeHandler() {
-        MockDatabaseUtils.OperatorHandlerFactory opHandlerFactory = new MockDatabaseUtils.OperatorHandlerFactory();
-        MockDatabaseUtils.OperatorHandler handler = opHandlerFactory.getHandler('like');
+        OperatorHandlerFactory opHandlerFactory = new OperatorHandlerFactory();
+        IOperatorHandler handler = opHandlerFactory.getHandler('like');
         Test.startTest();
         Boolean isLike = handler.handle('test', '%tes_');
         Test.stopTest();
@@ -1136,8 +1136,8 @@ private with sharing class MockDatabaseUtilsTest {
 
     @IsTest
     static void testInHandler() {
-        MockDatabaseUtils.OperatorHandlerFactory opHandlerFactory = new MockDatabaseUtils.OperatorHandlerFactory();
-        MockDatabaseUtils.OperatorHandler handler = opHandlerFactory.getHandler('in');
+        OperatorHandlerFactory opHandlerFactory = new OperatorHandlerFactory();
+        IOperatorHandler handler = opHandlerFactory.getHandler('in');
         Test.startTest();
         Boolean isIn = handler.handle('test', new List<String>{'test', 'test1'});
         Test.stopTest();
@@ -1150,8 +1150,8 @@ private with sharing class MockDatabaseUtilsTest {
 
     @IsTest
     static void testNotInHandler() {
-        MockDatabaseUtils.OperatorHandlerFactory opHandlerFactory = new MockDatabaseUtils.OperatorHandlerFactory();
-        MockDatabaseUtils.OperatorHandler handler = opHandlerFactory.getHandler('not in');
+        OperatorHandlerFactory opHandlerFactory = new OperatorHandlerFactory();
+        IOperatorHandler handler = opHandlerFactory.getHandler('not in');
         Test.startTest();
         Boolean isNotIn = handler.handle('test', new List<String>{'test1', 'test2'});
         Test.stopTest();
@@ -1164,8 +1164,8 @@ private with sharing class MockDatabaseUtilsTest {
 
     @IsTest
     static void testGreaterThanHandlerString1() {
-        MockDatabaseUtils.OperatorHandlerFactory opHandlerFactory = new MockDatabaseUtils.OperatorHandlerFactory();
-        MockDatabaseUtils.OperatorHandler handler = opHandlerFactory.getHandler('>');
+        OperatorHandlerFactory opHandlerFactory = new OperatorHandlerFactory();
+        IOperatorHandler handler = opHandlerFactory.getHandler('>');
         Test.startTest();
         Boolean isGreaterThan = handler.handle('test1', 'test');
         Test.stopTest();
@@ -1178,8 +1178,8 @@ private with sharing class MockDatabaseUtilsTest {
 
     @IsTest
     static void testGreaterThanHandlerString2() {
-        MockDatabaseUtils.OperatorHandlerFactory opHandlerFactory = new MockDatabaseUtils.OperatorHandlerFactory();
-        MockDatabaseUtils.OperatorHandler handler = opHandlerFactory.getHandler('>');
+        OperatorHandlerFactory opHandlerFactory = new OperatorHandlerFactory();
+        IOperatorHandler handler = opHandlerFactory.getHandler('>');
         Test.startTest();
         Boolean isGreaterThan = handler.handle('test', 'test1');
         Test.stopTest();
@@ -1192,8 +1192,8 @@ private with sharing class MockDatabaseUtilsTest {
 
     @IsTest
     static void testGreaterThanHandlerString3() {
-        MockDatabaseUtils.OperatorHandlerFactory opHandlerFactory = new MockDatabaseUtils.OperatorHandlerFactory();
-        MockDatabaseUtils.OperatorHandler handler = opHandlerFactory.getHandler('>');
+        OperatorHandlerFactory opHandlerFactory = new OperatorHandlerFactory();
+        IOperatorHandler handler = opHandlerFactory.getHandler('>');
         Test.startTest();
         Boolean isGreaterThan = handler.handle('test', 'test');
         Test.stopTest();

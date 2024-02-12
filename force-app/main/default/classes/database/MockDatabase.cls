@@ -1103,7 +1103,7 @@ public with sharing class MockDatabase {
      * @return : whether the record exists in the database
      */
     private Boolean isRecordInDatabase(Id recordId) {
-        String recordApiName = this.utils.getSObjectApiName(recordId.getSObjectType().getDescribe().getName()).toLowerCase();
+        String recordApiName = SchemaService.getSObjectName(recordId);
         Map<Id, sObject> mockObjects = this.db.get(recordApiName);
         return mockObjects.containsKey(recordId);
     }
@@ -1282,7 +1282,7 @@ public with sharing class MockDatabase {
 
         Node objNode = fromNode.left;
         String objName = objNode.id;
-        String objApiName = this.utils.getSObjectApiName(objName);
+        String objApiName = SchemaService.getSObjectName(objName);
 
         Map<Id, sObject> mockObjects = this.db.get(objApiName);
         if (mockObjects == null) {
