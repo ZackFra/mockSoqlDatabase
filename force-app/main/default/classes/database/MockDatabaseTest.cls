@@ -2771,4 +2771,78 @@ private with sharing class MockDatabaseTest {
         Assert.areEqual(1, queriedAggregates.size(), 'Incorrect number of aggregates');
         Assert.areEqual('Account', queriedAggregates[0].get('Type'), 'Incorrect Type');
     }
+
+    @IsTest
+    static void testTypeInOrderBy() {
+        MockDatabase mockDb = new MockDatabase();
+        Account acct = new Account(
+            Name = 'Test'
+        );
+        mockDb.doInsert(acct);
+
+        Contact con = new Contact(
+            LastName = 'Test',
+            AccountId = acct.Id
+        );
+
+        mockDb.doInsert(con);
+
+        Task t = new Task(
+            Subject = 'Test',
+            WhatId = acct.Id
+        );
+
+        Task t2 = new Task(
+            Subject = 'Test',
+            WhatId = con.Id
+        );
+
+        List<Task> taskList = new List<Task>{t, t2};
+
+        mockDb.doInsert(taskList);
+
+        Test.startTest();
+        List<Task> queriedTasks = (List<Task>) mockDb.query('SELECT Id, What.Type FROM Task ORDER BY What.Type');
+        Test.stopTest();
+
+        Assert.areEqual('Account', queriedTasks[0].What.Type, 'Incorrect Type');
+        Assert.areEqual('Contact', queriedTasks[1].What.Type, 'Incorrect Type');
+    }
+
+    @IsTest
+    static void testTypeInOrderByDesc() {
+        MockDatabase mockDb = new MockDatabase();
+        Account acct = new Account(
+            Name = 'Test'
+        );
+        mockDb.doInsert(acct);
+
+        Contact con = new Contact(
+            LastName = 'Test',
+            AccountId = acct.Id
+        );
+
+        mockDb.doInsert(con);
+
+        Task t = new Task(
+            Subject = 'Test',
+            WhatId = acct.Id
+        );
+
+        Task t2 = new Task(
+            Subject = 'Test',
+            WhatId = con.Id
+        );
+
+        List<Task> taskList = new List<Task>{t, t2};
+
+        mockDb.doInsert(taskList);
+
+        Test.startTest();
+        List<Task> queriedTasks = (List<Task>) mockDb.query('SELECT Id, What.Type FROM Task ORDER BY What.Type DESC');
+        Test.stopTest();
+
+        Assert.areEqual('Contact', queriedTasks[0].What.Type, 'Incorrect Type');
+        Assert.areEqual('Account', queriedTasks[1].What.Type, 'Incorrect Type');
+    }
 }
