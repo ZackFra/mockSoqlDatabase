@@ -1,4 +1,8 @@
-List<Task> taskList = [SELECT TYPEOF What WHEN Opportunity THEN Name END FROM Task];
-for(Task t : taskList) {
-    System.debug(t.What);
+List<Schema.SObjectField> fields = SchemaService.getFields(
+    SchemaService.getSObjectType('Name')
+);
+for(Schema.SObjectField field : fields) {
+    System.debug(SchemaService.getSObjectName(
+        SchemaService.getNameSObjectType())
+    );
 }

@@ -33,8 +33,8 @@ public with sharing class HavingLogicHandler extends BooleanLogicHandler {
             expectedValue = valueNode.id;
         }
         
-        MockDatabaseUtils.OperatorHandlerFactory handlerFactory = new MockDatabaseUtils.OperatorHandlerFactory();
-        MockDatabaseUtils.OperatorHandler handler = handlerFactory.getHandler(operatorNode.id);
+        OperatorHandlerFactory handlerFactory = new OperatorHandlerFactory();
+        IOperatorHandler handler = handlerFactory.getHandler(operatorNode.id);
         return handler.handle(value, expectedValue);
     }
 }

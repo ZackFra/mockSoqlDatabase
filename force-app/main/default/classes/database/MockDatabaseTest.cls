@@ -2433,4 +2433,416 @@ private with sharing class MockDatabaseTest {
             'Exception should have been thrown with the message "TYPEOF not allowed in GROUP BY query"'
         );
     }
+
+    @IsTest
+    static void testTypeOfOuterJoin() {
+        MockDatabase mockDb = new MockDatabase();
+
+        User u = new User( 
+            FirstName = 'Test',
+            LastName = 'User',
+            Username = 'test@test.com'
+        );
+        mockDb.doInsert(u);
+
+        Account acct = new Account(
+            OwnerId = u.Id,
+            Name = 'Test'
+        );
+        mockDb.doInsert(acct);
+
+        Opportunity opp = new Opportunity(
+            OwnerId = u.Id,
+            Name = 'Test Opp',
+            AccountId = acct.Id
+        );
+        mockDb.doInsert(opp);
+
+        String exMessage;
+        Test.startTest();
+        try {
+            mockDb.query('SELECT Name FROM Account WHERE Id IN (SELECT TYPEOF Owner WHEN User THEN Id ELSE Id END FROM Opportunity)');
+        } catch(Exception e) {
+            exMessage = e.getMessage();
+        }
+        Test.stopTest();
+
+        Assert.isTrue(
+            exMessage != null && exMessage.contains('TYPEOF not supported in outer join'), 
+            'Expected exception to be thrown'
+        );        
+    }
+
+    @IsTest
+    static void testNormalPolymorphic() {
+        MockDatabase mockDb = new MockDatabase();
+        Opportunity opp = new Opportunity(
+            Name = 'Test'
+        );
+
+        mockDb.doInsert(opp);
+
+        Task t = new Task(
+            Subject = 'Test',
+            WhatId = opp.Id
+        );
+        mockDb.doInsert(t);
+
+        Test.startTest();
+        List<Task> queriedTaskList = (List<Task>) mockDb.query('SELECT Id, Subject, WhatId, What.Name FROM Task');
+        Test.stopTest();
+
+        Task queriedTask = queriedTaskList[0];
+        Assert.areEqual('Test', queriedTask.What.Name, 'Incorrect Name');
+    }
+
+    @IsTest
+    static void testWhatType() {
+        MockDatabase mockDb = new MockDatabase();
+        Opportunity opp = new Opportunity(
+            Name = 'Test'
+        );
+
+        mockDb.doInsert(opp);
+
+        Task t = new Task(
+            Subject = 'Test',
+            WhatId = opp.Id
+        );
+        mockDb.doInsert(t);
+
+        Test.startTest();
+        List<Task> queriedTaskList = (List<Task>) mockDb.query('SELECT Id, Subject, WhatId, What.Type FROM Task');
+        Test.stopTest();
+
+        Task queriedTask = queriedTaskList[0];
+        Assert.areEqual('Opportunity', queriedTask.What.Type, 'Incorrect Name');
+    }
+
+    @IsTest
+    static void testOwnerType() {
+        MockDatabase mockDb = new MockDatabase();
+        User u = new User(
+            FirstName = 'Test',
+            LastName = 'User',
+            Username = 'fakeemail@email.com'
+        );
+
+        mockDb.doInsert(u);
+
+        case c = new Case(
+            OwnerId = u.Id,
+            Subject = 'Test',
+            Status = 'New'
+        );
+
+        mockDb.doInsert(c);
+
+        Test.startTest();
+        List<Case> queriedCaseList = (List<Case>) mockDb.query('SELECT Id, Subject, OwnerId, Owner.Type FROM Case');
+        Test.stopTest();
+
+        Case queriedCase = queriedCaseList[0];
+        Assert.areEqual('User', queriedCase.Owner.Type, 'Incorrect Type');
+    }
+
+    @IsTest
+    static void testOwnerTypeAndName() {
+        MockDatabase mockDb = new MockDatabase();
+        User u = new User(
+            FirstName = 'Test',
+            LastName = 'User',
+            Username = 'fakeemail@email.com'
+        );
+
+        mockDb.doInsert(u);
+
+        case c = new Case(
+            OwnerId = u.Id,
+            Subject = 'Test',
+            Status = 'New'
+        );
+
+        mockDb.doInsert(c);
+
+        Test.startTest();
+        List<Case> queriedCaseList = (List<Case>) mockDb.query('SELECT Id, Subject, OwnerId, Owner.FirstName, Owner.Type FROM Case');
+        Test.stopTest();
+
+        Case queriedCase = queriedCaseList[0];
+        Assert.areEqual('User', queriedCase.Owner.Type, 'Incorrect Type');
+        Assert.areEqual('Test', queriedCase.Owner.FirstName, 'Incorrect Name');
+    }
+
+    @IsTest
+    static void testFirstNameQueueAndUser() {
+        MockDatabase mockDb = new MockDatabase();
+        User u = new User(
+            FirstName = 'Test',
+            LastName = 'User',
+            Username = 'fakeemail@email.com'
+        );
+
+        Group caseQueue = new Group(
+            Name = 'Case Queue',
+            DeveloperName = 'Case_Queue'
+        );
+
+        List<SObject> owners = new List<SObject>{u, caseQueue};
+
+        mockDb.doInsert(owners);
+
+        case c1 = new Case(
+            OwnerId = caseQueue.Id,
+            Subject = 'Test',
+            Status = 'New'
+        );
+
+        Case c2 = new Case(
+            OwnerId = u.Id,
+            Subject = 'Test',
+            Status = 'New'
+        );
+
+        List<Case> caseList = new List<Case>{c1, c2};
+
+        mockDb.doInsert(caseList);
+
+        Test.startTest();
+        List<Case> queriedCaseList = (List<Case>) mockDb.query('SELECT Id, Subject, OwnerId, Owner.FirstName, Owner.Type FROM Case');
+        Test.stopTest();
+
+        for(case c: queriedCaseList) {
+            if(c.Owner.Type == 'User') {
+                Assert.areEqual('Test', c.Owner.FirstName, 'Incorrect Name');
+            } else {
+                Assert.areEqual(null, c.Owner.FirstName, 'Incorrect Name');
+            }
+        }
+    }
+
+    @IsTest
+    static void testOwnerTypeAndNameWithWhere() {
+        MockDatabase mockDb = new MockDatabase();
+        User u = new User(
+            FirstName = 'Test',
+            LastName = 'User',
+            Username = 'fakeemail@email.com'
+        );
+
+        Group caseQueue = new Group(
+            Name = 'Case Queue',
+            DeveloperName = 'Case_Queue'
+        );
+
+        List<SObject> owners = new List<SObject>{u, caseQueue};
+        mockDb.doInsert(owners);
+
+        case c1 = new Case(
+            OwnerId = u.Id,
+            Subject = 'Test',
+            Status = 'New'
+        );
+
+        Case c2 = new Case(
+            OwnerId = caseQueue.Id,
+            Subject = 'Test',
+            Status = 'New'
+        );
+
+        List<Case> caseList = new List<Case>{c1, c2};
+
+        mockDb.doInsert(caseList);
+
+        Test.startTest();
+        List<Case> queriedCaseList = (List<Case>) mockDb.query('SELECT Id, Subject, OwnerId, Owner.FirstName, Owner.Type FROM Case WHERE Owner.Type = \'User\'');
+        Test.stopTest();
+
+        Case queriedCase = queriedCaseList[0];
+        Assert.areEqual('User', queriedCase.Owner.Type, 'Incorrect Type');
+        Assert.areEqual('Test', queriedCase.Owner.FirstName, 'Incorrect Name');
+    }
+
+    @IsTest
+    static void testTypeWithGroupBy() {
+        MockDatabase mockDb = new MockDatabase();
+        User u = new User(
+            FirstName = 'Test',
+            LastName = 'User',
+            Username = 'fakeemail@email.com'
+        );
+
+        Group caseQueue = new Group(
+            Name = 'Case Queue',
+            DeveloperName = 'Case_Queue'
+        );
+
+        List<SObject> owners = new List<SObject>{u, caseQueue};
+        mockDb.doInsert(owners);
+
+        case c1 = new Case(
+            OwnerId = u.Id,
+            Subject = 'Test 1',
+            Status = 'New'
+        );
+
+        Case c2 = new Case(
+            OwnerId = caseQueue.Id,
+            Subject = 'Test 2',
+            Status = 'New'
+        );
+
+        List<Case> caseList = new List<Case>{c1, c2};
+
+        mockDb.doInsert(caseList);
+
+        Test.startTest();
+        List<Aggregate> queriedAggregates = (List<Aggregate>) mockDb.query('SELECT Owner.Type, Subject FROM Case GROUP BY Owner.Type, Subject');
+        Test.stopTest();
+
+        Assert.areEqual(2, queriedAggregates.size(), 'Incorrect number of aggregates');
+        for(Aggregate a: queriedAggregates) {
+            if(a.get('Type') == 'User') {
+                Assert.areEqual('Test 1', a.get('Subject'), 'Incorrect Subject');
+            } else {
+                Assert.areEqual('Test 2', a.get('Subject'), 'Incorrect Subject');
+            }
+        }
+    }
+
+    @IsTest
+    static void testTypeWithSubqery() {
+        MockDatabase mockDb = new MockDatabase();
+        Account acct = new Account(
+            Name = 'Test'
+        );
+
+        mockDb.doInsert(acct);
+
+        Task t = new Task(
+            Subject = 'Test',
+            WhatId = acct.Id
+        );
+
+        mockDb.doInsert(t);
+
+        Test.startTest();
+        List<Account> queriedAcctList = (List<Account>) mockDb.query('SELECT (SELECT What.Type FROM Tasks) FROM Account');
+        Test.stopTest();
+
+        Account queriedAcct = queriedAcctList[0];
+        Task queriedTask = queriedAcct.Tasks[0];
+        Assert.areEqual('Account', queriedTask.What.Type, 'Incorrect Name');
+    }
+
+    @IsTest
+    static void testTypeInHavingClause() {
+        MockDatabase mockDb = new MockDatabase();
+        Account acct = new Account(
+            Name = 'Test'
+        );
+        mockDb.doInsert(acct);
+
+        Contact con = new Contact(
+            LastName = 'Test',
+            AccountId = acct.Id
+        );
+
+        mockDb.doInsert(con);
+
+        Task t = new Task(
+            Subject = 'Test',
+            WhatId = acct.Id
+        );
+
+        Task t2 = new Task(
+            Subject = 'Test',
+            WhatId = con.Id
+        );
+
+        List<Task> taskList = new List<Task>{t, t2};
+
+        mockDb.doInsert(taskList);
+
+        Test.startTest();
+        List<Aggregate> queriedAggregates = (List<Aggregate>) mockDb.query('SELECT What.Type, COUNT(Id) FROM Task GROUP BY What.Type HAVING What.Type = \'Account\'');
+        Test.stopTest();
+
+        Assert.areEqual(1, queriedAggregates.size(), 'Incorrect number of aggregates');
+        Assert.areEqual('Account', queriedAggregates[0].get('Type'), 'Incorrect Type');
+    }
+
+    @IsTest
+    static void testTypeInOrderBy() {
+        MockDatabase mockDb = new MockDatabase();
+        Account acct = new Account(
+            Name = 'Test'
+        );
+        mockDb.doInsert(acct);
+
+        Contact con = new Contact(
+            LastName = 'Test',
+            AccountId = acct.Id
+        );
+
+        mockDb.doInsert(con);
+
+        Task t = new Task(
+            Subject = 'Test',
+            WhatId = acct.Id
+        );
+
+        Task t2 = new Task(
+            Subject = 'Test',
+            WhatId = con.Id
+        );
+
+        List<Task> taskList = new List<Task>{t, t2};
+
+        mockDb.doInsert(taskList);
+
+        Test.startTest();
+        List<Task> queriedTasks = (List<Task>) mockDb.query('SELECT Id, What.Type FROM Task ORDER BY What.Type');
+        Test.stopTest();
+
+        Assert.areEqual('Account', queriedTasks[0].What.Type, 'Incorrect Type');
+        Assert.areEqual('Contact', queriedTasks[1].What.Type, 'Incorrect Type');
+    }
+
+    @IsTest
+    static void testTypeInOrderByDesc() {
+        MockDatabase mockDb = new MockDatabase();
+        Account acct = new Account(
+            Name = 'Test'
+        );
+        mockDb.doInsert(acct);
+
+        Contact con = new Contact(
+            LastName = 'Test',
+            AccountId = acct.Id
+        );
+
+        mockDb.doInsert(con);
+
+        Task t = new Task(
+            Subject = 'Test',
+            WhatId = acct.Id
+        );
+
+        Task t2 = new Task(
+            Subject = 'Test',
+            WhatId = con.Id
+        );
+
+        List<Task> taskList = new List<Task>{t, t2};
+
+        mockDb.doInsert(taskList);
+
+        Test.startTest();
+        List<Task> queriedTasks = (List<Task>) mockDb.query('SELECT Id, What.Type FROM Task ORDER BY What.Type DESC');
+        Test.stopTest();
+
+        Assert.areEqual('Contact', queriedTasks[0].What.Type, 'Incorrect Type');
+        Assert.areEqual('Account', queriedTasks[1].What.Type, 'Incorrect Type');
+    }
 }
