@@ -71,13 +71,14 @@ public with sharing class MockDatabaseUtils {
             if(parentRecord != null) {
                 priorRecord = parentRecord;
             }
+
             Map<String, Object> parentInfo = getParentObject(obj, parentField);
             parentRecord = (sObject) parentInfo.get('parentRecord');
             parentObjApiName = (String) parentInfo.get('parentObjApiName');
             fieldRelationshipName = (String) parentInfo.get('fieldRelationshipName');
             relationshipName += fieldRelationshipName + '.';
             isPolymorphic = (Boolean) parentInfo.get('isPolymorphic');
-            
+
             parentRecord = this.db.get(parentObjApiName).get(parentRecord.Id);
             
 
@@ -104,6 +105,7 @@ public with sharing class MockDatabaseUtils {
             Schema.SObjectType comparableSot = SchemaService.getSObjectType(comparableRecord);
             comparableField = SchemaService.getFieldName(comparableSot, finalField);
         }
+
         relationshipName += comparableField;
         comparables.put('comparableRecord', comparableRecord);
         comparables.put('comparableField', comparableField);
@@ -406,8 +408,9 @@ public with sharing class MockDatabaseUtils {
                 if(objTypeList.size() == 1) {
                     parentObjApiName = objTypeList[0].getDescribe().getName();
                 } else {
-                    String childFieldApiName = f.getDescribe().getName();
-                    parentObjApiName = ((Id) sObj.get(childFieldApiName)).getSobjectType().getDescribe().getName();
+                    String parentFieldApiName = SchemaService.getFieldName(f);
+                    Id parentRecordId = (Id) sObj.get(parentFieldApiName);
+                    parentObjApiName = SchemaService.getSObjectName(parentRecordId);
                     isPolymorphic = true;
                 }
                 
@@ -465,8 +468,8 @@ public with sharing class MockDatabaseUtils {
                 if(objTypeList.size() == 1) {
                     parentObjApiName = objTypeList[0].getDescribe().getName();
                 } else {
-                    String childFieldApiName = f.getDescribe().getName();
-                    parentObjApiName = ((Id) sObj.get(childFieldApiName)).getSobjectType().getDescribe().getName();
+                    Schema.SObjectType sot = SchemaService.getFieldSObjectType(f);
+                    parentObjApiName = SchemaService.getSObjectName(sot);
                 }
 
                 fieldApiName = f.getDescribe().getName();

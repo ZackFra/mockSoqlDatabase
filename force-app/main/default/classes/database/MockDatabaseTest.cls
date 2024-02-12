@@ -2709,4 +2709,66 @@ private with sharing class MockDatabaseTest {
             }
         }
     }
+
+    @IsTest
+    static void testTypeWithSubqery() {
+        MockDatabase mockDb = new MockDatabase();
+        Account acct = new Account(
+            Name = 'Test'
+        );
+
+        mockDb.doInsert(acct);
+
+        Task t = new Task(
+            Subject = 'Test',
+            WhatId = acct.Id
+        );
+
+        mockDb.doInsert(t);
+
+        Test.startTest();
+        List<Account> queriedAcctList = (List<Account>) mockDb.query('SELECT (SELECT What.Type FROM Tasks) FROM Account');
+        Test.stopTest();
+
+        Account queriedAcct = queriedAcctList[0];
+        Task queriedTask = queriedAcct.Tasks[0];
+        Assert.areEqual('Account', queriedTask.What.Type, 'Incorrect Name');
+    }
+
+    @IsTest
+    static void testTypeInHavingClause() {
+        MockDatabase mockDb = new MockDatabase();
+        Account acct = new Account(
+            Name = 'Test'
+        );
+        mockDb.doInsert(acct);
+
+        Contact con = new Contact(
+            LastName = 'Test',
+            AccountId = acct.Id
+        );
+
+        mockDb.doInsert(con);
+
+        Task t = new Task(
+            Subject = 'Test',
+            WhatId = acct.Id
+        );
+
+        Task t2 = new Task(
+            Subject = 'Test',
+            WhatId = con.Id
+        );
+
+        List<Task> taskList = new List<Task>{t, t2};
+
+        mockDb.doInsert(taskList);
+
+        Test.startTest();
+        List<Aggregate> queriedAggregates = (List<Aggregate>) mockDb.query('SELECT What.Type, COUNT(Id) FROM Task GROUP BY What.Type HAVING What.Type = \'Account\'');
+        Test.stopTest();
+
+        Assert.areEqual(1, queriedAggregates.size(), 'Incorrect number of aggregates');
+        Assert.areEqual('Account', queriedAggregates[0].get('Type'), 'Incorrect Type');
+    }
 }

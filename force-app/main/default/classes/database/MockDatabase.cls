@@ -563,7 +563,17 @@ public with sharing class MockDatabase {
                 Map<String, Object> comparableInfo = this.utils.getComparables(obj, groupByField);
                 sObject comparableRecord = (sObject) comparableInfo.get('comparableRecord');
                 String comparableField = (String) comparableInfo.get('comparableField');
-                isSame = (isSame && (comparableRecord.get(comparableField) == ar.get(comparableField)));
+
+                Schema.SObjectType sot = SchemaService.getSObjectType(comparableRecord);
+                Schema.SObjectField comparableSObjField = SchemaService.getField(sot, comparableField);
+                Boolean isPolymorphic = (Boolean) comparableInfo.get('isPolymorphic');
+                Boolean isType = (comparableField == 'Type');
+                if(isPolymorphic && isType) {
+                    String type = SchemaService.getSObjectName(comparableRecord);
+                    isSame = (isSame && (type == ar.get(comparableField)));
+                } else {
+                    isSame = (isSame && (comparableRecord.get(comparableField) == ar.get(comparableField)));
+                }
             }
             if(isSame) {
                 aggregateResult = ar;

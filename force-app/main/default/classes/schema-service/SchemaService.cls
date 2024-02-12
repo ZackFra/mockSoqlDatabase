@@ -189,6 +189,20 @@ public with sharing class SchemaService {
 
     /**
      * @description this method returns the API name of a given SObject
+     * @param recordId the record id
+     * @return the sobject api name
+     */
+    public static String getSObjectName(Id recordId) {
+        Map<String, Object> args = new Map<String, Object> {
+            'recordId' => recordId
+        };
+        Common.nullCheck(args);
+
+        return recordId.getSObjectType().getDescribe().getName();
+    }
+
+    /**
+     * @description this method returns the API name of a given SObject
      * @param sObjectName the sobject name
      * @return the sobject api name
      * @throws TypeException if the type is not found
