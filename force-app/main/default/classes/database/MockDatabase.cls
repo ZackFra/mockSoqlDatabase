@@ -21,7 +21,13 @@ public with sharing class MockDatabase {
         Node havingNode,
         Map<String, Object> params
     ) {
-        HavingLogicHandler havingLogicHandler = new HavingLogicHandler(this, havingNode, selectNode, aggr, params);
+        BooleanLogicOptions havingLogicOptions = new BooleanLogicOptions()
+            .setDatabase(this)
+            .setHead(havingNode)
+            .setSelectNode(selectNode)
+            .setObj(aggr)
+            .setParams(params);
+        HavingLogicHandler havingLogicHandler = new HavingLogicHandler(havingLogicOptions);
         return havingLogicHandler.evaluate();
     }
 
@@ -40,7 +46,12 @@ public with sharing class MockDatabase {
         Node whereNode, 
         Map<String, Object> params
     ) {
-        WhereLogicHandler whereLogicHandler = new WhereLogicHandler(this, whereNode, sObj, params);
+        BooleanLogicOptions whereLogicOptions = new BooleanLogicOptions()
+            .setDatabase(this)
+            .setHead(whereNode)
+            .setObj(sObj)
+            .setParams(params);
+        WhereLogicHandler whereLogicHandler = new WhereLogicHandler(whereLogicOptions);
         return whereLogicHandler.evaluate();
     }
 
