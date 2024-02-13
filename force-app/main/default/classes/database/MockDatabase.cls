@@ -267,7 +267,6 @@ public with sharing class MockDatabase {
                 Node usingScopeRightNode = usingScopeNode.right;
                 usingScopeNode.right = subqueryCloneWhereNode;
                 subqueryCloneWhereNode.right = usingScopeRightNode;
-                subqueryCloneFromNode.right = subqueryCloneWhereNode;
             } else {
                 Node fromRightNode = subqueryCloneFromNode.right;
                 subqueryCloneFromNode.right = subqueryCloneWhereNode;
