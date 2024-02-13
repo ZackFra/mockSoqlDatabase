@@ -366,7 +366,7 @@ public with sharing class MockDatabase {
         return handleSelectQuery(fSelector);
     }
 
-    private SObject copyWithFields(sObject databaseRecord, Node selectNode, Map<String, Object> params) {
+    private SObject handleSelectQuery(sObject databaseRecord, Node selectNode, Map<String, Object> params) {
         Node fieldNode = selectNode.left;
         
         String sObjApiName = SchemaService.getSObjectName(databaseRecord);
@@ -1252,17 +1252,17 @@ public with sharing class MockDatabase {
         List<sObject> sObjects = new List<sObject>();
 
         // process the query, whether it's a count, aggregate, or regular query
-        for(sObject obj : mockObjects.values()) {
+        for(sObject databaseRecord : mockObjects.values()) {
             BooleanLogicOptions whereLogicOptions = new BooleanLogicOptions()
                 .setDatabase(this)
                 .setHead(whereNode)
-                .setObj(obj)
+                .setObj(databaseRecord)
                 .setParams(params);
             if(!checkWhereClause(whereLogicOptions)) {
                 continue;
             }
 
-            if(!handleUsingScopeNode(obj, usingScopeNode, params)) {
+            if(!handleUsingScopeNode(databaseRecord, usingScopeNode, params)) {
                 continue;
             }
 
@@ -1273,14 +1273,14 @@ public with sharing class MockDatabase {
 
             // handle fields
             if(!isAggregateQuery) {
-                SObject sObj = copyWithFields(obj, selectNode, params);
-                sObjects.add(sObj);
+                SObject queriedRecord = handleSelectQuery(databaseRecord, selectNode, params);
+                sObjects.add(queriedRecord);
                 continue;
             }
 
             Map<String, Object> aggrResultValues = handleAggregateQuery(
                 selectNode, 
-                obj, 
+                databaseRecord, 
                 aggregateResults
             );
             aggregateResults = (List<Map<String, Object>>) aggrResultValues.get('aggregateResults');
