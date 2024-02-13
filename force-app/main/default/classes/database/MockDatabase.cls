@@ -1000,7 +1000,7 @@ public with sharing class MockDatabase {
      * @description Filter on the "USING SCOPE" clause
      * @param sObject The SObject to filter
      */
-     private Boolean handleUsingScopeNode(SObject sObj, Map<String, Object> params) {
+     private Boolean handleUsingScopeNode(SObject sObj, Node usingScopeNode, Map<String, Object> params) {
         // Salesforce at some point will support evaluating formulas in Apex
         // that day is not today, so until then we're just assuming the scope is good
         // https://help.salesforce.com/s/articleView?id=release-notes.rn_apex_formulaeval.htm&release=248&type=5
@@ -1187,6 +1187,7 @@ public with sharing class MockDatabase {
         Node orderByNode = topLevelNodes.orderByNode;
         Node limitNode = topLevelNodes.limitNode;
         Node offsetNode = topLevelNodes.offsetNode;
+        Node usingScopeNode = topLevelNodes.usingScopeNode;
 
         // validate the query, throws exception if invalid
         QueryValidator validator = new QueryValidator(topLevelNodes);
@@ -1217,7 +1218,7 @@ public with sharing class MockDatabase {
                 continue;
             }
 
-            if(!handleUsingScopeNode(obj, params)) {
+            if(!handleUsingScopeNode(obj, usingScopeNode, params)) {
                 continue;
             }
 
