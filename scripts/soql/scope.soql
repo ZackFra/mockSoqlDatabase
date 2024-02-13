@@ -1,0 +1,4 @@
+SELECT Id, Description, DeveloperName, EnforcementType, 
+FullName, IsActive, Language, MasterLabel, Metadata, RecordFilter,
+TargetEntity, UserCriteria, Version
+FROM RestrictionRule
