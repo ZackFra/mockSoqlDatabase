@@ -602,4 +602,25 @@ public with sharing class SchemaService {
         Comparator<Schema.SObjectField> comparator = IdFieldComparatorFactory.create(field1, field2);
         return comparator.compare(field1, field2) == 0;
     }
+
+    /** 
+     * @description Given a child relationship and a child relationship name, return whether the child relationship is the same as the child relationship name
+     * @param childRelationship : the child relationship
+     * @param childRelationshipName : the child relationship name
+     * @return : whether the child relationship is the same as the child relationship name
+     */
+    public static Boolean isChildRelationship(Schema.ChildRelationship childRelationship, String childRelationshipName) {
+        Map<String, Object> args = new Map<String, Object> {
+            'childRelationship' => childRelationship,
+            'childRelationshipName' => childRelationshipName
+        };
+        Common.nullCheck(args);
+        childRelationshipName = childRelationshipName.toLowerCase();
+
+        String foundChildRelationshipName = getChildRelationshipName(childRelationship);
+        return (
+            foundChildRelationshipName != null && 
+            foundChildRelationshipName.toLowerCase() == childRelationshipName
+        );
+    }
 }

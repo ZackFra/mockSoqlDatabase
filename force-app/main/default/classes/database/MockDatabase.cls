@@ -15,32 +15,12 @@ public with sharing class MockDatabase {
         return this.db.get(objApiName);
     }
     
-    private Boolean checkHavingCondition(
-        Map<String, Object> aggr, 
-        Node selectNode,
-        Node havingNode,
-        Map<String, Object> params
-    ) {
-        BooleanLogicOptions havingLogicOptions = new BooleanLogicOptions()
-            .setDatabase(this)
-            .setHead(havingNode)
-            .setSelectNode(selectNode)
-            .setObj(aggr)
-            .setParams(params);
+    private Boolean checkHavingClause(BooleanLogicOptions havingLogicOptions) {
         HavingLogicHandler havingLogicHandler = new HavingLogicHandler(havingLogicOptions);
         return havingLogicHandler.evaluate();
     }
 
-    private Boolean handleWhereNode(
-        sObject sObj, 
-        Node whereNode, 
-        Map<String, Object> params
-    ) {
-        BooleanLogicOptions whereLogicOptions = new BooleanLogicOptions()
-            .setDatabase(this)
-            .setHead(whereNode)
-            .setObj(sObj)
-            .setParams(params);
+    private Boolean checkWhereClause(BooleanLogicOptions whereLogicOptions) {
         WhereLogicHandler whereLogicHandler = new WhereLogicHandler(whereLogicOptions);
         return whereLogicHandler.evaluate();
     }
@@ -128,7 +108,12 @@ public with sharing class MockDatabase {
         }
     }
 
-    private SObject handlePolymorphicQuery(SObject sObj, Node fieldNode, Map<String, Object> params) {
+    private SObject handleTypeOfQuery(FieldSelector fSelector) {
+        SObject databaseRecord = fSelector.databaseRecord;
+        SObject queriedRecord = fSelector.queriedRecord;
+        Node fieldNode = fSelector.fieldNode;
+        Map<String, Object> params = fSelector.params;
+
         if(fieldNode.nodeType != 'typeof') {
             throw new QueryException('Unexpected error');
         }
@@ -136,25 +121,22 @@ public with sharing class MockDatabase {
         Node whenNode = fieldNode.right;
         String relName = fieldNode.id;
 
-        String fieldApiName = SchemaService.getFieldNameForRelationship(sObj.getSObjectType(), relName);
-        String objApiName = SchemaService.getSObjectName(sObj);
-        Schema.SObjectType sot = SchemaService.getSObjectType(sObj);
+        Schema.SObjectType sot = SchemaService.getSObjectType(queriedRecord);
+        String fieldApiName = SchemaService.getFieldNameForRelationship(sot, relName);
+        String objApiName = SchemaService.getSObjectName(queriedRecord);
         Schema.SObjectField field = SchemaService.getField(sot, fieldApiName);
 
         if(!SchemaService.isFieldPolymorphic(field)) {
             throw new QueryException('TYPEOF operand "' + fieldApiName + '" is not a polymorphic relationship field');
         }
 
-        Id parentRecordId = (Id) sObj.get(fieldApiName);
+        Id parentRecordId = (Id) databaseRecord.get(fieldApiName);
 
         if(parentRecordId == null) {
-            return sObj;
+            return queriedRecord;
         }
         SObject parentRecord = findRecord(parentRecordId);
-        if(parentRecord == null) {
-            throw new QueryException('No record found for ' + parentRecordId);
-        }
-        String parentObjApiName = parentRecord.getSObjectType().getDescribe().getName().toLowerCase();
+        String parentObjApiName = SchemaService.getSObjectName(parentRecord).toLowerCase();
 
         Node curr = whenNode;
         Node fieldListNode;
@@ -181,7 +163,7 @@ public with sharing class MockDatabase {
         }
 
         if(fieldListNode == null) {
-            return sObj;
+            return queriedRecord;
         }
 
         curr = fieldListNode;
@@ -194,8 +176,8 @@ public with sharing class MockDatabase {
         }
 
         Map<String, Object> parentRecordData = new Map<String, Object>();
-        if(sObj.getSObject(relName) != null) {
-            parentRecordData = this.utils.mapFromSObject(sObj.getSObject(relName));
+        if(queriedRecord.getSObject(relName) != null) {
+            parentRecordData = this.utils.mapFromSObject(queriedRecord.getSObject(relName));
         }
 
         for(String parentRecordFieldApiName : selectFields) {
@@ -208,7 +190,7 @@ public with sharing class MockDatabase {
             'url' => '/' + parentRecord.Id
         };
         parentRecordData.put('attributes', attributes);
-        Map<String, Object> sObjClone = this.utils.mapFromSObject(sObj);
+        Map<String, Object> sObjClone = this.utils.mapFromSObject(queriedRecord);
 
         Schema.DescribeFieldResult dfr = SchemaService.describeField(objApiName, fieldApiName);
         String relApiName = dfr.getRelationshipName();
@@ -219,48 +201,51 @@ public with sharing class MockDatabase {
 
     }
 
-    private sObject handleParentSubQuery(sObject sObj, String sObjApiName, Node field, Map<String, Object> params) {
-        String fieldName = field.id;
+    private sObject handleParentSubQuery(FieldSelector fSelector) {
+        SObject queriedRecord = fSelector.queriedRecord;
+        Node fieldNode = fSelector.fieldNode;
+        Map<String, Object> params = fSelector.params;
+
+        String sObjApiName = SchemaService.getSObjectName(queriedRecord);
+        String fieldName = fieldNode.id;
 
         List<String> fieldParts = fieldName.split('\\.');
         String finalField = fieldParts[fieldParts.size()-1];
         fieldParts.remove(fieldParts.size()-1);
-        return buildObjWithRelations(sObj, fieldParts, finalField);
+        return buildObjWithRelations(queriedRecord, fieldParts, finalField);
     }
 
-    private Map<String, Object> handleChildSubQuery(sObject obj, String objApiName, Node field, Map<String, Object> params) {
-        Node subquerySelectNode = field.right;
+    private SObject handleChildSubQuery(FieldSelector fSelector) {
+        SObject queriedRecord = fSelector.queriedRecord;
+        Node fieldNode = fSelector.fieldNode;
+        Map<String, Object> params = fSelector.params;
+
+        String objApiName = SchemaService.getSObjectName(queriedRecord);
+        Node subquerySelectNode = fieldNode.right;
         Node subqueryFromNode = subquerySelectNode.right;
 
         Node subqueryObjNode = subqueryFromNode.left;
         String subqueryChildRelationshipName = subqueryObjNode.id;
 
-        Boolean isValidRelationship = false;
-        String subQueryObjName;
-        String subQueryFieldName;
-
         Schema.SObjectType childObjectType = SchemaService.getSObjectType(objApiName);
         List<Schema.ChildRelationship> childRelationships = SchemaService.getChildRelationships(childObjectType);
 
+        Schema.ChildRelationship subqueryChildRelationship = null;
         for (Schema.ChildRelationship childRelationship : childRelationships) {
-            String childRelationshipName = SchemaService.getChildRelationshipName(childRelationship);
-            if(childRelationshipName == null) {
+            if(!SchemaService.isChildRelationship(childRelationship, subqueryChildRelationshipName)) {
                 continue;
             }
-
-            String lowerCaseChildRelationshipName = childRelationshipName.toLowerCase();
-            Boolean isRelationshipNamesEqual = (lowerCaseChildRelationshipName == subqueryChildRelationshipName);
-            if(isRelationshipNamesEqual) {
-                subQueryObjName = SchemaService.getChildRelationshipChildSObjectName(childRelationship);
-                subQueryFieldName = SchemaService.getChildRelationshipFieldName(childRelationship);
-                subqueryChildRelationshipName = childRelationshipName;
-                isValidRelationship = true;
-                break;
-            }
+            subqueryChildRelationship = childRelationship;
+            break;
         }
-        if(!isValidRelationship) {
+
+        if(subqueryChildRelationship == null) {
             throw new QueryException('Invalid relationship name: ' + subqueryChildRelationshipName);
         }
+
+        String subQueryObjName = SchemaService.getChildRelationshipChildSObjectName(subQueryChildRelationship);
+        String subQueryFieldName = SchemaService.getChildRelationshipFieldName(subQueryChildRelationship);
+        subqueryChildRelationshipName = SchemaService.getChildRelationshipName(subQueryChildRelationship);
 
         // clone the tree so we can modify it
         Node subqueryCloneSelectNode = subQuerySelectNode.deepClone();
@@ -284,7 +269,7 @@ public with sharing class MockDatabase {
                 .setNodeType('field')
                 .build())
             .setRight(new NodeBuilder()
-                .setId(((String) obj.Id).toLowerCase())
+                .setId(((String) queriedRecord.Id).toLowerCase())
                 .setNodeType('string')
                 .build())
             .build();
@@ -300,61 +285,90 @@ public with sharing class MockDatabase {
                 .build();
         }
 
-        List<sObject> subQueryObjects = (List<sObject>) doQuery(subqueryCloneSelectNode, params);
-        Map<String, Object> subQueryResults = new Map<String, Object> {
-            'records' => subQueryObjects,
-            'subqueryRelationshipName' => subqueryChildRelationshipName,
-            'done' => true,
-            'totalSize' => subQueryObjects.size()
-        };
-        return subQueryResults;
+        List<SObject> subQueryRecords = (List<SObject>) doQuery(subqueryCloneSelectNode, params);
+
+        // so we can't mock the subquery results directly, but we can serialize them and then deserialize them
+        // here we serialize the subquery results, which can't be instaniated,
+        // then deserialize them into a map, then add the map to the parent object
+        Map<String, Object> objMap = this.utils.mapFromSObject(queriedRecord);
+        Map<String, Object> subQueryResultMap = new Map<String, Object>();
+        
+        subQueryResultMap.put('records', subQueryRecords);
+        subQueryResultMap.put('totalSize', subQueryRecords.size());
+        subQueryResultMap.put('done', true);
+
+        objMap.put(subQueryChildRelationshipName, subQueryResultMap);
+
+        return this.utils.sObjectFromMap(objMap, ObjApiName);
     }
 
-    private sObject copyWithFields(sObject obj, Node selectNode, Map<String, Object> params) {
-        Node field = selectNode.left;
-        sObject sObj = (sObject) Type.forName(obj.getSObjectType().getDescribe().getName()).newInstance();
-        String objApiName = obj.getSObjectType().getDescribe().getName();
-        sObj.put('Id', obj.Id);
-        while(field != null) {
-            Boolean isTypeOf = (field.nodeType == 'typeof');
-            Boolean isChildSubQuery = (field.nodeType == 'subquery');
-            Boolean isParentSubQuery = (field.id.contains('.'));
+    private SObject handleFieldQuery(FieldSelector fSelector) {
+        SObject queriedRecord = fSelector.queriedRecord;
+        SObject databaseRecord = fSelector.databaseRecord;
+        Node fieldNode = fSelector.fieldNode;
+
+        String fieldName = fieldNode.id;
+        Object fieldValue = databaseRecord.get(fieldName);
+
+        Schema.SObjectType sot = SchemaService.getSObjectType(databaseRecord);
+        String sObjectName = SchemaService.getSObjectName(sot);
+        if(fieldValue != null) {
+            Map<String, Object> objMap = this.utils.mapFromSObject(queriedRecord);
+            objMap.put(fieldName, fieldValue);
             
-            if(isTypeOf) {
-                sObj = handlePolymorphicQuery(obj, field, params);
-            } else if(isChildSubQuery) {
-                Map<String, Object> subQueryResults = handleChildSubQuery(obj, objApiName, field, params);
-
-                String subQueryChildRelationshipName = (String) subQueryResults.get('subqueryRelationshipName');
-                List<sObject> subQueryRecords = (List<sObject>) subQueryResults.get('records');
-
-                // so we can't mock the subquery results directly, but we can serialize them and then deserialize them
-                // here we serialize the subquery results, which can't be instaniated,
-                // then deserialize them into a map, then add the map to the parent object
-                Map<String, Object> objMap = this.utils.mapFromSObject(sObj);
-                Map<String, Object> subQueryResultMap = new Map<String, Object>();
-                
-                subQueryResultMap.put('records', subQueryRecords);
-                subQueryResultMap.put('totalSize', subQueryRecords.size());
-                subQueryResultMap.put('done', true);
-
-                objMap.put(subQueryChildRelationshipName, subQueryResultMap);
-                sObj = this.utils.sObjectFromMap(objMap, ObjApiName);
-            } else if(isParentSubQuery) {
-                sObj = handleParentSubQuery(sObj, objApiName, field, params);
-            } else {
-                String fieldName = field.id;
-                Object fieldValue = obj.get(fieldName);
-
-                if(fieldValue != null) {
-                    Map<String, Object> objMap = this.utils.mapFromSObject(sObj);
-                    objMap.put(fieldName, fieldValue);
-                    sObj = this.utils.sObjectFromMap(objMap, ObjApiName);
-                }
-            }
-            field = field.left;
+            queriedRecord = this.utils.sObjectFromMap(objMap, SObjectName);
         }
-        return sObj;
+        return queriedRecord;
+    }
+
+    private SObject handleSelectQuery(FieldSelector fSelector) {
+        Node fieldNode = fSelector.fieldNode;
+        SObject queriedRecord = fSelector.queriedRecord;
+        SObject databaseRecord = fSelector.databaseRecord;
+        Map<String, Object> params = fSelector.params;
+
+        if(fieldNode == null) {
+            return queriedrecord;
+        }
+
+        Boolean isTypeOf = (fieldNode.nodeType == 'typeof');
+        Boolean isChildSubQuery = (fieldNode.nodeType == 'subquery');
+        Boolean isParentSubQuery = (fieldNode.id.contains('.'));
+        
+        if(isTypeOf) {
+            queriedRecord = handleTypeOfQuery(fSelector);
+        } else if(isChildSubQuery) {
+            queriedRecord = handleChildSubQuery(fSelector);
+        } else if(isParentSubQuery) {
+            queriedRecord = handleParentSubQuery(fSelector);
+        } else {
+            queriedRecord = handleFieldQuery(fSelector);
+        }
+
+        // to check the next field node in the list, 
+        // the only changes are the queriedRecord and the fieldNode
+        fSelector
+            .setQueriedRecord(queriedRecord)
+            .setFieldNode(fieldNode.left);
+
+        // Recursion, baby!
+        return handleSelectQuery(fSelector);
+    }
+
+    private SObject copyWithFields(sObject databaseRecord, Node selectNode, Map<String, Object> params) {
+        Node fieldNode = selectNode.left;
+        
+        String sObjApiName = SchemaService.getSObjectName(databaseRecord);
+        SObject queriedRecord = SchemaService.blankSObjectFrom(sObjApiName);
+        queriedRecord.put('Id', databaseRecord.Id);
+
+        FieldSelector fSelector = new FieldSelector()
+            .setDatabaseRecord(databaseRecord)
+            .setQueriedRecord(queriedRecord)
+            .setFieldNode(fieldNode)
+            .setParams(params);
+
+        return handleSelectQuery(fSelector);
     }
 
     private Boolean isAggregateQuery(Node selectNode) {
@@ -768,7 +782,13 @@ public with sharing class MockDatabase {
 
         List<Map<String, Object>> results = new List<Map<String, Object>>();
         for(Map<String, Object> ar : aggregateResults) {
-            if(checkHavingCondition(ar, selectNode, havingNode, params)) {
+            BooleanLogicOptions havingLogicOptions = new BooleanLogicOptions()
+                .setDatabase(this)
+                .setHead(havingNode)
+                .setSelectNode(selectNode)
+                .setObj(ar)
+                .setParams(params);
+            if(checkHavingClause(havingLogicOptions)) {
                 results.add(ar);
             }
         }
@@ -833,7 +853,12 @@ public with sharing class MockDatabase {
         throw new QueryException('No alias found');
     }
 
-    private Object handleOrderByNode(String typeOfQuery, Object results, Node selectNode, Node orderByNode) {
+    private Object handleOrderByNode(
+        String typeOfQuery, 
+        Object results, 
+        Node selectNode, 
+        Node orderByNode
+    ) {
         if(results == null) {
             return results;
         }
@@ -1214,7 +1239,12 @@ public with sharing class MockDatabase {
 
         // process the query, whether it's a count, aggregate, or regular query
         for(sObject obj : mockObjects.values()) {
-            if(!handleWhereNode(obj, whereNode, params)) {
+            BooleanLogicOptions whereLogicOptions = new BooleanLogicOptions()
+                .setDatabase(this)
+                .setHead(whereNode)
+                .setObj(obj)
+                .setParams(params);
+            if(!checkWhereClause(whereLogicOptions)) {
                 continue;
             }
 
