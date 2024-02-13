@@ -260,7 +260,19 @@ public with sharing class MockDatabase {
                 .setId('where')
                 .setNodeType('where')
                 .build();
-            subqueryCloneFromNode.right = subqueryCloneWhereNode;
+            
+            // need to account for something being to the right of the from node
+            Node usingScopeNode = subqueryCloneTopLevelNodes.usingScopeNode;
+            if(usingScopeNode != null) {
+                Node usingScopeRightNode = usingScopeNode.right;
+                usingScopeNode.right = subqueryCloneWhereNode;
+                subqueryCloneWhereNode.right = usingScopeRightNode;
+                subqueryCloneFromNode.right = subqueryCloneWhereNode;
+            } else {
+                Node fromRightNode = subqueryCloneFromNode.right;
+                subqueryCloneFromNode.right = subqueryCloneWhereNode;
+                subqueryCloneWhereNode.right = fromRightNode;
+            }
         }
 
         Node queryConditionNode = new NodeBuilder()
