@@ -21,26 +21,27 @@ public with sharing class MockDatabase {
         Node havingNode,
         Map<String, Object> params
     ) {
-        HavingLogicHandler havingLogicHandler = new HavingLogicHandler(this, havingNode, selectNode, aggr, params);
+        BooleanLogicOptions havingLogicOptions = new BooleanLogicOptions()
+            .setDatabase(this)
+            .setHead(havingNode)
+            .setSelectNode(selectNode)
+            .setObj(aggr)
+            .setParams(params);
+        HavingLogicHandler havingLogicHandler = new HavingLogicHandler(havingLogicOptions);
         return havingLogicHandler.evaluate();
     }
 
-    private Boolean isValidWhereClause(Node whereNode) {
-        if(whereNode == null) {
-            return true;
-        }
-        if(whereNode.nodeType == 'typeof') {
-            return false;
-        }
-        return isValidWhereClause(whereNode.left) && isValidWhereClause(whereNode.right);
-    }
-
-    private Boolean checkWhereCondition(
+    private Boolean handleWhereNode(
         sObject sObj, 
         Node whereNode, 
         Map<String, Object> params
     ) {
-        WhereLogicHandler whereLogicHandler = new WhereLogicHandler(this, whereNode, sObj, params);
+        BooleanLogicOptions whereLogicOptions = new BooleanLogicOptions()
+            .setDatabase(this)
+            .setHead(whereNode)
+            .setObj(sObj)
+            .setParams(params);
+        WhereLogicHandler whereLogicHandler = new WhereLogicHandler(whereLogicOptions);
         return whereLogicHandler.evaluate();
     }
 
@@ -354,42 +355,6 @@ public with sharing class MockDatabase {
             field = field.left;
         }
         return sObj;
-    }
-
-    private Boolean hasDuplicateFields(Node selectNode) {
-        Node curr = selectNode;
-        Set<String> fieldNames = new Set<String>();
-        while(curr != null) {
-            if(curr.nodeType == 'field') {
-                String fieldName = curr.id;
-                if(fieldNames.contains(fieldName)) {
-                    return true;
-                }
-                fieldNames.add(fieldName);
-            }
-            curr = curr.left;
-        }
-        return false;
-    }
-
-    private Boolean hasDuplicateSubQueries(Node selectNode) {
-        Node curr = selectNode;
-        Set<String> subQueryRelationshipNames = new Set<String>();
-        while(curr != null) {
-            if(curr.nodeType == 'subquery') {
-                Node subQuerySelectNode = curr.right;
-                Node subQueryFromNode = subQuerySelectNode.right;
-                Node subQueryObjectNode = subQueryFromNode.left;
-                String subQueryRelationshipName = subQueryObjectNode.id;
-
-                if(subQueryRelationshipNames.contains(subQueryRelationshipName)) {
-                    return true;
-                }
-                subQueryRelationshipNames.add(subQueryRelationshipName);
-            }
-            curr = curr.left;
-        }
-        return false;
     }
 
     private Boolean isAggregateQuery(Node selectNode) {
@@ -1031,71 +996,17 @@ public with sharing class MockDatabase {
         return (selectNode.left.id == 'count' && selectNode.left.right == null && selectNode.left.left == null);
     }
 
-    private Boolean isTypeOfQuery(Node selectNode) {
-        Node curr = selectNode;
-        while(curr != null) {
-            if(curr.nodeType == 'typeof') {
-                return true;
-            }
-            curr = curr.left;
-        }
-        return false;
-    }
-
     /**
-     * @description : given a select node, validate whether this query can be performed
-     * @param selectNode : the select node
-     * @throws QueryException : if the query is invalid
+     * @description Filter on the "USING SCOPE" clause
+     * @param sObject The SObject to filter
      */
-    private void handleValidation(Node selectNode) {
-        TopLevelNodes topLevelNodes = getTopLevelNodes(selectNode);
-        Node groupByNode = topLevelNodes.groupByNode;
-        Node orderByNode = topLevelNodes.orderByNode;
-        Node limitNode = topLevelNodes.limitNode;
-        Node offsetNode = topLevelNodes.offsetNode;
-        Node forUpdateNode = topLevelNodes.forUpdateNode;
-        Node havingNode = topLevelNodes.havingNode;
-        Node whereNode = topLevelNodes.whereNode;
+     private Boolean handleUsingScopeNode(SObject sObj, Node usingScopeNode, Map<String, Object> params) {
+        // Salesforce at some point will support evaluating formulas in Apex
+        // that day is not today, so until then we're just assuming the scope is good
+        // https://help.salesforce.com/s/articleView?id=release-notes.rn_apex_formulaeval.htm&release=248&type=5
+        return true;
+     }
 
-        Boolean isAggregateQuery = isAggregateQuery(selectNode);
-        Boolean isCount = isSingularCount(selectNode);
-
-        if(isTypeOfQuery(selectNode) && groupByNode != null) {
-            throw new QueryException('TYPEOF not supported with GROUP BY');
-        }
-
-        if(!isValidWhereClause(whereNode)) {
-            throw new QueryException('TYPEOF not supported in outer join');
-        }
-
-        if(hasDuplicateSubQueries(selectNode)) {
-            throw new QueryException('Cannot follow the same aggregate relationship twice');
-        }
-
-        if(hasDuplicateFields(selectNode)) {
-            throw new QueryException('Duplicate field selected');
-        }
-
-        if(isCount && orderByNode != null) {
-            throw new QueryException('COUNT() and ORDER BY may not be used together');
-        }
-
-        if(isAggregateQuery && groupByNode == null && limitNode != null) {
-            throw new QueryException('Non-grouped query that uses overall aggregate functions cannot also use LIMIT');
-        }
-
-        if(isAggregateQuery && groupByNode == null && offsetNode != null) {
-            throw new QueryException('Non-grouped query that uses overall aggregate functions cannot also use OFFSET');
-        }
-
-        if(isAggregateQuery && forUpdateNode != null) {
-            throw new QueryException('FOR UPDATE not allowed in this context');
-        }
-
-        if(isCount && forUpdateNode != null) {
-            throw new QueryException('FOR UPDATE not allowed in this context');
-        }
-    }
 
     /**
      * @description Given a record id, verify it exists in the database
@@ -1276,9 +1187,11 @@ public with sharing class MockDatabase {
         Node orderByNode = topLevelNodes.orderByNode;
         Node limitNode = topLevelNodes.limitNode;
         Node offsetNode = topLevelNodes.offsetNode;
+        Node usingScopeNode = topLevelNodes.usingScopeNode;
 
         // validate the query, throws exception if invalid
-        handleValidation(selectNode);
+        QueryValidator validator = new QueryValidator(topLevelNodes);
+        validator.validate();
 
         Node objNode = fromNode.left;
         String objName = objNode.id;
@@ -1301,7 +1214,11 @@ public with sharing class MockDatabase {
 
         // process the query, whether it's a count, aggregate, or regular query
         for(sObject obj : mockObjects.values()) {
-            if(!checkWhereCondition(obj, whereNode, params)) {
+            if(!handleWhereNode(obj, whereNode, params)) {
+                continue;
+            }
+
+            if(!handleUsingScopeNode(obj, usingScopeNode, params)) {
                 continue;
             }
 

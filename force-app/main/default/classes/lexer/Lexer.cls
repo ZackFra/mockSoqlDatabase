@@ -99,6 +99,13 @@ public with sharing class Lexer {
 
         nextLink.head.right = fromIntermediary.head;
         nextLink = fromIntermediary;
+
+        Intermediary scopeIntermediary = parseScope(query);
+        if(scopeIntermediary != null) {
+            query = scopeIntermediary.subquery;
+            nextLink.head.right = scopeIntermediary.head;
+            nextLink = scopeIntermediary;
+        }
         
         Intermediary whereIntermediary = parseWhere(fromIntermediary.subquery);
         if(whereIntermediary != null) {
@@ -1261,6 +1268,49 @@ public with sharing class Lexer {
                 .setId(aliasName)
                 .setNodeType('alias')
                 .build(),
+            query
+        );
+    }
+
+    private Intermediary parseScopeName(String query) {
+        query = ParserUtils.skipWhitespace(query);
+        String scopeName = '';
+        while(ParserUtils.validCharForFieldOrObject(lookahead(query, 1))) {
+            scopeName += lookahead(query, 1);
+            query = query.subString(1);
+        }
+
+        if(scopeName.isNumeric()) {
+            throw new ParsingException(scopeName, 'scope name');
+        }
+
+        return new Intermediary(
+            new NodeBuilder()
+                .setId(scopeName)
+                .setNodeType('scope')
+                .build(),
+            query
+        );
+    }
+
+    private Intermediary parseScope(String query) {
+        query = ParserUtils.skipWhitespace(query);
+        if(query.length() < 5 || lookahead(query, 5) != 'using') {
+            return null;
+        }
+
+        query = consume(query, 'using');
+        query = ParserUtils.skipWhitespace(query);
+        query = consume(query, 'scope');
+        query = ParserUtils.skipWhitespace(query);
+        Intermediary scope = parseScopeName(query);
+        query = scope.subquery;
+        return new Intermediary(
+        	new NodeBuilder()
+            	.setId('using scope')
+            	.setNodeType('using scope')
+            	.setLeft(scope.head)
+            	.build(),
             query
         );
     }

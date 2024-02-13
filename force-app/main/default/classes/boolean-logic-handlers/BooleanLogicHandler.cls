@@ -24,17 +24,23 @@ public virtual with sharing class BooleanLogicHandler {
     public MockDatabase db;
 
     /**
+     * @description The select node to compare against
+     */
+    public Node selectNode;
+
+    /**
      * @description Constructor
      * @param db The database to use for queries
      * @param head The head conditional node
      * @param obj The object being compared (either SObject or Aggregate)
      * @param params Parameters for bind variables in the query
      */
-    public BooleanLogicHandler(MockDatabase db, Node head, Object obj, Map<String, Object> params) {
-        this.obj = obj;
-        this.params = params;
-        this.head = head;
-        this.db = db;
+    public BooleanLogicHandler(BooleanLogicOptions options) {
+        this.obj = options.obj;
+        this.params = options.params;
+        this.head = options.head;
+        this.db = options.db;
+        this.selectNode = options.selectNode;
     }
 
     /**

@@ -1,7 +1,7 @@
 public with sharing class WhereLogicHandler extends BooleanLogicHandler {
 
-    public WhereLogicHandler(MockDatabase db, Node head, SObject sObj, Map<String, Object> params) {
-        super(db, head, sObj, params);
+    public WhereLogicHandler(BooleanLogicOptions options) {
+        super(options);
     }
 
     public override Boolean isCompareConditionMet(Node operatorNode) {

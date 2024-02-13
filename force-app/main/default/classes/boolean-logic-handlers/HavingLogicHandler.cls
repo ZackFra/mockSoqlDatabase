@@ -2,11 +2,9 @@
  * @description This class is used to handle the having clause logic
  */
 public with sharing class HavingLogicHandler extends BooleanLogicHandler {
-    private Node selectNode;
 
-    public HavingLogicHandler(MockDatabase db, Node head, Node selectNode, Map<String, Object> aggr, Map<String, Object> params) {
-        super(db, head, aggr, params);
-        this.selectNode = selectNode;
+    public HavingLogicHandler(BooleanLogicOptions options) {
+        super(options);
     }
 
     /**

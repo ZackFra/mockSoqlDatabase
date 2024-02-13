@@ -13,6 +13,7 @@ public with sharing class TopLevelNodes {
     public Node limitNode { get; private set; }
     public Node offsetNode { get; private set; }
     public Node forUpdateNode { get; private set; }
+    public Node usingScopeNode { get; private set; }
     
 
     public TopLevelNodes(Node selectNode) {
@@ -20,6 +21,11 @@ public with sharing class TopLevelNodes {
         this.fromNode = selectNode.right;
 
         Node curr = fromNode.right;
+
+        if(isNode(curr, 'using scope')) {
+            this.usingScopeNode = curr;
+            curr = curr.right;
+        }
 
         if(isNode(curr, 'where')) {
             this.whereNode = curr;
