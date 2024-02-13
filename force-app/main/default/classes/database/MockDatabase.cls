@@ -1035,6 +1035,9 @@ public with sharing class MockDatabase {
     /**
      * @description Filter on the "USING SCOPE" clause
      * @param sObject The SObject to filter
+     * @param usingScopeNode The "USING SCOPE" node
+     * @param params The query parameters
+     * @return Whether the SObject passes the filter
      */
      private Boolean handleUsingScopeNode(SObject sObj, Node usingScopeNode, Map<String, Object> params) {
         // Salesforce at some point will support evaluating formulas in Apex
