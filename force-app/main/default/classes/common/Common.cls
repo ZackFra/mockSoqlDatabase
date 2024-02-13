@@ -2,6 +2,11 @@
  * @description Common utility class for basic operations, should not contain complex code
  */
 public with sharing class Common {
+    static final String DATE_PATTERN = '^([0-9]{4})\\-([0-9]{2})\\-([0-9]{2})$';
+    static final String DATE_TIME_PATTERN1 = '^([0-9]{4})\\-([0-9]{2})\\-([0-9]{2})T([0-9]{2}):([0-9]{2}):([0-9]{2})\\+([0-9]{2}):([0-9]{2})$';
+    static final String DATE_TIME_PATTERN2 = '^([0-9]{4})\\-([0-9]{2})\\-([0-9]{2})T([0-9]{2}):([0-9]{2}):([0-9]{2})\\-([0-9]{2}):([0-9]{2})$';
+    static final String DATE_TIME_PATTERN3 = '^([0-9]{4})\\-([0-9]{2})\\-([0-9]{2})T([0-9]{2}):([0-9]{2}):([0-9]{2})Z$';
+    static final String TIME_PATTERN = '^([0-9]{2}):([0-9]{2}):([0-9]{2})\\.([0-9]{3})Z$';
 
     /**
      * @description Method to check if a field is null
@@ -25,7 +30,7 @@ public with sharing class Common {
      * @throws QueryException if the date string is not in the correct format
      */
     public static Date parseDate(String dateString) {
-        Pattern datePattern = Pattern.compile('([0-9]{4})\\-([0-9]{2})\\-([0-9]{2})');
+        Pattern datePattern = Pattern.compile(DATE_PATTERN);
         Matcher dateMatcher = datePattern.matcher(dateString);
         if(!dateMatcher.matches()) {
             throw new IllegalArgumentException('Invalid date format');
@@ -45,7 +50,7 @@ public with sharing class Common {
      */
     public static DateTime parseDateTime(String dateTimeString) {
         // YYYY-MM-DDThh:mm:ss+hh:mm
-        Pattern datePattern1 = Pattern.compile('([0-9]{4})\\-([0-9]{2})\\-([0-9]{2})T([0-9]{2}):([0-9]{2}):([0-9]{2})\\+([0-9]{2}):([0-9]{2})');
+        Pattern datePattern1 = Pattern.compile(DATE_TIME_PATTERN1);
         Matcher dateMatcher1 = datePattern1.matcher(dateTimeString);
         if(dateMatcher1.matches()) {
             Integer year = Integer.valueOf(dateMatcher1.group(1));
@@ -61,7 +66,7 @@ public with sharing class Common {
                 .addMinutes(-offsetMin);
         }
         // YYYY-MM-DDThh:mm:ss-hh:mm
-        Pattern datePattern2 = Pattern.compile('([0-9]{4})\\-([0-9]{2})\\-([0-9]{2})T([0-9]{2}):([0-9]{2}):([0-9]{2})\\-([0-9]{2}):([0-9]{2})');
+        Pattern datePattern2 = Pattern.compile(DATE_TIME_PATTERN2);
         Matcher dateMatcher2 = datePattern2.matcher(dateTimeString);
         if(dateMatcher2.matches()) {
             Integer year = Integer.valueOf(dateMatcher2.group(1));
@@ -77,7 +82,7 @@ public with sharing class Common {
                 .addMinutes(offsetMin);
         }
         // YYYY-MM-DDThh:mm:ssZ
-        Pattern datePattern3 = Pattern.compile('([0-9]{4})\\-([0-9]{2})\\-([0-9]{2})T([0-9]{2}):([0-9]{2}):([0-9]{2})Z');
+        Pattern datePattern3 = Pattern.compile(DATE_TIME_PATTERN3);
         Matcher dateMatcher3 = datePattern3.matcher(dateTimeString);
         if(dateMatcher3.matches()) {
             Integer year = Integer.valueOf(dateMatcher3.group(1));
@@ -99,7 +104,7 @@ public with sharing class Common {
      * @throws IllegalArgumentException if the time string is not in the correct format
      */
     public static Time parseTime(String timeString) {
-        Pattern timePattern = Pattern.compile('([0-9]{2}):([0-9]{2}):([0-9]{2})\\.([0-9]{3})Z');
+        Pattern timePattern = Pattern.compile(TIME_PATTERN);
         Matcher timeMatcher = timePattern.matcher(timeString);
         if(!timeMatcher.matches()) {
             throw new IllegalArgumentException('Invalid time format');
