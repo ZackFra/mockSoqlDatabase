@@ -28,7 +28,7 @@ public with sharing class Common {
         Pattern datePattern = Pattern.compile('([0-9]{4})\\-([0-9]{2})\\-([0-9]{2})');
         Matcher dateMatcher = datePattern.matcher(dateString);
         if(!dateMatcher.matches()) {
-            throw new QueryException('Invalid date format');
+            throw new IllegalArgumentException('Invalid date format');
         }
         return Date.newInstance(
             Integer.valueOf(dateMatcher.group(1)),
