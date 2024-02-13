@@ -81,11 +81,11 @@ public with sharing class MockDatabase {
                 }
 
                 // the "Name" object is a hidden SF object for polymorphic relationships
-                Schema.SObjectType polymorphicObjectSot = SchemaService.getPolymorphicSObjectType();
-                String polymorphicObjectName = SchemaService.getSObjectName(polymorphicObjectSot);
+                Schema.SObjectType polymorphicSObjectSot = SchemaService.getPolymorphicSObjectType();
+                String polymorphicSObjectName = SchemaService.getSObjectName(polymorphicSObjectSot);
 
                 Map<String, String> attributes = new Map<String, String> {
-                    'type' => polymorphicObjectName,
+                    'type' => polymorphicSObjectName,
                     'url' => '/' + parentRecord.Id
                 };
                 
