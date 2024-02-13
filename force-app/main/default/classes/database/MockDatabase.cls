@@ -1252,6 +1252,7 @@ public with sharing class MockDatabase {
                 .setHead(whereNode)
                 .setObj(databaseRecord)
                 .setParams(params);
+
             if(!checkWhereClause(whereLogicOptions)) {
                 continue;
             }

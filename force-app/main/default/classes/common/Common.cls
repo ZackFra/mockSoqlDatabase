@@ -9,7 +9,8 @@ public with sharing class Common {
      * @throws IllegalArgumentException if the field is null
      */
     public static void nullCheck(Map<String, Object> args) {
-        for(String argName : args.keySet()) {
+        Set<String> argNames = args.keySet();
+        for(String argName : argNames) {
             Object argValue = args.get(argName);
             if(argValue == null) {
                 throw new IllegalArgumentException('Argument ' + argName + ' cannot be null');
