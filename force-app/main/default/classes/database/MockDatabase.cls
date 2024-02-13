@@ -249,8 +249,10 @@ public with sharing class MockDatabase {
 
         // clone the tree so we can modify it
         Node subqueryCloneSelectNode = subQuerySelectNode.deepClone();
-        Node subqueryCloneFromNode = subqueryCloneSelectNode.right;
-        Node subqueryCloneWhereNode = subqueryCloneFromNode.right;
+        TopLevelNodes subqueryCloneTopLevelNodes = new TopLevelNodes(subqueryCloneSelectNode);
+
+        Node subqueryCloneFromNode = subqueryCloneTopLevelNodes.fromNode;
+        Node subqueryCloneWhereNode = subqueryCloneTopLevelNodes.whereNode;
 
         subqueryCloneFromNode.left.id = subqueryObjName.toLowerCase();
         if(subqueryCloneWhereNode == null) {
