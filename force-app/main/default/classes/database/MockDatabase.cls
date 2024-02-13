@@ -264,13 +264,13 @@ public with sharing class MockDatabase {
             // need to account for something being to the right of the from node
             Node usingScopeNode = subqueryCloneTopLevelNodes.usingScopeNode;
             if(usingScopeNode != null) {
-                Node usingScopeRightNode = usingScopeNode.right;
+                Node nodeToRightOfUsingScopeNode = usingScopeNode.right;
                 usingScopeNode.right = subqueryCloneWhereNode;
-                subqueryCloneWhereNode.right = usingScopeRightNode;
+                subqueryCloneWhereNode.right = nodeToRightOfUsingScopeNode;
             } else {
-                Node fromRightNode = subqueryCloneFromNode.right;
+                Node nodeToRightOfFromNode = subqueryCloneFromNode.right;
                 subqueryCloneFromNode.right = subqueryCloneWhereNode;
-                subqueryCloneWhereNode.right = fromRightNode;
+                subqueryCloneWhereNode.right = nodeToRightOfFromNode;
             }
         }
 
