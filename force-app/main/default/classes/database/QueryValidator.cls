@@ -21,45 +21,19 @@ public with sharing class QueryValidator {
      * @throws QueryException : if the query is invalid
      */
     public void validate() {
-        Node selectNode = topLevelNodes.selectNode;
-        Node groupByNode = topLevelNodes.groupByNode;
-        Node orderByNode = topLevelNodes.orderByNode;
-        Node limitNode = topLevelNodes.limitNode;
-        Node offsetNode = topLevelNodes.offsetNode;
-        Node forUpdateNode = topLevelNodes.forUpdateNode;
-        Node havingNode = topLevelNodes.havingNode;
-        Node whereNode = topLevelNodes.whereNode;
+        validateTypeOf();
+        validateDuplicates();
+        validateCount();
+        validateLimit();
+        validateOffset();
+        validateForUpdate();
+    }
 
+    private void validateForUpdate() {
+        Node selectNode = topLevelNodes.selectNode;
+        Node forUpdateNode = topLevelNodes.forUpdateNode;
         Boolean isAggregateQuery = isAggregateQuery(selectNode);
         Boolean isCount = isSingularCount(selectNode);
-
-        if(isTypeOfQuery(selectNode) && groupByNode != null) {
-            throw new QueryException('TYPEOF not supported with GROUP BY');
-        }
-
-        if(isTypeOfInWhereClause(whereNode)) {
-            throw new QueryException('TYPEOF not supported in outer join');
-        }
-
-        if(hasDuplicateSubQueries(selectNode)) {
-            throw new QueryException('Cannot follow the same aggregate relationship twice');
-        }
-
-        if(hasDuplicateFields(selectNode)) {
-            throw new QueryException('Duplicate field selected');
-        }
-
-        if(isCount && orderByNode != null) {
-            throw new QueryException('COUNT() and ORDER BY may not be used together');
-        }
-
-        if(isAggregateQuery && groupByNode == null && limitNode != null) {
-            throw new QueryException('Non-grouped query that uses overall aggregate functions cannot also use LIMIT');
-        }
-
-        if(isAggregateQuery && groupByNode == null && offsetNode != null) {
-            throw new QueryException('Non-grouped query that uses overall aggregate functions cannot also use OFFSET');
-        }
 
         if(isAggregateQuery && forUpdateNode != null) {
             throw new QueryException('FOR UPDATE not allowed in this context');
@@ -67,6 +41,61 @@ public with sharing class QueryValidator {
 
         if(isCount && forUpdateNode != null) {
             throw new QueryException('FOR UPDATE not allowed in this context');
+        }
+    }
+
+    private void validateOffset() {
+        Node selectNode = topLevelNodes.selectNode;
+        Node groupByNode = topLevelNodes.groupByNode;
+        Node offsetNode = topLevelNodes.offsetNode;
+        Boolean isAggregateQuery = isAggregateQuery(selectNode);
+
+        if(isAggregateQuery && groupByNode == null && offsetNode != null) {
+            throw new QueryException('Non-grouped query that uses overall aggregate functions cannot also use OFFSET');
+        }
+    }
+
+    private void validateLimit() {
+        Node selectNode = topLevelNodes.selectNode;
+        Node groupByNode = topLevelNodes.groupByNode;
+        Node limitNode = topLevelNodes.limitNode;
+        Boolean isAggregateQuery = isAggregateQuery(selectNode);
+
+        if(isAggregateQuery && groupByNode == null && limitNode != null) {
+            throw new QueryException('Non-grouped query that uses overall aggregate functions cannot also use LIMIT');
+        }
+    }
+
+    private void validateCount() {
+        Node selectNode = topLevelNodes.selectNode;
+        Node orderByNode = topLevelNodes.orderByNode;
+        Boolean isCount = isSingularCount(selectNode);
+        if(isCount && orderByNode != null) {
+            throw new QueryException('COUNT() and ORDER BY may not be used together');
+        }
+    }
+
+    private void validateTypeOf() {
+        Node selectNode = topLevelNodes.selectNode;
+        Node groupByNode = topLevelNodes.groupByNode;
+        Node whereNode = topLevelNodes.whereNode;
+        if(isTypeOfQuery(selectNode) && groupByNode != null) {
+            throw new QueryException('TYPEOF not supported with GROUP BY');
+        }
+
+        if(isTypeOfInWhereClause(whereNode)) {
+            throw new QueryException('TYPEOF not supported in outer join');
+        }        
+    }
+
+    private void validateDuplicates() {
+        Node selectNode = topLevelNodes.selectNode;
+        if(hasDuplicateSubQueries(selectNode)) {
+            throw new QueryException('Cannot follow the same aggregate relationship twice');
+        }
+
+        if(hasDuplicateFields(selectNode)) {
+            throw new QueryException('Duplicate field selected');
         }
     }
 
