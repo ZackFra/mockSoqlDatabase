@@ -1,5 +1,6 @@
 /**
- * @description Validate the AST of a query
+ * @description Validate the AST of a query, this does not validate the query against the schema,
+ * but rather checks for invalid queries that are not supported by the SOQL parser
  */
 public with sharing class QueryValidator {
     /**
