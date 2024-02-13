@@ -333,6 +333,7 @@ public with sharing class MockDatabase {
         Boolean isChildSubQuery = (fieldNode.nodeType == 'subquery');
         Boolean isParentSubQuery = (fieldNode.id.contains('.'));
         
+        // Could use a strategy pattern here, but it's a bit overkill for now
         if(isTypeOf) {
             queriedRecord = handleTypeOfQuery(fSelector);
         } else if(isChildSubQuery) {
