@@ -206,7 +206,6 @@ public with sharing class MockDatabase {
         Node fieldNode = fSelector.fieldNode;
         Map<String, Object> params = fSelector.params;
 
-        String sObjApiName = SchemaService.getSObjectName(queriedRecord);
         String fieldName = fieldNode.id;
 
         List<String> fieldParts = fieldName.split('\\.');
