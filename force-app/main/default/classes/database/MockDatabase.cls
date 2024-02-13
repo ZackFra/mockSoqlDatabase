@@ -324,8 +324,6 @@ public with sharing class MockDatabase {
     private SObject handleSelectQuery(FieldSelector fSelector) {
         Node fieldNode = fSelector.fieldNode;
         SObject queriedRecord = fSelector.queriedRecord;
-        SObject databaseRecord = fSelector.databaseRecord;
-        Map<String, Object> params = fSelector.params;
 
         if(fieldNode == null) {
             return queriedrecord;
