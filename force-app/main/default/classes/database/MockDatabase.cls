@@ -535,9 +535,9 @@ public with sharing class MockDatabase {
         return this.topLevelNodes.get(selectNode);
     }
 
-    private Map<String, Object> handleAggregateQuery(
-        Node selectNode,
-        SObject obj, 
+    private List<Map<String, Object>> handleAggregateQuery(
+        SObject databaseRecord,
+        Node selectNode, 
         List<Map<String, Object>> aggregateResults
     ) {
         aggregateResults = new List<Map<String, Object>>(aggregateResults);
@@ -550,7 +550,7 @@ public with sharing class MockDatabase {
         for(Map<String, Object> ar : aggregateResults) {
             Boolean isSame = true;
             for(String groupByField : groupByFields) {
-                Map<String, Object> comparableInfo = this.utils.getComparables(obj, groupByField);
+                Map<String, Object> comparableInfo = this.utils.getComparables(databaseRecord, groupByField);
                 sObject comparableRecord = (sObject) comparableInfo.get('comparableRecord');
                 String comparableField = (String) comparableInfo.get('comparableField');
 
@@ -574,7 +574,7 @@ public with sharing class MockDatabase {
         if(aggregateResult == null) {
             aggregateResult = new Map<String, Object>();
             for(String groupByField : groupByFields) {
-                Map<String, Object> comparableInfo = this.utils.getComparables(obj, groupByField);
+                Map<String, Object> comparableInfo = this.utils.getComparables(databaseRecord, groupByField);
                 sObject comparableRecord = (sObject) comparableInfo.get('comparableRecord');
                 String comparableField = (String) comparableInfo.get('comparableField');
 
@@ -620,7 +620,7 @@ public with sharing class MockDatabase {
             Node aliasNode = fieldNode.left;
             String fieldName = fieldNode.id;
 
-            Map<String, Object> comparableInfo = this.utils.getComparables(obj, fieldName);
+            Map<String, Object> comparableInfo = this.utils.getComparables(databaseRecord, fieldName);
             sObject comparableRecord = (sObject) comparableInfo.get('comparableRecord');
             String comparableField = (String) comparableInfo.get('comparableField');
 
@@ -715,13 +715,7 @@ public with sharing class MockDatabase {
             }
             currSelect = currSelect.left;
         }
-
-        Map<String, Object> results = new Map<String, Object> {
-            'aggregateResults' => aggregateResults,
-            'aggregateResult' => aggregateResult
-        };
-
-        return results;
+        return aggregateResults;
     }
 
     private Map<String, Object> cleanUpAggregateResult(
@@ -1278,12 +1272,7 @@ public with sharing class MockDatabase {
                 continue;
             }
 
-            Map<String, Object> aggrResultValues = handleAggregateQuery(
-                selectNode, 
-                databaseRecord, 
-                aggregateResults
-            );
-            aggregateResults = (List<Map<String, Object>>) aggrResultValues.get('aggregateResults');
+            aggregateResults = handleAggregateQuery(databaseRecord, selectNode, aggregateResults);
         }
 
         // handle the ORDER BY and LIMIT logic here
