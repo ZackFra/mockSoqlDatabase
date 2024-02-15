@@ -2506,4 +2506,206 @@ private with sharing class LexerTest {
         Assert.isNull(scopeNode.right, 'Expected right to be null');
 
     }
+
+    @IsTest
+    private static void testGroupByRollup() {
+        Test.startTest();
+        Lexer t = new Lexer();
+        Node head = t.parse('SELECT Name, COUNT(Id) FROM Account GROUP BY ROLLUP(Name)');
+        Test.stopTest();
+
+        Assert.areEqual('select', head.id, 'Expected id to be "select"');
+        Assert.areEqual('select', head.nodeType, 'Expected nodeType to be "select"');
+        Assert.isNotNull(head.left, 'Expected left to not be null');
+        Assert.isNotNull(head.right, 'Expected right to not be null');
+
+        Node nameNode = head.left;
+        Assert.areEqual('name', nameNode.id, 'Expected id to be "name"');
+        Assert.areEqual('field', nameNode.nodeType, 'Expected nodeType to be "field"');
+        Assert.isNotNull(nameNode.left, 'Expected left to be null');
+        Assert.isNull(nameNode.right, 'Expected right to be null');
+
+        Node countNode = nameNode.left;
+        Assert.areEqual('count', countNode.id, 'Expected id to be "count"');
+        Assert.areEqual('aggregate function', countNode.nodeType, 'Expected nodeType to be "aggregate function"');
+        Assert.isNull(countNode.left, 'Expected left to be null');
+        Assert.isNotNull(countNode.right, 'Expected right to not be null');
+
+        Node idNode = countNode.right;
+        Assert.areEqual('id', idNode.id, 'Expected id to be "id"');
+        Assert.areEqual('field', idNode.nodeType, 'Expected nodeType to be "field"');
+        Assert.isNull(idNode.left, 'Expected left to be null');
+        Assert.isNull(idNode.right, 'Expected right to be null');
+
+        Node fromNode = head.right;
+        Assert.areEqual('from', fromNode.id, 'Expected id to be "from"');
+        Assert.areEqual('from', fromNode.nodeType, 'Expected nodeType to be "from"');
+        Assert.isNotNull(fromNode.left, 'Expected left to not be null');
+        Assert.isNotNull(fromNode.right, 'Expected right to not be null');
+
+        Node accountNode = fromNode.left;
+        Assert.areEqual('account', accountNode.id, 'Expected id to be "account"');
+        Assert.areEqual('object', accountNode.nodeType, 'Expected nodeType to be "object"');
+        Assert.isNull(accountNode.left, 'Expected left to be null');
+        Assert.isNull(accountNode.right, 'Expected right to be null');
+
+        Node groupByNode = fromNode.right;
+        Assert.areEqual('rollup', groupByNode.id, 'Expected id to be "group by"');
+        Assert.areEqual('group by', groupByNode.nodeType, 'Expected nodeType to be "group by"');
+        Assert.isNotNull(groupByNode.left, 'Expected left to not be null');
+        Assert.isNull(groupByNode.right, 'Expected right to be null');
+
+        Node nameNode2 = groupByNode.left;
+        Assert.areEqual('name', nameNode2.id, 'Expected id to be "name"');
+        Assert.areEqual('field', nameNode2.nodeType, 'Expected nodeType to be "field"');
+        Assert.isNull(nameNode2.left, 'Expected left to be null');
+        Assert.isNull(nameNode2.right, 'Expected right to be null');
+    }
+
+    @IsTest
+    private static void testGroupByRollupTwoFields() {
+        Test.startTest();
+        Lexer t = new Lexer();
+        Node head = t.parse('SELECT Name, COUNT(Id) FROM Account GROUP BY ROLLUP(Name, CreatedDate)');
+        Test.stopTest();
+
+        Assert.areEqual('select', head.id, 'Expected id to be "select"');
+        Assert.areEqual('select', head.nodeType, 'Expected nodeType to be "select"');
+        Assert.isNotNull(head.left, 'Expected left to not be null');
+        Assert.isNotNull(head.right, 'Expected right to not be null');
+
+        Node nameNode = head.left;
+        Assert.areEqual('name', nameNode.id, 'Expected id to be "name"');
+        Assert.areEqual('field', nameNode.nodeType, 'Expected nodeType to be "field"');
+        Assert.isNotNull(nameNode.left, 'Expected left to be null');
+        Assert.isNull(nameNode.right, 'Expected right to be null');
+
+        Node countNode = nameNode.left;
+        Assert.areEqual('count', countNode.id, 'Expected id to be "count"');
+        Assert.areEqual('aggregate function', countNode.nodeType, 'Expected nodeType to be "aggregate function"');
+        Assert.isNull(countNode.left, 'Expected left to be null');
+        Assert.isNotNull(countNode.right, 'Expected right to not be null');
+
+        Node idNode = countNode.right;
+        Assert.areEqual('id', idNode.id, 'Expected id to be "id"');
+        Assert.areEqual('field', idNode.nodeType, 'Expected nodeType to be "field"');
+        Assert.isNull(idNode.left, 'Expected left to be null');
+        Assert.isNull(idNode.right, 'Expected right to be null');
+
+        Node fromNode = head.right;
+        Assert.areEqual('from', fromNode.id, 'Expected id to be "from"');
+        Assert.areEqual('from', fromNode.nodeType, 'Expected nodeType to be "from"');
+        Assert.isNotNull(fromNode.left, 'Expected left to not be null');
+        Assert.isNotNull(fromNode.right, 'Expected right to not be null');
+
+        Node accountNode = fromNode.left;
+        Assert.areEqual('account', accountNode.id, 'Expected id to be "account"');
+        Assert.areEqual('object', accountNode.nodeType, 'Expected nodeType to be "object"');
+        Assert.isNull(accountNode.left, 'Expected left to be null');
+        Assert.isNull(accountNode.right, 'Expected right to be null');
+
+        Node groupByNode = fromNode.right;
+        Assert.areEqual('rollup', groupByNode.id, 'Expected id to be "group by"');
+        Assert.areEqual('group by', groupByNode.nodeType, 'Expected nodeType to be "group by"');
+        Assert.isNotNull(groupByNode.left, 'Expected left to not be null');
+        Assert.isNull(groupByNode.right, 'Expected right to be null');
+
+        Node nameNode2 = groupByNode.left;
+        Assert.areEqual('name', nameNode2.id, 'Expected id to be "name"');
+        Assert.areEqual('field', nameNode2.nodeType, 'Expected nodeType to be "field"');
+        Assert.isNotNull(nameNode2.left, 'Expected left to be null');
+        Assert.isNull(nameNode2.right, 'Expected right to not be null');
+
+        Node createdDateNode = nameNode2.left;
+        Assert.areEqual('createddate', createdDateNode.id, 'Expected id to be "createddate"');
+        Assert.areEqual('field', createdDateNode.nodeType, 'Expected nodeType to be "field"');
+        Assert.isNull(createdDateNode.left, 'Expected left to be null');
+        Assert.isNull(createdDateNode.right, 'Expected right to be null');
+    }
+
+    @IsTest
+    private static void testGroupByRollupThreeFields() {
+        Test.startTest();
+        Lexer t = new Lexer();
+        Node head = t.parse('SELECT Name, COUNT(Id) FROM Account GROUP BY ROLLUP(Name, CreatedDate, LastModifiedDate)');
+        Test.stopTest();
+
+        Assert.areEqual('select', head.id, 'Expected id to be "select"');
+        Assert.areEqual('select', head.nodeType, 'Expected nodeType to be "select"');
+        Assert.isNotNull(head.left, 'Expected left to not be null');
+        Assert.isNotNull(head.right, 'Expected right to not be null');
+
+        Node nameNode = head.left;
+        Assert.areEqual('name', nameNode.id, 'Expected id to be "name"');
+        Assert.areEqual('field', nameNode.nodeType, 'Expected nodeType to be "field"');
+        Assert.isNotNull(nameNode.left, 'Expected left to not be null');
+        Assert.isNull(nameNode.right, 'Expected right to be null');
+
+        Node countNode = nameNode.left;
+        Assert.areEqual('count', countNode.id, 'Expected id to be "count"');
+        Assert.areEqual('aggregate function', countNode.nodeType, 'Expected nodeType to be "aggregate function"');
+        Assert.isNull(countNode.left, 'Expected left to be null');
+        Assert.isNotNull(countNode.right, 'Expected right to not be null');
+
+        Node idNode = countNode.right;
+        Assert.areEqual('id', idNode.id, 'Expected id to be "id"');
+        Assert.areEqual('field', idNode.nodeType, 'Expected nodeType to be "field"');
+        Assert.isNull(idNode.left, 'Expected left to be null');
+        Assert.isNull(idNode.right, 'Expected right to be null');
+
+        Node fromNode = head.right;
+        Assert.areEqual('from', fromNode.id, 'Expected id to be "from"');
+        Assert.areEqual('from', fromNode.nodeType, 'Expected nodeType to be "from"');
+        Assert.isNotNull(fromNode.left, 'Expected left to not be null');
+        Assert.isNotNull(fromNode.right, 'Expected right to not be null');
+
+        Node accountNode = fromNode.left;
+        Assert.areEqual('account', accountNode.id, 'Expected id to be "account"');
+        Assert.areEqual('object', accountNode.nodeType, 'Expected nodeType to be "object"');
+        Assert.isNull(accountNode.left, 'Expected left to be null');
+
+        Node groupByNode = fromNode.right;
+        Assert.areEqual('rollup', groupByNode.id, 'Expected id to be "group by"');
+        Assert.areEqual('group by', groupByNode.nodeType, 'Expected nodeType to be "group by"');
+        Assert.isNotNull(groupByNode.left, 'Expected left to not be null');
+        Assert.isNull(groupByNode.right, 'Expected right to be null');
+
+        Node nameNode2 = groupByNode.left;
+        Assert.areEqual('name', nameNode2.id, 'Expected id to be "name"');
+        Assert.areEqual('field', nameNode2.nodeType, 'Expected nodeType to be "field"');
+        Assert.isNotNull(nameNode2.left, 'Expected left to not be null');
+        Assert.isNull(nameNode2.right, 'Expected right to be null');
+
+        Node createdDateNode = nameNode2.left;
+        Assert.areEqual('createddate', createdDateNode.id, 'Expected id to be "createddate"');
+        Assert.areEqual('field', createdDateNode.nodeType, 'Expected nodeType to be "field"');
+        Assert.isNotNull(createdDateNode.left, 'Expected left to not be null');
+        Assert.isNull(createdDateNode.right, 'Expected right to be null');
+
+        Node lastModifiedDateNode = createdDateNode.left;
+        Assert.areEqual('lastmodifieddate', lastModifiedDateNode.id, 'Expected id to be "lastmodifieddate"');
+        Assert.areEqual('field', lastModifiedDateNode.nodeType, 'Expected nodeType to be "field"');
+        Assert.isNull(lastModifiedDateNode.left, 'Expected left to be null');
+        Assert.isNull(lastModifiedDateNode.right, 'Expected right to be null');
+    }
+
+    @IsTest
+    private static void testGroupByRollupFourFields() {
+
+        String exMessage;
+        Test.startTest();
+        Lexer t = new Lexer();
+        try {
+            t.parse('SELECT Name, COUNT(Id) FROM Account GROUP BY ROLLUP(Name, CreatedDate, LastModifiedDate, LastActivityDate)');
+        } catch(Exception e) {
+            exMessage = e.getMessage();
+        }
+        Test.stopTest();
+
+        Assert.isTrue(
+            exMessage != null &&
+            exMessage.contains('Group By with ROLLUP or CUBE must contain 3 fields or less'),
+            'Expected exception to be thrown'
+        );
+    }
 }

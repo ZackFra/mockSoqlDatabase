@@ -2845,4 +2845,120 @@ private with sharing class MockDatabaseTest {
         Assert.areEqual('Contact', queriedTasks[0].What.Type, 'Incorrect Type');
         Assert.areEqual('Account', queriedTasks[1].What.Type, 'Incorrect Type');
     }
+
+    @IsTest
+    private static void testGroupByRollupCount() {
+        MockDatabase mockDb = new MockDatabase();
+        Account a = new Account(Name = 'Test1', NumberOfEmployees = 5, AnnualRevenue = 1000);
+        Account c = new Account(Name = 'Test3', NumberOfEmployees = 5, AnnualRevenue = 3000);
+        Account e = new Account(Name = 'Test5', NumberOfEmployees = 5, AnnualRevenue = 5000);
+        Account i = new Account(Name = 'Test9', NumberOfEmployees = 5, AnnualRevenue = 9000);
+        Account l = new Account(Name = 'Test12', NumberOfEmployees = 5, AnnualRevenue = 12000);
+        Account m = new Account(Name = 'Test13', NumberOfEmployees = 5, AnnualRevenue = 13000);
+        Account n = new Account(Name = 'Test14', NumberOfEmployees = 5, AnnualRevenue = 14000);
+        Account o = new Account(Name = 'Test15', NumberOfEmployees = 5, AnnualRevenue = 15000);
+
+        Account b = new Account(Name = 'Test2', NumberOfEmployees = 10, AnnualRevenue = 2000);
+        Account f = new Account(Name = 'Test6', NumberOfEmployees = 10, AnnualRevenue = 6000);
+        Account h = new Account(Name = 'Test8', NumberOfEmployees = 10, AnnualRevenue = 8000);
+        Account j = new Account(Name = 'Test10', NumberOfEmployees = 10, AnnualRevenue = 10000);
+        Account k = new Account(Name = 'Test11', NumberOfEmployees = 10, AnnualRevenue = 11000);
+
+        Account g = new Account(Name = 'Test7', NumberOfEmployees = 15, AnnualRevenue = 7000);
+
+        Account d = new Account(Name = 'Test4', NumberOfEmployees = 20, AnnualRevenue = 4000);
+        
+    
+        List<Account> acctList = new List<Account>{a, b, c, d, e, f, g, h, i, j, k, l, m, n, o};
+        mockDb.doInsert(acctList);
+
+        Test.startTest();
+        List<Aggregate> queriedAccts = (List<Aggregate>) mockDb.query('SELECT NumberOfEmployees, COUNT(Id) FROM Account GROUP BY ROLLUP(NumberOfEmployees)');
+        Test.stopTest();
+
+        Assert.areEqual(5, queriedAccts.size(), 'Incorrect number of aggregates');
+        Assert.areEqual(15, queriedAccts[4].get('expr0'), 'Incorrect count');
+
+        for(Aggregate aggr: queriedAccts) {
+            System.debug(aggr);
+        }
+    }
+
+    @IsTest
+    private static void testGroupByRollupCountTwoFields() {
+        MockDatabase mockDb = new MockDatabase();
+        Account a = new Account(Name = 'Test1', NumberOfEmployees = 5, AnnualRevenue = 3000);
+        Account c = new Account(Name = 'Test3', NumberOfEmployees = 5, AnnualRevenue = 3000);
+        Account e = new Account(Name = 'Test5', NumberOfEmployees = 5, AnnualRevenue = 3000);
+        Account i = new Account(Name = 'Test9', NumberOfEmployees = 5, AnnualRevenue = 3000);
+        Account l = new Account(Name = 'Test12', NumberOfEmployees = 5, AnnualRevenue = 3000);
+        Account m = new Account(Name = 'Test13', NumberOfEmployees = 5, AnnualRevenue = 3000);
+        Account n = new Account(Name = 'Test14', NumberOfEmployees = 5, AnnualRevenue = 3000);
+
+        Account o = new Account(Name = 'Test15', NumberOfEmployees = 5, AnnualRevenue = 4000);
+
+        Account b = new Account(Name = 'Test2', NumberOfEmployees = 10, AnnualRevenue = 2000);
+        Account f = new Account(Name = 'Test6', NumberOfEmployees = 10, AnnualRevenue = 2000);
+        Account h = new Account(Name = 'Test8', NumberOfEmployees = 10, AnnualRevenue = 2000);
+        Account j = new Account(Name = 'Test10', NumberOfEmployees = 10, AnnualRevenue = 2000);
+
+        Account k = new Account(Name = 'Test11', NumberOfEmployees = 10, AnnualRevenue = 3000);
+
+        Account g = new Account(Name = 'Test7', NumberOfEmployees = 15, AnnualRevenue = 7000);
+
+        Account d = new Account(Name = 'Test4', NumberOfEmployees = 20, AnnualRevenue = 4000);
+        
+    
+        List<Account> acctList = new List<Account>{a, b, c, d, e, f, g, h, i, j, k, l, m, n, o};
+        mockDb.doInsert(acctList);
+
+        Test.startTest();
+        List<Aggregate> queriedAccts = (List<Aggregate>) mockDb.query('SELECT NumberOfEmployees, AnnualRevenue, COUNT(Id) FROM Account GROUP BY ROLLUP(NumberOfEmployees, AnnualRevenue)');
+        Test.stopTest();
+        for(Aggregate aggr: queriedAccts) {
+            System.debug(aggr);
+        }
+
+        Assert.areEqual(11, queriedAccts.size(), 'Incorrect number of aggregates');
+        Assert.areEqual(15, queriedAccts[10].get('expr0'), 'Incorrect count');
+    }
+
+    @IsTest
+    private static void testGroupByRollupCountThreeFields() {
+        MockDatabase mockDb = new MockDatabase();
+        Account a = new Account(Name = 'Test1', NumberOfEmployees = 5, AnnualRevenue = 3000);
+        Account c = new Account(Name = 'Test3', NumberOfEmployees = 5, AnnualRevenue = 3000);
+        Account e = new Account(Name = 'Test5', NumberOfEmployees = 5, AnnualRevenue = 3000);
+        Account i = new Account(Name = 'Test9', NumberOfEmployees = 5, AnnualRevenue = 3000);
+        Account l = new Account(Name = 'Test12', NumberOfEmployees = 5, AnnualRevenue = 3000);
+        Account m = new Account(Name = 'Test13', NumberOfEmployees = 5, AnnualRevenue = 3000);
+        Account n = new Account(Name = 'Test14', NumberOfEmployees = 5, AnnualRevenue = 3000);
+
+        Account o = new Account(Name = 'Test15', NumberOfEmployees = 5, AnnualRevenue = 4000);
+
+        Account b = new Account(Name = 'Test2', NumberOfEmployees = 10, AnnualRevenue = 2000);
+        Account f = new Account(Name = 'Test6', NumberOfEmployees = 10, AnnualRevenue = 2000);
+        Account h = new Account(Name = 'Test8', NumberOfEmployees = 10, AnnualRevenue = 2000);
+        Account j = new Account(Name = 'Test10', NumberOfEmployees = 10, AnnualRevenue = 2000);
+
+        Account k = new Account(Name = 'Test11', NumberOfEmployees = 10, AnnualRevenue = 3000);
+
+        Account g = new Account(Name = 'Test7', NumberOfEmployees = 15, AnnualRevenue = 7000);
+
+        Account d = new Account(Name = 'Test4', NumberOfEmployees = 20, AnnualRevenue = 4000);
+        
+    
+        List<Account> acctList = new List<Account>{a, b, c, d, e, f, g, h, i, j, k, l, m, n, o};
+        mockDb.doInsert(acctList);
+
+        Test.startTest();
+        List<Aggregate> queriedAccts = (List<Aggregate>) mockDb.query('SELECT NumberOfEmployees, AnnualRevenue, Name, COUNT(Id) FROM Account GROUP BY ROLLUP(NumberOfEmployees, AnnualRevenue, Name)');
+        Test.stopTest();
+        for(Aggregate aggr: queriedAccts) {
+            System.debug(aggr);
+        }
+
+        Assert.areEqual(26, queriedAccts.size(), 'Incorrect number of aggregates');
+        Assert.areEqual(15, queriedAccts[25].get('expr0'), 'Incorrect count');        
+    }
 }

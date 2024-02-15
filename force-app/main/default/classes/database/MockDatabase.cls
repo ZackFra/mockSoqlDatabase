@@ -535,6 +535,143 @@ public with sharing class MockDatabase {
         return this.topLevelNodes.get(selectNode);
     }
 
+    // I'ma be shook if this works
+    private List<Map<String, Object>> handleGroupByRollup(List<Map<String, Object>> aggregates, Node selectNode) {
+        TopLevelNodes topLevelNodes = getTopLevelNodes(selectNode);
+        Node groupByNode = topLevelNodes.groupByNode;
+        Boolean isRollup = (
+            groupByNode != null &&  
+            groupByNode.id == 'rollup'
+        );
+        if(!isRollup) {
+            return aggregates;
+        }
+
+        List<String> fields = new List<String>();
+        // for now assume that the rollup is only one level deep
+        Node rollupNode = groupByNode.left;
+        while(rollupNode != null) {
+            fields.add(
+                getAlias(selectNode, rollupNode).get('fieldApiName')
+            );
+            rollupNode = rollupNode.left;
+        }
+
+        List<Map<String, Object>> summaryList = new List<Map<String, Object>>();
+        for(Integer i = 0; i < fields.size(); i++) {
+
+            String field1 = null;
+            if(i > 0) {
+                field1 = fields[0];
+            }
+            String field2 = null;
+            if(i > 1) {
+                field2 = fields[1];
+            }
+
+            List<Map<String, Object>> rollupAggregates = calculateRollup(selectNode, aggregates, field1, field2);
+            for(Map<String, Object> ra : rollupAggregates) {
+                for(String key : aggregates[0].keySet()) {
+                    if(!ra.containsKey(key)) {
+                        ra.put(key, null);
+                    }
+                }
+            }
+            summaryList.addAll(rollupAggregates);
+            rollupAggregates.clear();
+        }
+        aggregates.addAll(summaryList);
+
+        Map<String, Map<String, String>> fieldsSortData = new Map<String, Map<String, String>>();
+        for(Node currNode = groupByNode.left; currNode != null; currNode = currNode.left) {
+            Map<String, String> aliasData = getAlias(selectNode, currNode);
+            Map<String, String> fieldData = new Map<String, String> {
+                'fieldApiName' => aliasData.get('fieldApiName'),
+                'relationshipName' => aliasData.get('relationshipName'),
+                'order' => 'asc',
+                'nullDir' => 'last'
+            };
+            fieldsSortData.put(aliasData.get('fieldApiName'), fieldData);
+        }
+        AggregateComparator comparator = new AggregateComparator(fieldsSortData);
+        aggregates.sort(comparator);
+
+        // TODO: sort, see sortByOrderBy
+        return aggregates;
+    }
+
+    // no PMD because this is a big boi
+    private List<Map<String, Object>> calculateRollup( // NOPMD
+        Node selectNode, 
+        List<Map<String, Object>> rollupAggregates, 
+        String field1,
+        String field2
+    ) {
+        Node fieldNode = selectNode.left;
+        List<Map<String, Object>> aggregateResults = new List<Map<String, Object>>();
+
+        for(Node currField = fieldNode; currField != null; currField = currField.left) {
+            Boolean isAggregateFunc = (currField.nodeType == 'aggregate function');
+            Boolean isAggrSum = (isAggregateFunc && currField.id == 'sum');
+            Boolean isAggrCount = (isAggregateFunc && currField.id == 'count');
+            Boolean isAggrMax = (isAggregateFunc && currField.id == 'max');
+            Boolean isAggrMin = (isAggregateFunc && currField.id == 'min');
+            Boolean isAggrAvg = (isAggregateFunc && currField.id == 'avg');
+            Boolean isAggrCountDistinct = (isAggregateFunc && currField.id == 'count_distinct');
+
+            if(!isAggregateFunc) {
+                continue;
+            }
+            String alias = getAlias(selectNode, currField).get('fieldApiName');
+            for(Map<String, Object> currAggr : rollupAggregates) {
+                Map<String, Object> aggr = null;
+
+                // find the aggregate result that matches the current rollup aggregate
+                for(Map<String, Object> ar : aggregateResults) {
+                    // if field == null, there's only the grand total in the list
+                    if(field1 == null) {
+                        aggr = ar;
+                        break;
+                    } else if(ar.get(field1) == currAggr.get(field1) && field2 == null) {
+                        aggr = ar;
+                        break;
+                    } else if(ar.get(field1) == currAggr.get(field1) && ar.get(field2) == currAggr.get(field2)) {
+                        aggr = ar;
+                        break;
+                    }
+                }
+
+                // if the aggregate result doesn't exist, create it
+                if(aggr == null) {
+                    aggr = new Map<String, Object>();
+                    if(field1 != null) {
+                        aggr.put(field1, currAggr.get(field1));
+                    }
+                    if(field2 != null) {
+                        aggr.put(field2, currAggr.get(field2));
+                    }
+                    aggregateResults.add(aggr);
+                }
+
+                // calculate the aggregate
+                if(isAggrCount) {
+                    Integer count = (Integer) aggr.get(alias);
+                    if(count == null) {
+                        count = 0;
+                    }
+
+                    if(currAggr.get(alias) != null) {
+                        count += (Integer) currAggr.get(alias);
+                    }
+                    
+
+                    aggr.put(alias, count);
+                }
+            }
+        }
+        return aggregateResults;
+    }
+
     private List<Map<String, Object>> handleAggregateQuery(
         SObject databaseRecord,
         Node selectNode, 
@@ -610,7 +747,7 @@ public with sharing class MockDatabase {
             Boolean isAggrAvg = (isAggregateFunc && currSelect.id == 'avg');
             Boolean isAggrCountDistinct = (isAggregateFunc && currSelect.id == 'count_distinct');
 
-            if(currSelect.nodeType == 'field') {
+            if(!isAggregateFunc) {
                 currSelect = currSelect.left;
                 continue;
             }
@@ -1278,6 +1415,7 @@ public with sharing class MockDatabase {
 
         // handle the ORDER BY and LIMIT logic here
         if(isAggregateQuery) {
+            aggregateResults = (List<Map<String, Object>>) handleGroupByRollup(aggregateResults, selectNode);
             aggregateResults = (List<Map<String, Object>>) handleHavingNode(aggregateResults, selectNode, params);
             aggregateResults = (List<Map<String, Object>>) handleOrderByNode('aggregate', aggregateResults, selectNode, orderByNode);
             aggregateResults = (List<Map<String, Object>>) handleOffsetNode('aggregate', offsetNode, aggregateResults, params);

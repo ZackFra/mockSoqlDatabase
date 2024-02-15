@@ -1,13 +1,5 @@
-/**System.debug([
-    SELECT Id, Description, DeveloperName, EnforcementType, 
-    FullName, IsActive, Language, MasterLabel, Metadata, RecordFilter,
-    TargetEntity, UserCriteria, Version
-    FROM RestrictionRule
-]);**/
-
-FormulaEval.FormulaInstance isItSuper = FormulaEval.FormulaBuilder.builder()
-                            .withReturnType(FormulaEval.FormulaReturnType.Boolean)
-                            .withType(Account.class)
-                            .withFormula('OwnerId=$User.Id"')
-                            .build();
-isItSuper.evaluate(aBoat); //=> "Not Super"
+for(AggregateResult ar : [SELECT Opportunity.Name, Opportunity.Account.Name acctName, Opportunity.StageName, SUM(Opportunity.Amount)
+    FROM OpportunityLineItem
+    GROUP BY ROLLUP(Opportunity.Name, Opportunity.Account.Name, Opportunity.StageName)]) {
+        System.debug(ar);
+}
