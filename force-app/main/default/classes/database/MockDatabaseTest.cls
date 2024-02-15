@@ -2878,10 +2878,6 @@ private with sharing class MockDatabaseTest {
 
         Assert.areEqual(5, queriedAccts.size(), 'Incorrect number of aggregates');
         Assert.areEqual(15, queriedAccts[4].get('expr0'), 'Incorrect count');
-
-        for(Aggregate aggr: queriedAccts) {
-            System.debug(aggr);
-        }
     }
 
     @IsTest
@@ -2915,9 +2911,6 @@ private with sharing class MockDatabaseTest {
         Test.startTest();
         List<Aggregate> queriedAccts = (List<Aggregate>) mockDb.query('SELECT NumberOfEmployees, AnnualRevenue, COUNT(Id) FROM Account GROUP BY ROLLUP(NumberOfEmployees, AnnualRevenue)');
         Test.stopTest();
-        for(Aggregate aggr: queriedAccts) {
-            System.debug(aggr);
-        }
 
         Assert.areEqual(11, queriedAccts.size(), 'Incorrect number of aggregates');
         Assert.areEqual(15, queriedAccts[10].get('expr0'), 'Incorrect count');
@@ -2954,9 +2947,6 @@ private with sharing class MockDatabaseTest {
         Test.startTest();
         List<Aggregate> queriedAccts = (List<Aggregate>) mockDb.query('SELECT NumberOfEmployees, AnnualRevenue, Name, COUNT(Id) FROM Account GROUP BY ROLLUP(NumberOfEmployees, AnnualRevenue, Name)');
         Test.stopTest();
-        for(Aggregate aggr: queriedAccts) {
-            System.debug(aggr);
-        }
 
         Assert.areEqual(26, queriedAccts.size(), 'Incorrect number of aggregates');
         Assert.areEqual(15, queriedAccts[25].get('expr0'), 'Incorrect count');        
