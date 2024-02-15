@@ -582,6 +582,7 @@ public with sharing class MockDatabase {
         }
         aggregates.addAll(summaryList);
 
+        // should probably rename get alias, it does a bit more than just getting the alias
         Map<String, Map<String, String>> fieldsSortData = new Map<String, Map<String, String>>();
         for(Node currNode = groupByNode.left; currNode != null; currNode = currNode.left) {
             Map<String, String> aliasData = getAlias(selectNode, currNode);
