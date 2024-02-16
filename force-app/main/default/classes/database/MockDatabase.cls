@@ -535,6 +535,64 @@ public with sharing class MockDatabase {
         return this.topLevelNodes.get(selectNode);
     }
 
+    /** scary function, needs refactor */
+    private Map<String, String> getRollupFieldOrAlias(Node selectNode, Node rollupNode) {
+        String fieldApiName;
+        String relationshipName;
+        Map<String, Object> aliasData;
+
+        for(Node currSelect = selectNode.left; currSelect != null; currSelect = currSelect.left) {
+            if(currSelect.id == rollupNode.id) {
+                try {
+                    aliasData = getAlias(selectNode, currSelect);
+                    fieldApiName = (String) aliasData.get('fieldApiName');
+                    relationshipName = (String) aliasData.get('relationshipName');
+                    break;
+                } catch(QueryException ex) {
+                    aliasData = this.utils.getComparableDataFromNodes(currSelect, selectNode);
+                    fieldApiName = (String) aliasData.get('comparableField');
+                    relationshipName = (String) aliasData.get('relationshipName');
+                    break;
+                } catch(Exception ex) {
+                    throw new QueryException('Invalid field or relationship name');
+                }
+            }
+        }
+
+        if(fieldApiName == null) {
+            aliasData = this.utils.getComparableDataFromNodes(rollupNode, selectNode);
+            fieldApiName = (String) aliasData.get('comparableField');
+            relationshipName = (String) aliasData.get('relationshipName');
+            if(fieldApiName == null) {
+                throw new QueryException('Invalid field or relationship name');
+            }
+        }
+
+        return new Map<String, String> {
+            'fieldOrAlias' => fieldApiName,
+            'relationshipName' => relationshipName
+        };
+    }
+
+    private List<Map<String, Object>> replaceWithAliases(Node selectNode, List<Map<String, Object>> aggregates) {
+        List<Map<String, Object>> aggregateResults = new List<Map<String, Object>>(aggregates);
+        
+        for(Map<String, Object> aggr : aggregateResults) {
+            for(Node currSelect = selectNode.left; currSelect != null; currSelect = currSelect.left) {
+                String fieldOrAliasFromSelect = getAlias(selectNode, currSelect).get('fieldApiName');
+                for(String key : aggr.keySet()) {
+                    if(key.toLowerCase() == currSelect.id && key != fieldOrAliasFromSelect) {
+                        aggr.put(fieldOrAliasFromSelect, aggr.get(key));
+                        aggr.remove(key);
+                        break;
+                    }
+                }
+            }
+        }
+
+        return aggregateResults;
+    }
+
     // I'ma be shook if this works
     private List<Map<String, Object>> handleGroupByRollup(List<Map<String, Object>> aggregates, Node selectNode) {
         TopLevelNodes topLevelNodes = getTopLevelNodes(selectNode);
@@ -548,13 +606,13 @@ public with sharing class MockDatabase {
         }
 
         List<String> fields = new List<String>();
-        // for now assume that the rollup is only one level deep
-        Node rollupNode = groupByNode.left;
-        while(rollupNode != null) {
+
+        for(Node rollupNode = groupByNode.left; rollupNode != null; rollupNode = rollupNode.left) {
+            Map<String, String> rollupFieldOrAlias = getRollupFieldOrAlias(selectNode, rollupNode);
+            String fieldOrAlias = rollupFieldOrAlias.get('fieldOrAlias');
             fields.add(
-                getAlias(selectNode, rollupNode).get('fieldApiName')
+                fieldOrAlias
             );
-            rollupNode = rollupNode.left;
         }
 
         List<Map<String, Object>> summaryList = new List<Map<String, Object>>();
@@ -585,19 +643,22 @@ public with sharing class MockDatabase {
         // should probably rename get alias, it does a bit more than just getting the alias
         Map<String, Map<String, String>> fieldsSortData = new Map<String, Map<String, String>>();
         for(Node currNode = groupByNode.left; currNode != null; currNode = currNode.left) {
-            Map<String, String> aliasData = getAlias(selectNode, currNode);
+            Map<String, String> rollupFieldOrAlias = getRollupFieldOrAlias(selectNode, currNode);
+            String fieldOrAlias = rollupFieldOrAlias.get('fieldOrAlias');
+            String relationshipName = rollupFieldOrAlias.get('relationshipName');
+        
             Map<String, String> fieldData = new Map<String, String> {
-                'fieldApiName' => aliasData.get('fieldApiName'),
-                'relationshipName' => aliasData.get('relationshipName'),
+                'fieldApiName' => fieldOrAlias,
+                'relationshipName' => relationshipName,
                 'order' => 'asc',
                 'nullDir' => 'last'
             };
-            fieldsSortData.put(aliasData.get('fieldApiName'), fieldData);
+            fieldsSortData.put(fieldOrAlias, fieldData);
         }
+
         AggregateComparator comparator = new AggregateComparator(fieldsSortData);
         aggregates.sort(comparator);
 
-        // TODO: sort, see sortByOrderBy
         return aggregates;
     }
 
@@ -611,19 +672,19 @@ public with sharing class MockDatabase {
         Node fieldNode = selectNode.left;
         List<Map<String, Object>> aggregateResults = new List<Map<String, Object>>();
 
-        for(Node currField = fieldNode; currField != null; currField = currField.left) {
-            Boolean isAggregateFunc = (currField.nodeType == 'aggregate function');
-            Boolean isAggrSum = (isAggregateFunc && currField.id == 'sum');
-            Boolean isAggrCount = (isAggregateFunc && currField.id == 'count');
-            Boolean isAggrMax = (isAggregateFunc && currField.id == 'max');
-            Boolean isAggrMin = (isAggregateFunc && currField.id == 'min');
-            Boolean isAggrAvg = (isAggregateFunc && currField.id == 'avg');
-            Boolean isAggrCountDistinct = (isAggregateFunc && currField.id == 'count_distinct');
+        for(Node currSelect = selectNode.left; currSelect != null; currSelect = currSelect.left) {
+            Boolean isAggregateFunc = (currSelect.nodeType == 'aggregate function');
+            Boolean isAggrSum = (isAggregateFunc && currSelect.id == 'sum');
+            Boolean isAggrCount = (isAggregateFunc && currSelect.id == 'count');
+            Boolean isAggrMax = (isAggregateFunc && currSelect.id == 'max');
+            Boolean isAggrMin = (isAggregateFunc && currSelect.id == 'min');
+            Boolean isAggrAvg = (isAggregateFunc && currSelect.id == 'avg');
+            Boolean isAggrCountDistinct = (isAggregateFunc && currSelect.id == 'count_distinct');
 
             if(!isAggregateFunc) {
                 continue;
             }
-            String alias = getAlias(selectNode, currField).get('fieldApiName');
+            String alias = getAlias(selectNode, currSelect).get('fieldApiName');
             for(Map<String, Object> currAggr : rollupAggregates) {
                 Map<String, Object> aggr = null;
 
@@ -654,7 +715,7 @@ public with sharing class MockDatabase {
                     aggregateResults.add(aggr);
                 }
 
-                // calculate the aggregate
+                // count's a little diff. the original calc just added 1, but we need to add the count of the rollup aggregate
                 if(isAggrCount) {
                     Integer count = (Integer) aggr.get(alias);
                     if(count == null) {
@@ -665,12 +726,109 @@ public with sharing class MockDatabase {
                         count += (Integer) currAggr.get(alias);
                     }
                     
-
                     aggr.put(alias, count);
+                } else {
+                    calculateAggregate(
+                        currSelect, 
+                        alias, 
+                        aggr,
+                        currAggr.get(alias)
+                    );
                 }
             }
         }
         return aggregateResults;
+    }
+
+    private Map<String, Object> calculateAggregate(
+        Node currSelect, 
+        String alias, 
+        Map<String, Object> aggregateResult,
+        Object value
+    ) {
+        Boolean isAggregateFunc = (currSelect.nodeType == 'aggregate function');
+        Boolean isAggrSum = (isAggregateFunc && currSelect.id == 'sum');
+        Boolean isAggrCount = (isAggregateFunc && currSelect.id == 'count');
+        Boolean isAggrMax = (isAggregateFunc && currSelect.id == 'max');
+        Boolean isAggrMin = (isAggregateFunc && currSelect.id == 'min');
+        Boolean isAggrAvg = (isAggregateFunc && currSelect.id == 'avg');
+        Boolean isAggrCountDistinct = (isAggregateFunc && currSelect.id == 'count_distinct');
+
+        if(isAggrCountDistinct) {
+            Integer currValue = (Integer) aggregateResult.get(alias);
+            if(currValue == null) {
+                currValue = 0;
+            }
+            Set<Object> distinctValues = (Set<Object>) aggregateResult.get(alias + '__distinct');
+            if(distinctValues == null) {
+                distinctValues = new Set<Object>();
+            }
+            aggregateResult.put(alias + '__distinct', distinctValues);
+            if(value != null) {
+                distinctValues.add(value);
+            }
+            aggregateResult.put(alias, distinctValues.size());
+        } else if(isAggrAvg) {
+            Decimal currValue = (Decimal) aggregateResult.get(alias);
+            Decimal newValue = (Decimal) value;
+            Decimal n = (Decimal) aggregateResult.get(alias + '__n');
+            if(n == null) {
+                n = 1;
+            }
+
+            if(currValue == null) {
+                currValue = newValue;
+            } else {
+                currValue = currValue + (newValue - currValue) / n;
+            }
+
+            aggregateResult.put(alias, currValue);
+            aggregateResult.put(alias + '__n', n + 1);
+        } else if(isAggrMin) {
+            Decimal currValue = (Decimal) aggregateResult.get(alias);
+            Decimal newValue = (Decimal) value;
+
+            if(currValue == null) {
+                currValue = newValue;
+            } else {
+                currValue = Math.min(currValue, newValue);
+            }
+
+            aggregateResult.put(alias, currValue);
+        } else if(isAggrMax) {
+
+            Decimal currValue = (Decimal) aggregateResult.get(alias);
+            Decimal newValue = (Decimal) value;
+            if(currValue == null) {
+                currValue = newValue;
+            } else {
+                currValue = Math.max(currValue, newValue);
+            }
+
+            aggregateResult.put(alias, currValue);
+        } else if(isAggrCount) {
+            Integer currValue = (Integer) aggregateResult.get(alias);
+            if(currValue == null) {
+                currValue = 0;
+            }
+            aggregateResult.put(alias, currValue + 1);
+        } else if(isAggrSum) {
+
+            Decimal currValue = (Decimal) aggregateResult.get(alias);
+            Decimal newValue = (Decimal) value;
+            Decimal sum;
+            if(currValue == null) {
+                sum = newValue;
+            } else {
+                sum = currValue + newValue;
+            }
+
+            aggregateResult.put(alias, sum);
+        } else {
+            throw new QueryException('Invalid aggregate function, saw ' + currSelect.id + ' ' + isAggrAvg);
+        }
+
+        return aggregateResult;
     }
 
     private List<Map<String, Object>> handleAggregateQuery(
@@ -719,7 +877,7 @@ public with sharing class MockDatabase {
                 Boolean isPolymorphic = (Boolean) comparableInfo.get('isPolymorphic');
                 Boolean isType = (comparableField == 'Type');
                 if(isPolymorphic && isType) {
-                    String type = comparableRecord.getSObjectType().getDescribe().getName();
+                    String type = SchemaService.getSObjectName(comparableRecord);
                     aggregateResult.put(comparableField, type);
                 } else if(isPolymorphic) {
                     try {
@@ -737,9 +895,8 @@ public with sharing class MockDatabase {
             aggregateResults.add(aggregateResult);
         }
 
-        Node currSelect = selectNode.left;
         Integer exprNumber = 0;
-        while(currSelect != null) {
+        for(Node currSelect = selectNode.left; currSelect != null; currSelect = currSelect.left) {
             Boolean isAggregateFunc = (currSelect.nodeType == 'aggregate function');
             Boolean isAggrSum = (isAggregateFunc && currSelect.id == 'sum');
             Boolean isAggrCount = (isAggregateFunc && currSelect.id == 'count');
@@ -749,7 +906,6 @@ public with sharing class MockDatabase {
             Boolean isAggrCountDistinct = (isAggregateFunc && currSelect.id == 'count_distinct');
 
             if(!isAggregateFunc) {
-                currSelect = currSelect.left;
                 continue;
             }
 
@@ -779,79 +935,13 @@ public with sharing class MockDatabase {
                 throw new QueryException('Invalid field type');
             }
 
-            if(isAggrCountDistinct) {
-                Integer currValue = (Integer) aggregateResult.get(alias);
-                if(currValue == null) {
-                    currValue = 0;
-                }
-                Set<Object> distinctValues = (Set<Object>) aggregateResult.get(alias + '__distinct');
-                if(distinctValues == null) {
-                    distinctValues = new Set<Object>();
-                }
-                aggregateResult.put(alias + '__distinct', distinctValues);
-                Object value = comparableRecord.get(comparableField);
-                if(value != null) {
-                    distinctValues.add(value);
-                }
-                aggregateResult.put(alias, distinctValues.size());
-            } else if(isAggrAvg) {
-                Decimal currValue = (Decimal) aggregateResult.get(alias);
-                Decimal newValue = (Decimal) comparableRecord.get(comparableField);
-                Decimal n = (Decimal) aggregateResult.get(alias + '__n');
-                if(n == null) {
-                    n = 1;
-                }
-
-                if(currValue == null) {
-                    currValue = newValue;
-                } else {
-                    currValue = currValue + (newValue - currValue) / n;
-                }
-
-                aggregateResult.put(alias, currValue);
-                aggregateResult.put(alias + '__n', n + 1);
-            } if(isAggrMin) {
-                Decimal currValue = (Decimal) aggregateResult.get(alias);
-                Decimal newValue = (Decimal) comparableRecord.get(comparableField);
-
-                if(currValue == null) {
-                    currValue = newValue;
-                } else {
-                    currValue = Math.min(currValue, newValue);
-                }
-
-                aggregateResult.put(alias, currValue);
-            } else if(isAggrMax) {
-
-                Decimal currValue = (Decimal) aggregateResult.get(alias);
-                Decimal newValue = (Decimal) comparableRecord.get(comparableField);
-                if(currValue == null) {
-                    currValue = newValue;
-                } else {
-                    currValue = Math.max(currValue, newValue);
-                }
-
-                aggregateResult.put(alias, currValue);
-            } else if(isAggrCount) {
-                Integer currValue = (Integer) aggregateResult.get(alias);
-                if(currValue == null) {
-                    currValue = 0;
-                }
-                aggregateResult.put(alias, currValue + 1);
-            } else if(isAggrSum) {
-
-                Decimal currValue = (Decimal) aggregateResult.get(alias);
-                Decimal newValue = (Decimal) comparableRecord.get(comparableField);
-                Decimal sum;
-                if(currValue == null) {
-                    sum = newValue;
-                } else {
-                    sum = currValue + newValue;
-                }
-
-                aggregateResult.put(alias, sum);
-            }
-            currSelect = currSelect.left;
+            // mutates aggregateResult
+            calculateAggregate(
+                currSelect, 
+                alias, 
+                aggregateResult,
+                comparableRecord.get(comparableField)
+            );
         }
         return aggregateResults;
     }
@@ -1416,6 +1506,7 @@ public with sharing class MockDatabase {
 
         // handle the ORDER BY and LIMIT logic here
         if(isAggregateQuery) {
+            replaceWithAliases(selectNode, aggregateResults);
             aggregateResults = (List<Map<String, Object>>) handleGroupByRollup(aggregateResults, selectNode);
             aggregateResults = (List<Map<String, Object>>) handleHavingNode(aggregateResults, selectNode, params);
             aggregateResults = (List<Map<String, Object>>) handleOrderByNode('aggregate', aggregateResults, selectNode, orderByNode);

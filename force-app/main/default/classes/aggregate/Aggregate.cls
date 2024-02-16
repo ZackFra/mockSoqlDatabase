@@ -21,6 +21,11 @@ public with sharing class Aggregate {
         return this.ar.get(key);
     }
 
+    @TestVisible
+    private Set<String> keySet() {
+        return this.ar.keySet();
+    }
+
     /**
      * @description Returns the map as a string
      * @return the map as a string
