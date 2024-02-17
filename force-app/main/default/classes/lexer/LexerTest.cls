@@ -1534,7 +1534,7 @@ private with sharing class LexerTest {
     private static void testAlias() {
         Test.startTest();
         Lexer t = new Lexer();
-        Node head = t.parse('SELECT COUNT(Id) cnt1 FROM Account GROUP BY Id');
+        Node head = t.parse('SELECT COUNT(Id) Cnt1 FROM Account GROUP BY Id');
         Test.stopTest();
 
         Assert.areEqual('select', head.id, 'Expected id to be "select"');
@@ -1555,7 +1555,7 @@ private with sharing class LexerTest {
         Assert.isNull(idNode.right, 'Expected right to be null');
 
         Node aliasNode = idNode.left;
-        Assert.areEqual('cnt1', aliasNode.id, 'Expected id to be "cnt1"');
+        Assert.areEqual('Cnt1', aliasNode.id, 'Expected id to be "Cnt1"');
         Assert.areEqual('alias', aliasNode.nodeType, 'Expected nodeType to be "alias"');
         Assert.isNull(aliasNode.left, 'Expected left to be null');
         Assert.isNull(aliasNode.right, 'Expected right to be null');
@@ -1742,7 +1742,7 @@ private with sharing class LexerTest {
         Assert.isNotNull(accountNameNode.right, 'Expected right to not be null');
 
         Node acctNameNode = accountNameNode.right;
-        Assert.areEqual('acctname', acctNameNode.id, 'Expected id to be "acctname"');
+        Assert.areEqual('acctName', acctNameNode.id, 'Expected id to be "acctName"');
         Assert.areEqual('alias', acctNameNode.nodeType, 'Expected nodeType to be "alias"');
         Assert.isNull(acctNameNode.left, 'Expected left to be null');
         Assert.isNull(acctNameNode.right, 'Expected right to be null');

@@ -3151,11 +3151,90 @@ private with sharing class MockDatabaseTest {
         List<Aggregate> queriedAccts = (List<Aggregate>) mockDb.query('SELECT NumberOfEmployees numEmpl, SUM(AnnualRevenue) FROM Account GROUP BY ROLLUP(NumberOfEmployees)');
         Test.stopTest();
 
+        Assert.areEqual(5, queriedAccts.size(), 'Incorrect number of aggregates');
+        Assert.isNotNull(queriedAccts[0].get('numEmpl'), 'Expected numEmpl to be not null');
+    }
+
+    @IsTest
+    private static void testGroupByRollupSumWithFuncAlias() {
+        MockDatabase mockDb = new MockDatabase();
+        Account a = new Account(Name = 'Test1', NumberOfEmployees = 5, AnnualRevenue = 1000);
+        Account c = new Account(Name = 'Test3', NumberOfEmployees = 5, AnnualRevenue = 3000);
+        Account e = new Account(Name = 'Test5', NumberOfEmployees = 5, AnnualRevenue = 5000);
+        Account i = new Account(Name = 'Test9', NumberOfEmployees = 5, AnnualRevenue = 9000);
+        Account l = new Account(Name = 'Test12', NumberOfEmployees = 5, AnnualRevenue = 12000);
+        Account m = new Account(Name = 'Test13', NumberOfEmployees = 5, AnnualRevenue = 13000);
+        Account n = new Account(Name = 'Test14', NumberOfEmployees = 5, AnnualRevenue = 14000);
+        Account o = new Account(Name = 'Test15', NumberOfEmployees = 5, AnnualRevenue = 15000);
+
+        Account b = new Account(Name = 'Test2', NumberOfEmployees = 10, AnnualRevenue = 2000);
+        Account f = new Account(Name = 'Test6', NumberOfEmployees = 10, AnnualRevenue = 6000);
+        Account h = new Account(Name = 'Test8', NumberOfEmployees = 10, AnnualRevenue = 8000);
+        Account j = new Account(Name = 'Test10', NumberOfEmployees = 10, AnnualRevenue = 10000);
+        Account k = new Account(Name = 'Test11', NumberOfEmployees = 10, AnnualRevenue = 11000);
+
+        Account g = new Account(Name = 'Test7', NumberOfEmployees = 15, AnnualRevenue = 7000);
+
+        Account d = new Account(Name = 'Test4', NumberOfEmployees = 20, AnnualRevenue = 4000);
+        
+        List<Account> acctList = new List<Account>{a, b, c, d, e, f, g, h, i, j, k, l, m, n, o};
+        mockDb.doInsert(acctList);
+
+        Decimal sum = 0;
+        for(Account acct : acctList) {
+            sum += acct.AnnualRevenue;
+        }
+
+        Test.startTest();
+        List<Aggregate> queriedAccts = (List<Aggregate>) mockDb.query('SELECT NumberOfEmployees numEmpl, SUM(AnnualRevenue) sumRev FROM Account GROUP BY ROLLUP(NumberOfEmployees)');
+        Test.stopTest();
+
+        Assert.areEqual(5, queriedAccts.size(), 'Incorrect number of aggregates');
+        Assert.areEqual(sum, queriedAccts[4].get('sumRev'), 'Expected sumRev to be ' + sum);
+    }
+
+    /*
+    @IsTest
+    private static void testCountDistinctGroupByRollup() {
+        MockDatabase mockDb = new MockDatabase();
+        Account a = new Account(Name = 'Test1', NumberOfEmployees = 5, AnnualRevenue = 1000, BillingState = 'NY');
+        Account c = new Account(Name = 'Test1', NumberOfEmployees = 5, AnnualRevenue = 1000, BillingState = 'NY');
+        Account e = new Account(Name = 'Test1', NumberOfEmployees = 5, AnnualRevenue = 1000, BillingState = 'NY');
+        Account i = new Account(Name = 'Test1', NumberOfEmployees = 5, AnnualRevenue = 1000, BillingState = 'NY');
+        Account l = new Account(Name = 'Test1', NumberOfEmployees = 5, AnnualRevenue = 1000, BillingState = 'NY');
+        Account m = new Account(Name = 'Test1', NumberOfEmployees = 5, AnnualRevenue = 1000, BillingState = 'NY');
+        Account n = new Account(Name = 'Test1', NumberOfEmployees = 5, AnnualRevenue = 1000, BillingState = 'NY');
+        Account o = new Account(Name = 'Test1', NumberOfEmployees = 5, AnnualRevenue = 1000, BillingState = 'NY');
+
+        Account b = new Account(Name = 'Test2', NumberOfEmployees = 10, AnnualRevenue = 2000, BillingState = 'NY');
+        Account f = new Account(Name = 'Test2', NumberOfEmployees = 10, AnnualRevenue = 2000, BillingState = 'MD');
+        Account h = new Account(Name = 'Test2', NumberOfEmployees = 10, AnnualRevenue = 2000, BillingState = 'MD');
+
+        Account j = new Account(Name = 'Test3', NumberOfEmployees = 10, AnnualRevenue = 3000, BillingState = 'MD');
+        Account k = new Account(Name = 'Test3', NumberOfEmployees = 10, AnnualRevenue = 3000, BillingState = 'MD');
+
+        Account g = new Account(Name = 'Test3', NumberOfEmployees = 15, AnnualRevenue = 4000, BillingState = 'IL');
+
+        Account d = new Account(Name = 'Test4', NumberOfEmployees = 20, AnnualRevenue = 4000, BillingState = 'IL');
+        
+        
+        List<Account> acctList = new List<Account>{a, b, c, d, e, f, g, h, i, j, k, l, m, n, o};
+        mockDb.doInsert(acctList);
+
+        Decimal sum = 0;
+        for(Account acct : acctList) {
+            sum += acct.AnnualRevenue;
+        }
+
+        Test.startTest();
+        List<Aggregate> queriedAccts = (List<Aggregate>) mockDb.query('SELECT Name, COUNT_DISTINCT(NumberOfEmployees) FROM Account GROUP BY ROLLUP(Name)');
+        Test.stopTest();
+
         for(Aggregate ar : queriedAccts) {
             System.debug(ar);
         }
 
         Assert.areEqual(5, queriedAccts.size(), 'Incorrect number of aggregates');
-        Assert.isNotNull(queriedAccts[0].get('numempl'), 'Expected numempl to be not null');
-    }
+        Assert.areEqual(4, queriedAccts[4].get('expr0'), 'Expected expr0 to be 4');
+    }*/
 }

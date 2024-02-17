@@ -30,7 +30,7 @@ public with sharing class Lexer {
      * @throws ParsingException : if the token is not the first token in the query
      */
     private String consume(String query, String token) {
-        if(query.length() < token.length() || query.subString(0, token.length()) != token) {
+        if(query.length() < token.length() || query.subString(0, token.length()).toLowerCase() != token) {
             throw new ParsingException(query, token);
         }
         return query.subString(token.length());
@@ -43,6 +43,17 @@ public with sharing class Lexer {
      * @return : String, the next numChars characters in the query
      */
     private String lookahead(String query, Integer numChars) {
+        if(query.length() < numChars) { 
+            return query.toLowerCase();
+        }
+        return query.subString(0, numChars).toLowerCase();
+    }
+
+    private String lookahead(String query, Integer numChars, Boolean isCaseSensitive) {
+        if(!isCaseSensitive) {
+            return lookahead(query, numChars);
+        }
+
         if(query.length() < numChars) { 
             return query;
         }
@@ -84,10 +95,21 @@ public with sharing class Lexer {
             }
         }
     }
+
+    private void applyCasing(Node head) {
+        if(head == null) {
+            return;
+        }
+
+        if(head.nodeType != 'alias') {
+            head.id = head.id.toLowerCase();
+        }
+
+        applyCasing(head.left);
+        applyCasing(head.right);
+    }
     
     private Intermediary parseQuery(String query) {
-        
-        query = query.toLowerCase();
         
         Intermediary selectIntermediary = parseSelect(query);
         query = selectIntermediary.subquery;
@@ -161,6 +183,9 @@ public with sharing class Lexer {
 		if(nextLink.subquery != '' && lookahead(nextLink.subquery, 1) != ')') {
             throw new ParsingException(nextLink.subquery, null);
         }
+        // just making sure everything is lowercase
+        applyCasing(selectIntermediary.head);
+        
         return selectIntermediary;
     }
 
@@ -195,7 +220,6 @@ public with sharing class Lexer {
     }
     
     private Intermediary parseSelect(String query) {
-        query = ParserUtils.skipWhitespace(query);
         
         query = consume(query, 'select');
         Intermediary leftIntermediary = parseSelectExpr(query);
@@ -1295,7 +1319,7 @@ public with sharing class Lexer {
 
         String aliasName = '';
         while(query.length() > 0 && ParserUtils.validCharForFieldOrObject(lookahead(query, 1))) {
-            aliasName += lookahead(query, 1);
+            aliasName += lookahead(query, 1, true);
             query = query.subString(1);
         }
 

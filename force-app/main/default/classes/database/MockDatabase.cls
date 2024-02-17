@@ -432,7 +432,7 @@ public with sharing class MockDatabase {
         }
 
         if(typeOfQuery == 'aggregate') {
-            List<Map<String, Object>> resultsList = new List<Map<String, Object>>((List<Map<String, Object>>) results);
+            List<ProtoAggregate> resultsList = new List<ProtoAggregate>((List<ProtoAggregate>) results);
             while(resultsList.size() > limitSize) {
                 resultsList.remove(resultsList.size()-1);
             }
@@ -574,10 +574,10 @@ public with sharing class MockDatabase {
         };
     }
 
-    private List<Map<String, Object>> replaceWithAliases(Node selectNode, List<Map<String, Object>> aggregates) {
-        List<Map<String, Object>> aggregateResults = new List<Map<String, Object>>(aggregates);
+    private List<ProtoAggregate> replaceWithAliases(Node selectNode, List<ProtoAggregate> aggregates) {
+        List<ProtoAggregate> aggregateResults = new List<ProtoAggregate>(aggregates);
         
-        for(Map<String, Object> aggr : aggregateResults) {
+        for(ProtoAggregate aggr : aggregateResults) {
             for(Node currSelect = selectNode.left; currSelect != null; currSelect = currSelect.left) {
                 String fieldOrAliasFromSelect = getAlias(selectNode, currSelect).get('fieldApiName');
                 for(String key : aggr.keySet()) {
@@ -593,20 +593,18 @@ public with sharing class MockDatabase {
         return aggregateResults;
     }
 
-    // I'ma be shook if this works
-    private List<Map<String, Object>> handleGroupByRollup(List<Map<String, Object>> aggregates, Node selectNode) {
-        TopLevelNodes topLevelNodes = getTopLevelNodes(selectNode);
-        Node groupByNode = topLevelNodes.groupByNode;
-        Boolean isRollup = (
-            groupByNode != null &&  
+    private Boolean isRollup(Node groupByNode) {
+        return (
+            groupByNode != null && 
             groupByNode.id == 'rollup'
         );
-        if(!isRollup) {
-            return aggregates;
-        }
+    }
+
+    private List<String> buildRollupFields(Node selectNode) {
+        TopLevelNodes topLevelNodes = getTopLevelNodes(selectNode);
+        Node groupByNode = topLevelNodes.groupByNode;
 
         List<String> fields = new List<String>();
-
         for(Node rollupNode = groupByNode.left; rollupNode != null; rollupNode = rollupNode.left) {
             Map<String, String> rollupFieldOrAlias = getRollupFieldOrAlias(selectNode, rollupNode);
             String fieldOrAlias = rollupFieldOrAlias.get('fieldOrAlias');
@@ -614,8 +612,11 @@ public with sharing class MockDatabase {
                 fieldOrAlias
             );
         }
+        return fields;
+    }
 
-        List<Map<String, Object>> summaryList = new List<Map<String, Object>>();
+    private List<ProtoAggregate> buildSummaryList(List<String> fields, Node selectNode, List<ProtoAggregate> aggregates) {
+        List<ProtoAggregate> summaryList = new List<ProtoAggregate>();
         for(Integer i = 0; i < fields.size(); i++) {
 
             String field1 = null;
@@ -627,8 +628,8 @@ public with sharing class MockDatabase {
                 field2 = fields[1];
             }
 
-            List<Map<String, Object>> rollupAggregates = calculateRollup(selectNode, aggregates, field1, field2);
-            for(Map<String, Object> ra : rollupAggregates) {
+            List<ProtoAggregate> rollupAggregates = calculateRollup(selectNode, aggregates, field1, field2);
+            for(ProtoAggregate ra : rollupAggregates) {
                 for(String key : aggregates[0].keySet()) {
                     if(!ra.containsKey(key)) {
                         ra.put(key, null);
@@ -637,10 +638,14 @@ public with sharing class MockDatabase {
             }
             summaryList.addAll(rollupAggregates);
             rollupAggregates.clear();
-        }
-        aggregates.addAll(summaryList);
+        } 
+        return summaryList;
+    }
 
-        // should probably rename get alias, it does a bit more than just getting the alias
+    public AggregateComparator buildRollupComparator(Node selectNode) {
+        TopLevelNodes topLevelNodes = getTopLevelNodes(selectNode);
+        Node groupByNode = topLevelNodes.groupByNode;
+
         Map<String, Map<String, String>> fieldsSortData = new Map<String, Map<String, String>>();
         for(Node currNode = groupByNode.left; currNode != null; currNode = currNode.left) {
             Map<String, String> rollupFieldOrAlias = getRollupFieldOrAlias(selectNode, currNode);
@@ -657,20 +662,36 @@ public with sharing class MockDatabase {
         }
 
         AggregateComparator comparator = new AggregateComparator(fieldsSortData);
+        return comparator;
+    }
+
+    // I'ma be shook if this works
+    private List<ProtoAggregate> handleGroupByRollup(List<ProtoAggregate> aggregates, Node selectNode) {
+        TopLevelNodes topLevelNodes = getTopLevelNodes(selectNode);
+        Node groupByNode = topLevelNodes.groupByNode;
+        if(!isRollup(groupByNode)) {
+            return aggregates;
+        }
+
+        List<String> fields = buildRollupFields(selectNode);
+        List<ProtoAggregate> summaryList = buildSummaryList(fields, selectNode, aggregates);
+        aggregates.addAll(summaryList);
+
+        AggregateComparator comparator = buildRollupComparator(selectNode);
         aggregates.sort(comparator);
 
         return aggregates;
     }
 
     // no PMD because this is a big boi
-    private List<Map<String, Object>> calculateRollup( // NOPMD
+    private List<ProtoAggregate> calculateRollup( // NOPMD
         Node selectNode, 
-        List<Map<String, Object>> rollupAggregates, 
+        List<ProtoAggregate> rollupAggregates, 
         String field1,
         String field2
     ) {
         Node fieldNode = selectNode.left;
-        List<Map<String, Object>> aggregateResults = new List<Map<String, Object>>();
+        List<ProtoAggregate> aggregateResults = new List<ProtoAggregate>();
 
         for(Node currSelect = selectNode.left; currSelect != null; currSelect = currSelect.left) {
             Boolean isAggregateFunc = (currSelect.nodeType == 'aggregate function');
@@ -685,11 +706,11 @@ public with sharing class MockDatabase {
                 continue;
             }
             String alias = getAlias(selectNode, currSelect).get('fieldApiName');
-            for(Map<String, Object> currAggr : rollupAggregates) {
-                Map<String, Object> aggr = null;
+            for(ProtoAggregate currAggr : rollupAggregates) {
+                ProtoAggregate aggr = null;
 
                 // find the aggregate result that matches the current rollup aggregate
-                for(Map<String, Object> ar : aggregateResults) {
+                for(ProtoAggregate ar : aggregateResults) {
                     // if field == null, there's only the grand total in the list
                     if(field1 == null) {
                         aggr = ar;
@@ -705,7 +726,7 @@ public with sharing class MockDatabase {
 
                 // if the aggregate result doesn't exist, create it
                 if(aggr == null) {
-                    aggr = new Map<String, Object>();
+                    aggr = new ProtoAggregate();
                     if(field1 != null) {
                         aggr.put(field1, currAggr.get(field1));
                     }
@@ -740,110 +761,41 @@ public with sharing class MockDatabase {
         return aggregateResults;
     }
 
-    private Map<String, Object> calculateAggregate(
+    /**
+     * @description calculates the aggregate result for the current proto aggregate
+     *              mutates the aggregate, returns the mutated aggregate as well
+     * @param currSelect : the current select node
+     * @param alias : the alias for the aggregated field
+     * @param aggregateResult : the current aggregate result
+     * @param value : the value to calculate the aggregate with
+     * @return the mutated aggregate
+     */
+    private ProtoAggregate calculateAggregate(
         Node currSelect, 
         String alias, 
-        Map<String, Object> aggregateResult,
+        ProtoAggregate aggregateResult,
         Object value
     ) {
-        Boolean isAggregateFunc = (currSelect.nodeType == 'aggregate function');
-        Boolean isAggrSum = (isAggregateFunc && currSelect.id == 'sum');
-        Boolean isAggrCount = (isAggregateFunc && currSelect.id == 'count');
-        Boolean isAggrMax = (isAggregateFunc && currSelect.id == 'max');
-        Boolean isAggrMin = (isAggregateFunc && currSelect.id == 'min');
-        Boolean isAggrAvg = (isAggregateFunc && currSelect.id == 'avg');
-        Boolean isAggrCountDistinct = (isAggregateFunc && currSelect.id == 'count_distinct');
 
-        if(isAggrCountDistinct) {
-            Integer currValue = (Integer) aggregateResult.get(alias);
-            if(currValue == null) {
-                currValue = 0;
-            }
-            Set<Object> distinctValues = (Set<Object>) aggregateResult.get(alias + '__distinct');
-            if(distinctValues == null) {
-                distinctValues = new Set<Object>();
-            }
-            aggregateResult.put(alias + '__distinct', distinctValues);
-            if(value != null) {
-                distinctValues.add(value);
-            }
-            aggregateResult.put(alias, distinctValues.size());
-        } else if(isAggrAvg) {
-            Decimal currValue = (Decimal) aggregateResult.get(alias);
-            Decimal newValue = (Decimal) value;
-            Decimal n = (Decimal) aggregateResult.get(alias + '__n');
-            if(n == null) {
-                n = 1;
-            }
+        AggregateCalculatorOptions options = new AggregateCalculatorOptions()
+            .setAlias(alias)
+            .setAggregateResult(aggregateResult)
+            .setValue(value);
 
-            if(currValue == null) {
-                currValue = newValue;
-            } else {
-                currValue = currValue + (newValue - currValue) / n;
-            }
 
-            aggregateResult.put(alias, currValue);
-            aggregateResult.put(alias + '__n', n + 1);
-        } else if(isAggrMin) {
-            Decimal currValue = (Decimal) aggregateResult.get(alias);
-            Decimal newValue = (Decimal) value;
-
-            if(currValue == null) {
-                currValue = newValue;
-            } else {
-                currValue = Math.min(currValue, newValue);
-            }
-
-            aggregateResult.put(alias, currValue);
-        } else if(isAggrMax) {
-
-            Decimal currValue = (Decimal) aggregateResult.get(alias);
-            Decimal newValue = (Decimal) value;
-            if(currValue == null) {
-                currValue = newValue;
-            } else {
-                currValue = Math.max(currValue, newValue);
-            }
-
-            aggregateResult.put(alias, currValue);
-        } else if(isAggrCount) {
-            Integer currValue = (Integer) aggregateResult.get(alias);
-            if(currValue == null) {
-                currValue = 0;
-            }
-            aggregateResult.put(alias, currValue + 1);
-        } else if(isAggrSum) {
-
-            Decimal currValue = (Decimal) aggregateResult.get(alias);
-            Decimal newValue = (Decimal) value;
-            Decimal sum;
-            if(currValue == null) {
-                sum = newValue;
-            } else {
-                sum = currValue + newValue;
-            }
-
-            aggregateResult.put(alias, sum);
-        } else {
-            throw new QueryException('Invalid aggregate function, saw ' + currSelect.id + ' ' + isAggrAvg);
-        }
-
-        return aggregateResult;
+        IAggregateCalculator calculator = AggregateCalculatorFactory.getCalculator(currSelect.id, options);
+        return calculator.calculate();
     }
 
-    private List<Map<String, Object>> handleAggregateQuery(
-        SObject databaseRecord,
-        Node selectNode, 
-        List<Map<String, Object>> aggregateResults
-    ) {
-        aggregateResults = new List<Map<String, Object>>(aggregateResults);
-        
-        Map<String, List<String>> aggrFields = getAggregateFields(selectNode);
-        List<String> groupByFields = aggrFields.get('groupByFields');
-
-        Map<String, Object> aggregateResult;
-
-        for(Map<String, Object> ar : aggregateResults) {
+    /**
+     * @description : find the grouped aggregate
+     * @param databaseRecord : the database record
+     * @param aggregateResults : the aggregate results list to search
+     * @param groupByFields : the fields to group by
+     * @return : the grouped aggregate
+     */
+    private ProtoAggregate findGroupedAggregate(SObject databaseRecord, List<ProtoAggregate> aggregateResults, List<String> groupByFields) {
+        for(ProtoAggregate ar : aggregateResults) {
             Boolean isSame = true;
             for(String groupByField : groupByFields) {
                 Map<String, Object> comparableInfo = this.utils.getComparables(databaseRecord, groupByField);
@@ -862,35 +814,59 @@ public with sharing class MockDatabase {
                 }
             }
             if(isSame) {
-                aggregateResult = ar;
-                break;
+                return ar;
             }
         }
+        return null;
+    }
+
+    /**
+     * @description create a new aggregate result for the grouped aggregate
+     * @param databaseRecord the database record
+     * @param groupByFields the fields to group by
+     * @return the new aggregate result
+     */
+    private ProtoAggregate createGroupedAggregate(SObject databaseRecord, List<String> groupByFields) {
+        ProtoAggregate aggregateResult = new ProtoAggregate();
+        for(String groupByField : groupByFields) {
+            Map<String, Object> comparableInfo = this.utils.getComparables(databaseRecord, groupByField);
+            sObject comparableRecord = (sObject) comparableInfo.get('comparableRecord');
+            String comparableField = (String) comparableInfo.get('comparableField');
+
+            Boolean isPolymorphic = (Boolean) comparableInfo.get('isPolymorphic');
+            Boolean isType = (comparableField == 'Type');
+            if(isPolymorphic && isType) {
+                String type = SchemaService.getSObjectName(comparableRecord);
+                aggregateResult.put(comparableField, type);
+            } else if(isPolymorphic) {
+                try {
+                    aggregateResult.put(comparableField, comparableRecord.get(comparableField));
+                } catch(System.SObjectException e) {
+                    aggregateResult.put(comparableField, null);
+                } catch(Exception e) {
+                    throw e;
+                }
+            } else {
+                aggregateResult.put(comparableField, comparableRecord.get(comparableField));
+            }
+        }
+        return aggregateResult; 
+    }
+
+    private List<ProtoAggregate> handleAggregateQuery(
+        SObject databaseRecord,
+        Node selectNode, 
+        List<ProtoAggregate> aggregateResults
+    ) {
+        aggregateResults = new List<ProtoAggregate>(aggregateResults);
+        
+        Map<String, List<String>> aggrFields = getAggregateFields(selectNode);
+        List<String> groupByFields = aggrFields.get('groupByFields');
+
+        ProtoAggregate aggregateResult = findGroupedAggregate(databaseRecord, aggregateResults, groupByFields);
 
         if(aggregateResult == null) {
-            aggregateResult = new Map<String, Object>();
-            for(String groupByField : groupByFields) {
-                Map<String, Object> comparableInfo = this.utils.getComparables(databaseRecord, groupByField);
-                sObject comparableRecord = (sObject) comparableInfo.get('comparableRecord');
-                String comparableField = (String) comparableInfo.get('comparableField');
-
-                Boolean isPolymorphic = (Boolean) comparableInfo.get('isPolymorphic');
-                Boolean isType = (comparableField == 'Type');
-                if(isPolymorphic && isType) {
-                    String type = SchemaService.getSObjectName(comparableRecord);
-                    aggregateResult.put(comparableField, type);
-                } else if(isPolymorphic) {
-                    try {
-                        aggregateResult.put(comparableField, comparableRecord.get(comparableField));
-                    } catch(System.SObjectException e) {
-                        aggregateResult.put(comparableField, null);
-                    } catch(Exception e) {
-                        throw e;
-                    }
-                } else {
-                    aggregateResult.put(comparableField, comparableRecord.get(comparableField));
-                }
-            }
+            aggregateResult = createGroupedAggregate(databaseRecord, groupByFields);
             // pointer logic, we won't have to add this again
             aggregateResults.add(aggregateResult);
         }
@@ -898,12 +874,6 @@ public with sharing class MockDatabase {
         Integer exprNumber = 0;
         for(Node currSelect = selectNode.left; currSelect != null; currSelect = currSelect.left) {
             Boolean isAggregateFunc = (currSelect.nodeType == 'aggregate function');
-            Boolean isAggrSum = (isAggregateFunc && currSelect.id == 'sum');
-            Boolean isAggrCount = (isAggregateFunc && currSelect.id == 'count');
-            Boolean isAggrMax = (isAggregateFunc && currSelect.id == 'max');
-            Boolean isAggrMin = (isAggregateFunc && currSelect.id == 'min');
-            Boolean isAggrAvg = (isAggregateFunc && currSelect.id == 'avg');
-            Boolean isAggrCountDistinct = (isAggregateFunc && currSelect.id == 'count_distinct');
 
             if(!isAggregateFunc) {
                 continue;
@@ -930,12 +900,17 @@ public with sharing class MockDatabase {
             }
 
             Boolean isFieldNumeric = SchemaService.isFieldNumeric(fieldType);
-            Boolean isExpectingNumeric = (isAggrSum || isAggrAvg || isAggrMax || isAggrMin);
+
+            List<String> numericFuncs = new List<String> {
+                'sum', 'max', 'min', 'avg'
+            };
+
+            Boolean isExpectingNumeric = (numericFuncs.contains(currSelect.id));
             if(isExpectingNumeric && !isFieldNumeric) {
                 throw new QueryException('Invalid field type');
             }
 
-            // mutates aggregateResult
+            // mutates aggregate result
             calculateAggregate(
                 currSelect, 
                 alias, 
@@ -946,8 +921,8 @@ public with sharing class MockDatabase {
         return aggregateResults;
     }
 
-    private Map<String, Object> cleanUpAggregateResult(
-        Map<String, Object> aggr, 
+    private ProtoAggregate cleanUpAggregateResult(
+        ProtoAggregate aggr, 
         List<String> groupByFields, 
         List<String> selectFields
     ) {
@@ -982,7 +957,7 @@ public with sharing class MockDatabase {
      * @return : the cleaned up aggregate result list
      */
     private List<Aggregate> createAggregates(
-        List<Map<String, Object>> aggregateResults, 
+        List<ProtoAggregate> aggregateResults, 
         Node selectNode,
         Map<String, Object> params
     ) {
@@ -993,7 +968,7 @@ public with sharing class MockDatabase {
 
         List<Aggregate> aggregateResultsList = new List<Aggregate>();
         for(Integer i = 0; i < aggregateResults.size(); i++) {
-            Map<String, Object> ar = aggregateResults[i];
+            ProtoAggregate ar = aggregateResults[i];
 
             ar = cleanUpAggregateResult(ar, groupByFields, selectFields);
             Aggregate arp = new Aggregate(ar);
@@ -1002,8 +977,8 @@ public with sharing class MockDatabase {
         return aggregateResultsList;
     }
 
-    private List<Map<String, Object>> handleHavingNode(
-        List<Map<String, Object>> aggregateResults, 
+    private List<ProtoAggregate> handleHavingNode(
+        List<ProtoAggregate> aggregateResults, 
         Node selectNode, 
         Map<String, Object> params
     ) {
@@ -1013,8 +988,8 @@ public with sharing class MockDatabase {
             return aggregateResults;
         }
 
-        List<Map<String, Object>> results = new List<Map<String, Object>>();
-        for(Map<String, Object> ar : aggregateResults) {
+        List<ProtoAggregate> results = new List<ProtoAggregate>();
+        for(ProtoAggregate ar : aggregateResults) {
             BooleanLogicOptions havingLogicOptions = new BooleanLogicOptions()
                 .setDatabase(this)
                 .setHead(havingNode)
@@ -1097,7 +1072,7 @@ public with sharing class MockDatabase {
         }
 
         if(typeOfQuery == 'aggregate') {
-            return sortByOrderBy((List<Map<String, Object>>) results, selectNode, orderByNode);
+            return sortByOrderBy((List<ProtoAggregate>) results, selectNode, orderByNode);
         } else if(typeOfQuery == 'sObject') {
             return sortByOrderBy((List<SObject>) results, selectNode, orderByNode);
         } else {
@@ -1130,7 +1105,7 @@ public with sharing class MockDatabase {
         }
 
         if(typeOfQuery == 'aggregate') {
-            List<Map<String, Object>> aggrResults = new List<Map<String, Object>>((List<Map<String, Object>>) results);
+            List<ProtoAggregate> aggrResults = new List<ProtoAggregate>((List<ProtoAggregate>) results);
             while(offset > 0) {
                 aggrResults.remove(0);
                 offset--;
@@ -1154,9 +1129,9 @@ public with sharing class MockDatabase {
         }
     }
 
-    private List<Map<String, Object>> sortByOrderBy(List<Map<String, Object>> aggregates, Node selectNode, Node orderByNode) {
+    private List<ProtoAggregate> sortByOrderBy(List<ProtoAggregate> aggregates, Node selectNode, Node orderByNode) {
         // clone the list so we don't modify the original
-        aggregates = new List<Map<String, Object>>(aggregates);
+        aggregates = new List<ProtoAggregate>(aggregates);
 
         if(orderByNode == null) {
             return aggregates;
@@ -1470,7 +1445,7 @@ public with sharing class MockDatabase {
 
         // results will either be a count, a list of sObjects, or a list of aggregates
         Integer count = 0;
-        List<Map<String, Object>> aggregateResults = new List<Map<String, Object>>();
+        List<ProtoAggregate> aggregateResults = new List<ProtoAggregate>();
         List<sObject> sObjects = new List<sObject>();
 
         // process the query, whether it's a count, aggregate, or regular query
@@ -1507,11 +1482,11 @@ public with sharing class MockDatabase {
         // handle the ORDER BY and LIMIT logic here
         if(isAggregateQuery) {
             replaceWithAliases(selectNode, aggregateResults);
-            aggregateResults = (List<Map<String, Object>>) handleGroupByRollup(aggregateResults, selectNode);
-            aggregateResults = (List<Map<String, Object>>) handleHavingNode(aggregateResults, selectNode, params);
-            aggregateResults = (List<Map<String, Object>>) handleOrderByNode('aggregate', aggregateResults, selectNode, orderByNode);
-            aggregateResults = (List<Map<String, Object>>) handleOffsetNode('aggregate', offsetNode, aggregateResults, params);
-            aggregateResults = (List<Map<String, Object>>) handleLimitNode('aggregate', limitNode, aggregateResults, params);
+            aggregateResults = (List<ProtoAggregate>) handleGroupByRollup(aggregateResults, selectNode);
+            aggregateResults = (List<ProtoAggregate>) handleHavingNode(aggregateResults, selectNode, params);
+            aggregateResults = (List<ProtoAggregate>) handleOrderByNode('aggregate', aggregateResults, selectNode, orderByNode);
+            aggregateResults = (List<ProtoAggregate>) handleOffsetNode('aggregate', offsetNode, aggregateResults, params);
+            aggregateResults = (List<ProtoAggregate>) handleLimitNode('aggregate', limitNode, aggregateResults, params);
 
             // Remove internal fields from the aggregate result proto-records and return the list of aggregates
             List<Aggregate> aggregateResultsList = createAggregates(aggregateResults, selectNode, params);

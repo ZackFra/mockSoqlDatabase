@@ -15,7 +15,7 @@ public with sharing class HavingLogicHandler extends BooleanLogicHandler {
      * @see MockDatabaseUtils.OperatorHandlerFactory
      */
     public override Boolean isCompareConditionMet(Node operatorNode) {
-        Map<String, Object> aggr = (Map<String, Object>) this.obj;
+        ProtoAggregate aggr = (ProtoAggregate) this.obj;
 
         Node aggrNode = operatorNode.left;
         Map<String, Object> aggrNodeValue = this.db.utils.getAggrNodeValue(aggrNode, this.selectNode);

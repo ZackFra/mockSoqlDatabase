@@ -4,15 +4,15 @@ private class AggregateComparatorTest {
     @isTest
     private static void testCompareToEqual() {
 
-        Map<String, Object> protoAggr1 = new Map<String, Object> {
+        ProtoAggregate protoAggr1 = new ProtoAggregate( new Map<String, Object> {
             'field1' => 'value1',
             'field2' => 'value2'
-        };
+        });
         
-        Map<String, Object> protoAggr2 = new Map<String, Object> {
+        ProtoAggregate protoAggr2 = new ProtoAggregate(new Map<String, Object> {
             'field1' => 'value1',
             'field2' => 'value2'
-        };
+        });
 
         Map<String, String> fieldDatum1 = new Map<String, String> {
             'fieldApiName' => 'field1',
@@ -48,15 +48,15 @@ private class AggregateComparatorTest {
     @IsTest
     private static void testCompareToLessThan() {
             
-        Map<String, Object> protoAggr1 = new Map<String, Object> {
+        ProtoAggregate protoAggr1 = new ProtoAggregate(new Map<String, Object> {
             'field1' => 'value1',
             'field2' => 'value2'
-        };
+        });
         
-        Map<String, Object> protoAggr2 = new Map<String, Object> {
+        ProtoAggregate protoAggr2 = new ProtoAggregate(new Map<String, Object> {
             'field1' => 'value1',
             'field2' => 'value3'
-        };
+        });
 
         Map<String, String> fieldDatum1 = new Map<String, String> {
             'fieldApiName' => 'field1',
@@ -91,15 +91,15 @@ private class AggregateComparatorTest {
 
     @IsTest
     private static void testCompareToGreaterThan() {
-        Map<String, Object> protoAggr1 = new Map<String, Object> {
+        ProtoAggregate protoAggr1 = new ProtoAggregate(new Map<String, Object> {
             'field1' => 'value1',
             'field2' => 'value3'
-        };
+        });
         
-        Map<String, Object> protoAggr2 = new Map<String, Object> {
+        ProtoAggregate protoAggr2 = new ProtoAggregate(new Map<String, Object> {
             'field1' => 'value1',
             'field2' => 'value2'
-        };
+        });
 
         Map<String, String> fieldDatum1 = new Map<String, String> {
             'fieldApiName' => 'field1',
@@ -134,15 +134,15 @@ private class AggregateComparatorTest {
 
     @IsTest
     private static void testCompareToParentField() {
-        Map<String, Object> protoAggr1 = new Map<String, Object> {
+        ProtoAggregate protoAggr1 = new ProtoAggregate(new Map<String, Object> {
             'field1' => 'value1',
             'parent1.field2' => 'value2'
-        };
+        });
         
-        Map<String, Object> protoAggr2 = new Map<String, Object> {
+        ProtoAggregate protoAggr2 = new ProtoAggregate(new Map<String, Object> {
             'field1' => 'value1',
             'parent2.field2' => 'value2'
-        };
+        });
 
         Map<String, String> fieldDatum1 = new Map<String, String> {
             'fieldApiName' => 'field1',
@@ -177,15 +177,15 @@ private class AggregateComparatorTest {
 
     @IsTest
     private static void testCompareToNullLessThan() {
-        Map<String, Object> protoAggr1 = new Map<String, Object> {
+        ProtoAggregate protoAggr1 = new ProtoAggregate(new Map<String, Object> {
             'field1' => 'value1',
             'field2' => null
-        };
+        });
         
-        Map<String, Object> protoAggr2 = new Map<String, Object> {
+        ProtoAggregate protoAggr2 = new ProtoAggregate(new Map<String, Object> {
             'field1' => 'value1',
             'field2' => 'value2'
-        };
+        });
 
         Map<String, String> fieldDatum1 = new Map<String, String> {
             'fieldApiName' => 'field1',
@@ -219,15 +219,15 @@ private class AggregateComparatorTest {
 
     @IsTest
     private static void testCompareToNullGreaterThan() {
-        Map<String, Object> protoAggr1 = new Map<String, Object> {
+        ProtoAggregate protoAggr1 = new ProtoAggregate(new Map<String, Object> {
             'field1' => 'value1',
             'field2' => 'value2'
-        };
+        });
         
-        Map<String, Object> protoAggr2 = new Map<String, Object> {
+        ProtoAggregate protoAggr2 = new ProtoAggregate(new Map<String, Object> {
             'field1' => 'value1',
             'field2' => null
-        };
+        });
 
         Map<String, String> fieldDatum1 = new Map<String, String> {
             'fieldApiName' => 'field1',
@@ -262,15 +262,15 @@ private class AggregateComparatorTest {
 
     @IsTest
     private static void testCompareToNullEqual() {
-        Map<String, Object> protoAggr1 = new Map<String, Object> {
+        ProtoAggregate protoAggr1 = new ProtoAggregate(new Map<String, Object> {
             'field1' => 'value1',
             'field2' => null
-        };
+        });
         
-        Map<String, Object> protoAggr2 = new Map<String, Object> {
+        ProtoAggregate protoAggr2 = new ProtoAggregate(new Map<String, Object> {
             'field1' => 'value1',
             'field2' => null
-        };
+        });
 
         Map<String, String> fieldDatum1 = new Map<String, String> {
             'fieldApiName' => 'field1',
