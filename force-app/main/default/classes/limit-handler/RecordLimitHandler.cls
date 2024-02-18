@@ -5,8 +5,8 @@ public with sharing class RecordLimitHandler implements ILimitHandler {
     }
 
     public Object handleLimit() {
-        Object obj = options.obj;
-        Integer limitSize = options.limitSize;
+        Object obj = options.getObj();
+        Integer limitSize = options.getLimitSize();
 
         List<SObject> resultsList = new List<SObject>((List<SObject>) obj);
         while(resultsList.size() > limitSize) {

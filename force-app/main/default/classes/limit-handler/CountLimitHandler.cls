@@ -5,8 +5,8 @@ public with sharing class CountLimitHandler implements ILimitHandler {
     }
 
     public Object handleLimit() {
-        Integer limitSize = options.limitSize;
-        Object obj = options.obj;
+        Object obj = options.getObj();
+        Integer limitSize = options.getLimitSize();
 
         Integer count = (Integer) obj;
         if(count > limitSize) {

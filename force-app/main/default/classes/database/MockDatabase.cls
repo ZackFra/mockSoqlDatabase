@@ -109,11 +109,11 @@ public with sharing class MockDatabase {
             return results;
         }
 
-        LimitOptions options = new LimitOptions(limitNode, params)
+        ILimitHandler limitHandler = new LimitHandlerFactory()
+            .setLimitNode(limitNode)
+            .setParams(params)
             .setType(typeOfQuery)
-            .setObj(results);
-
-        ILimitHandler limitHandler = new LimitHandlerFactory(options)
+            .setObj(results)
             .createHandler();
         
         return limitHandler.handleLimit();
@@ -188,12 +188,12 @@ public with sharing class MockDatabase {
         if(offsetNode == null) {
             return results;
         }
-
-        OffsetOptions offsetOptions = new OffsetOptions(offsetNode, params)
-            .setType(typeOfQuery)
-            .setObj(results);
         
-        IOffsetHandler offsetHandler = new OffsetHandlerFactory(offsetOptions)
+        IOffsetHandler offsetHandler = new OffsetHandlerFactory()
+            .setType(typeOfQuery)
+            .setObj(results)
+            .setOffsetNode(offsetNode)
+            .setParams(params)
             .createHandler();
         
         return offsetHandler.handleOffset();
@@ -408,7 +408,7 @@ public with sharing class MockDatabase {
         List<ProtoAggregate> aggregateResults = new List<ProtoAggregate>();
         List<sObject> sObjects = new List<sObject>();
 
-        
+
         AggregateQueryHandler aggrHandler = new AggregateQueryHandler(this, topLevelNodes);
 
         // process the query, whether it's a count, aggregate, or regular query

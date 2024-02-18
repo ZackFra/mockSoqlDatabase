@@ -3,13 +3,13 @@ public with sharing class LimitOptions {
     public MockDatabase.QueryType type;
     public Object obj;
 
-    public LimitOptions(Node limitNode, Map<String, Object> params) {
-        this.setLimitSize(limitNode, params);
-    }
-
     public LimitOptions setType(MockDatabase.QueryType type) {
         this.type = type;
         return this;
+    }
+
+    public MockDatabase.QueryType getType() {
+        return this.type;
     }
 
     public LimitOptions setObj(Object obj) {
@@ -17,19 +17,16 @@ public with sharing class LimitOptions {
         return this;
     }
 
+    public Object getObj() {
+        return this.obj;
+    }
 
-    private LimitOptions setLimitSize(Node limitNode, Map<String, Object> params) {
-        Node limitSizeNode = limitNode.left;
-
-        if(limitSizeNode.nodeType == 'bind variable' && (params == null || !params.containsKey(limitSizeNode.id))) {
-            throw new QueryException('Missing bind variable: ' + limitSizeNode.id);
-        }
-
-        if(limitSizeNode.nodeType == 'bind variable') {
-            this.limitSize = (Integer) params.get(limitSizeNode.id);
-        } else {
-            this.limitSize = Integer.valueOf(limitSizeNode.id);
-        }
+    public LimitOptions setLimitSize(Integer limitSize) {
+        this.limitSize = limitSize;
         return this;
+    }
+
+    public Integer getLimitSize() {
+        return this.limitSize;
     }
 }
