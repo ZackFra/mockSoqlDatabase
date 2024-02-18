@@ -406,13 +406,9 @@ public with sharing class MockDatabase {
         // results will either be a count, a list of sObjects, or a list of aggregates
         Integer count = 0;
         List<ProtoAggregate> aggregateResults = new List<ProtoAggregate>();
-
-        List<ProtoAggregate> summaryResults = new List<ProtoAggregate>();
-        List<ProtoAggregate> summarySubResults = new List<ProtoAggregate>();
-        ProtoAggregate grandSummaryResult = new ProtoAggregate();
-
         List<sObject> sObjects = new List<sObject>();
 
+        
         AggregateQueryHandler aggrHandler = new AggregateQueryHandler(this, topLevelNodes);
 
         // process the query, whether it's a count, aggregate, or regular query
