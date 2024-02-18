@@ -231,24 +231,20 @@ public with sharing class MockDatabase {
     private Object handleOrderByNode(
         QueryType typeOfQuery, 
         Object results, 
-        Node selectNode, 
-        Node orderByNode
+        Node selectNode
     ) {
         if(results == null) {
             return results;
         }
 
-        switch on typeOfQuery {
-            when AGGREGATE {
-                return sortByOrderBy((List<ProtoAggregate>) results, selectNode, orderByNode);
-            }
-            when RECORD {
-                return sortByOrderBy((List<SObject>) results, selectNode, orderByNode);
-            }
-            when else {
-                throw new QueryException('Invalid results type');
-            }
-        }
+        TopLevelNodes topLevelNodes = getTopLevelNodes(selectNode);
+
+        OrderByHandler orderByHandler = new OrderByHandlerFactory()
+            .setObj(results)
+            .setTopLevelNodes(topLevelNodes)
+            .setType(typeOfQuery)
+            .createHandler();
+        return orderByHandler.handleOrderBy();
     }
 
     /**
@@ -276,101 +272,6 @@ public with sharing class MockDatabase {
 
     public Map<String, Object> getComparables(SObject record, String field) {
         return ComparableService.getComparables(this, record, field);
-    }
-
-    private List<ProtoAggregate> sortByOrderBy(List<ProtoAggregate> aggregates, Node selectNode, Node orderByNode) {
-        // clone the list so we don't modify the original
-        aggregates = new List<ProtoAggregate>(aggregates);
-
-        if(orderByNode == null) {
-            return aggregates;
-        }
-        Node orderByField = orderByNode.left;
-        
-        Map<String, Map<String, String>> fields = new Map<String, Map<String, String>>();
-        while(orderByField != null) {
-            String relationshipName;
-            String fieldApiName;
-
-            Map<String, String> aliasData = AliasService.getAlias(selectNode, orderByField);
-            fieldApiName = aliasData.get('fieldApiName');
-            relationshipName = aliasData.get('relationshipName');
-            
-            String nullDir = 'first';
-            String order = 'asc';
-            Node curr = orderByField.right;
-            if(curr != null && curr.nodeType == 'direction') {
-                order = orderByField.right.id;
-                curr = curr.right;
-            }
-            if(curr != null && curr.nodeType == 'nulls direction') {
-                if(curr.id == 'nulls last') {
-                    nullDir = 'last';
-                }
-            }
-
-
-            Map<String, String> fieldData = new Map<String, String> {
-                'fieldApiName' => fieldApiName,
-                'relationshipName' => relationshipName,
-                'order' => order,
-                'nullDir' => nullDir
-            };
-            fields.put(fieldApiName, fieldData);
-            orderByField = orderByField.left;
-        }
-        AggregateComparator comparator = new AggregateComparator(fields);
-        aggregates.sort(comparator);
-        return aggregates;
-    }
-
-    /**
-     * @description If orderByNode is not null, sort the list of sObjects by the fields in the orderByNode
-     * @param sObjects : the list of sObjects
-     * @param orderByNode : the orderByNode
-     * @return : the sorted list of sObjects
-     */
-    private List<SObject> sortByOrderBy(List<SObject> sObjects, Node selectNode, Node orderByNode) {
-        // clone the list so we don't modify the original
-        sObjects = new List<SObject>(sObjects);
-
-        if(orderByNode == null) {
-            return sObjects;
-        }
-        Node orderByField = orderByNode.left;
-
-        Map<String, Map<String, String>> fields = new Map<String, Map<String, String>>();
-        while(orderByField != null) {
-            String fieldName = orderByField.id;
-            Map<String, Object> comparables = ComparableService.getComparableDataFromNodes(orderByField, selectNode);
-            String relationshipName = (String) comparables.get('relationshipName');
-            String fieldApiName = (String) comparables.get('comparableField');
-
-            String order = 'asc';
-            String nullDir = 'first';
-            Node curr = orderByField.right;
-            if(curr != null && curr.nodeType == 'direction') {
-                order = orderByField.right.id;
-                curr = curr.right;
-            }
-
-            if(curr != null && curr.nodeType == 'nulls direction') {
-                if(curr.id == 'nulls last') {
-                    nullDir = 'last';
-                }
-            }
-            Map<String, String> fieldData = new Map<String, String> {
-                'fieldApiName' => fieldApiName,
-                'relationshipName' => relationshipName,
-                'order' => order,
-                'nullDir' => nullDir
-            };
-            fields.put(fieldName, fieldData);
-            orderByField = orderByField.left;
-        }
-        SObjectComparator comparator = new SObjectComparator(fields);
-        sObjects.sort(comparator);
-        return sObjects;
     }
 
     // if all we're doing is counting, no other aggregate funcs
@@ -636,7 +537,7 @@ public with sharing class MockDatabase {
         // handle the ORDER BY and LIMIT logic here
         if(isAggregateQuery) {
             aggregateResults = (List<ProtoAggregate>) handleHavingNode(aggregateResults, selectNode, params);
-            aggregateResults = (List<ProtoAggregate>) handleOrderByNode(QueryType.AGGREGATE, aggregateResults, selectNode, orderByNode);
+            aggregateResults = (List<ProtoAggregate>) handleOrderByNode(QueryType.AGGREGATE, aggregateResults, selectNode);
             aggregateResults = (List<ProtoAggregate>) handleOffsetNode(QueryType.AGGREGATE, offsetNode, aggregateResults, params);
             aggregateResults = (List<ProtoAggregate>) handleLimitNode(QueryType.AGGREGATE, limitNode, aggregateResults, params);
 
@@ -653,7 +554,7 @@ public with sharing class MockDatabase {
             count = (Integer) handleLimitNode(QueryType.COUNT, limitNode, count, params);
             results = count;
         } else {
-            sObjects = (List<SObject>) handleOrderByNode(QueryType.RECORD, sObjects, selectNode, orderByNode);
+            sObjects = (List<SObject>) handleOrderByNode(QueryType.RECORD, sObjects, selectNode);
             sObjects = (List<SObject>) handleOffsetNode(QueryType.RECORD, offsetNode, sObjects, params);
             sObjects = (List<SObject>) handleLimitNode(QueryType.RECORD, limitNode, sObjects, params);
             results = sObjects;
