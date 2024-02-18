@@ -1113,9 +1113,6 @@ public with sharing class MockDatabase {
                 throw new QueryException('Invalid field type');
             }
 
-            System.debug(comparableField);
-            System.debug(comparableRecord.get(comparableField));
-
             // mutates aggregate result
             calculateAggregate(
                 currSelect, 

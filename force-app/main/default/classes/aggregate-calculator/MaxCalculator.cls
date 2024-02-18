@@ -1,9 +1,15 @@
+/**
+ * @description calculates the MAX value of a field for an aggregate result
+ */
 public with sharing class MaxCalculator implements IAggregateCalculator {
     AggregateCalculatorOptions options;
     public MaxCalculator(AggregateCalculatorOptions options) {
         this.options = options;
     }
     
+    /**
+     * @description calculates the MAX value of a field for an aggregate result
+     */
     public ProtoAggregate calculate() {
         return calculate(
             options.aggregateResult,
@@ -11,8 +17,8 @@ public with sharing class MaxCalculator implements IAggregateCalculator {
             options.value
         );
     }
-    
-    public ProtoAggregate calculate(ProtoAggregate aggregateResult, String alias, Object value) {
+
+    private ProtoAggregate calculate(ProtoAggregate aggregateResult, String alias, Object value) {
         if(value == null) {
             // make sure it's explicitly set to null
             if(!aggregateResult.containsKey(alias)) {

@@ -2956,7 +2956,7 @@ private with sharing class MockDatabaseTest {
         Test.startTest();
         List<Aggregate> queriedAccts = (List<Aggregate>) mockDb.query('SELECT NumberOfEmployees, Name, SUM(AnnualRevenue) annualRevSum FROM Account GROUP BY ROLLUP(NumberOfEmployees, Name)');
         Test.stopTest();
-        System.debug(queriedAccts[25]);
+
         Assert.areEqual(26, queriedAccts.size(), 'Incorrect number of aggregates');
         Assert.areEqual(8569000000.0, queriedAccts[25].get('annualRevSum'), 'Incorrect sum');
     }

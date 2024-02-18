@@ -12,7 +12,8 @@ public with sharing class MinCalculator implements IAggregateCalculator {
             options.value
         );
     }
-    public ProtoAggregate calculate(ProtoAggregate aggregateResult, String alias, Object value) {
+    
+    private ProtoAggregate calculate(ProtoAggregate aggregateResult, String alias, Object value) {
         if(value == null) {
             // make sure it's explicitly set to null
             if(!aggregateResult.containsKey(alias)) {
