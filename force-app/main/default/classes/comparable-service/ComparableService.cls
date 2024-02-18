@@ -43,7 +43,7 @@ public with sharing class ComparableService {
                 priorRecord = parentRecord;
             }
 
-            Map<String, Object> parentInfo = db.getParentRecord(obj, parentField);
+            Map<String, Object> parentInfo = db.findParentRecord(obj, parentField);
             parentRecord = (sObject) parentInfo.get('parentRecord');
             parentObjApiName = (String) parentInfo.get('parentObjApiName');
             fieldRelationshipName = (String) parentInfo.get('fieldRelationshipName');

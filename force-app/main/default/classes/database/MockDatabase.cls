@@ -17,6 +17,14 @@ public with sharing class MockDatabase {
     public Map<Id, sObject> get(String objApiName) {
         return this.db.get(objApiName);
     }
+
+    public SObject findRecord(Id recordId) {
+        return this.utils.findRecord(recordId);
+    }
+
+    public Map<String, Object> findParentRecord(sObject sObj, String fieldName) {
+        return this.utils.findParentRecord(sObj, fieldName);
+    }
     
     private Boolean checkHavingClause(BooleanLogicOptions havingLogicOptions) {
         HavingLogicHandler havingLogicHandler = new HavingLogicHandler(havingLogicOptions);
@@ -31,86 +39,6 @@ public with sharing class MockDatabase {
             .setParams(params);
         WhereLogicHandler whereLogicHandler = new WhereLogicHandler(whereLogicOptions);
         return whereLogicHandler.evaluate();
-    }
-
-    /** @description : return a parent sObject from a field name and a child sObject
-      * @param sObj : the child sObject
-      * @param fieldName : the field name of the parent sObject from the child
-      *                  : ex. OpportunityLineItem, the field is Opportunity
-      */
-      public Map<String, Object> getParentRecord(sObject sObj, String fieldName) {
-        // api name of the child sObject
-        String objApiName = sObj.getSObjectType().getDescribe().getName();
-        // api name of the id object on the child (i.e. OpportunityId)
-        String fieldApiName;
-        // api name of the relationship field on the child (i.e. Opportunity)
-        String fieldRelationshipName;
-        // api name of the parent sObject
-        String parentObjApiName;
-        // whether this field is a polymorphic relationship
-        Boolean isPolymorphic = false;
-
-
-        String sObjApiName = sObj.getSObjectType().getDescribe().getName();
-        SObjectType t = ((SObject)Type.forName(sObjApiName).newInstance()).getSObjectType();
-        
-        List<Schema.SObjectField> fields = SchemaService.getFields(t);
-        for (SObjectField f : t.getDescribe().fields.getMap().values()) {
-            Schema.DescribeFieldResult dfr = f.getDescribe();
-            Schema.DisplayType dfrFieldType = dfr.getType();
-            String dfrRelationshipName = dfr.getRelationshipName();
-            String lowercaseDfrRelationshipName = null;
-            if(dfrRelationshipName != null) {
-                lowercaseDfrRelationshipName = dfrRelationshipName.toLowerCase();
-            }
-
-            if (dfrFieldType == Schema.DisplayType.REFERENCE && lowerCaseDfrRelationshipName == fieldName) {
-                List<Schema.sObjectType> objTypeList = dfr.getReferenceTo();
-
-                if(objTypeList.size() == 1) {
-                    parentObjApiName = objTypeList[0].getDescribe().getName();
-                } else {
-                    String parentFieldApiName = SchemaService.getFieldName(f);
-                    Id parentRecordId = (Id) sObj.get(parentFieldApiName);
-                    parentObjApiName = SchemaService.getSObjectName(parentRecordId);
-                    isPolymorphic = true;
-                }
-                
-                if(parentObjApiName == null) {
-                    throw new QueryException('Invalid relationship name: ' + fieldName);
-                }
-
-                fieldApiName = dfr.getName();
-                fieldRelationshipName = dfr.getRelationshipName();
-
-                sObject parentRecord = ((sObject) Type.forName(parentObjApiName).newInstance()).getSObjectType().newSObject();
-                
-                Map<Id, sObject> mockRecordsChild = this.db.get(objApiName);
-                Id parentId = (Id) mockRecordsChild.get(sObj.Id).get(fieldApiName);
-
-                parentRecord.put('Id', parentId);
-                Map<String, Object> objInfo = new Map<String, Object> {
-                    'fieldApiName' => fieldApiName,
-                    'fieldRelationshipName' => fieldRelationshipName,
-                    'parentObjApiName' => parentObjApiName,
-                    'objApiName' => objApiName,
-                    'parentRecord' => parentRecord,
-                    'isPolymorphic' => isPolymorphic
-                };
-                return objInfo;
-            }
-        }
-
-        throw new QueryException('Invalid relationship name: ' + fieldName);
-    }
-
-    public SObject findRecord(Id recordId) {
-        String objApiName = SchemaService.getSObjectName(recordId);
-        try {
-            return this.db.get(objApiName).get(recordId);
-        } catch(Exception e) {
-            throw new QueryException('No record found for ' + recordId);
-        }
     }
 
     private SObject handleSelectQuery(FieldSelector fSelector) {
@@ -150,29 +78,6 @@ public with sharing class MockDatabase {
             .setDatabase(this);
 
         return handleSelectQuery(fSelector);
-    }
-
-    private Boolean isAggregateQuery(Node selectNode) {
-        TopLevelNodes topLevelNodes = getTopLevelNodes(selectNode);
-        Node groupByNode = topLevelNodes.groupByNode;
-
-        if(isSingularCount(selectNode)) {
-            return false;
-        }
-
-        Node curr = selectNode;
-        while(curr != null) {
-            if(curr.nodeType == 'aggregate function') {
-                return true;
-            }
-            curr = curr.left;
-        }
-
-        if(groupByNode != null) {
-            return true;
-        }
-
-        return false;
     }
 
     private Object handleLimitNode(QueryType typeOfQuery, Node limitNode, Object results, Map<String, Object> params) {
@@ -273,12 +178,6 @@ public with sharing class MockDatabase {
     public Map<String, Object> getComparables(SObject record, String field) {
         return ComparableService.getComparables(this, record, field);
     }
-
-    // if all we're doing is counting, no other aggregate funcs
-    private Boolean isSingularCount(Node selectNode) {
-        return (selectNode.left.id == 'count' && selectNode.left.right == null && selectNode.left.left == null);
-    }
-
     /**
      * @description Filter on the "USING SCOPE" clause
      * @param sObject The SObject to filter
@@ -292,18 +191,6 @@ public with sharing class MockDatabase {
         // https://help.salesforce.com/s/articleView?id=release-notes.rn_apex_formulaeval.htm&release=248&type=5
         return true;
      }
-
-
-    /**
-     * @description Given a record id, verify it exists in the database
-     * @param recordId : the record id
-     * @return : whether the record exists in the database
-     */
-    private Boolean isRecordInDatabase(Id recordId) {
-        String recordApiName = SchemaService.getSObjectName(recordId);
-        Map<Id, sObject> mockObjects = this.db.get(recordApiName);
-        return mockObjects.containsKey(recordId);
-    }
 
     /** DML methods **/
 
@@ -349,7 +236,7 @@ public with sharing class MockDatabase {
             throw new DmlException('Argument cannot be null');
         }
 
-        String objName = obj.getSObjectType().getDescribe().getName();
+        String objName = SchemaService.getSObjectName(obj);
         Map<Id, sObject> mockObjects = this.db.get(objName);
 
         if (mockObjects == null) {
@@ -372,7 +259,7 @@ public with sharing class MockDatabase {
 
             Id recordId = (Id) obj.get(field);
 
-            if(isRef && !isRecordInDatabase(recordId)) {
+            if(isRef && !this.utils.isRecordInDatabase(recordId)) {
                 throw new DmlException('Foreign key reference does not exist');
             }
             mockObjects.get(obj.Id).put(field, obj.get(field));
@@ -490,8 +377,8 @@ public with sharing class MockDatabase {
             return new List<sObject>();
         }
 
-        Boolean isAggregateQuery = isAggregateQuery(selectNode);
-        Boolean isCount = isSingularCount(selectNode);
+        Boolean isAggregateQuery = NodeService.isAggregateQuery(topLevelNodes);
+        Boolean isCount = NodeService.isSingularCount(topLevelNodes);
 
         Object results;
 
