@@ -229,7 +229,7 @@ public with sharing class MockDatabase {
     }
 
     private Object handleOrderByNode(
-        String typeOfQuery, 
+        QueryType typeOfQuery, 
         Object results, 
         Node selectNode, 
         Node orderByNode
@@ -238,12 +238,16 @@ public with sharing class MockDatabase {
             return results;
         }
 
-        if(typeOfQuery == 'aggregate') {
-            return sortByOrderBy((List<ProtoAggregate>) results, selectNode, orderByNode);
-        } else if(typeOfQuery == 'sObject') {
-            return sortByOrderBy((List<SObject>) results, selectNode, orderByNode);
-        } else {
-            throw new QueryException('Invalid results type');
+        switch on typeOfQuery {
+            when AGGREGATE {
+                return sortByOrderBy((List<ProtoAggregate>) results, selectNode, orderByNode);
+            }
+            when RECORD {
+                return sortByOrderBy((List<SObject>) results, selectNode, orderByNode);
+            }
+            when else {
+                throw new QueryException('Invalid results type');
+            }
         }
     }
 
@@ -632,7 +636,7 @@ public with sharing class MockDatabase {
         // handle the ORDER BY and LIMIT logic here
         if(isAggregateQuery) {
             aggregateResults = (List<ProtoAggregate>) handleHavingNode(aggregateResults, selectNode, params);
-            aggregateResults = (List<ProtoAggregate>) handleOrderByNode('aggregate', aggregateResults, selectNode, orderByNode);
+            aggregateResults = (List<ProtoAggregate>) handleOrderByNode(QueryType.AGGREGATE, aggregateResults, selectNode, orderByNode);
             aggregateResults = (List<ProtoAggregate>) handleOffsetNode(QueryType.AGGREGATE, offsetNode, aggregateResults, params);
             aggregateResults = (List<ProtoAggregate>) handleLimitNode(QueryType.AGGREGATE, limitNode, aggregateResults, params);
 
@@ -649,7 +653,7 @@ public with sharing class MockDatabase {
             count = (Integer) handleLimitNode(QueryType.COUNT, limitNode, count, params);
             results = count;
         } else {
-            sObjects = (List<SObject>) handleOrderByNode('sObject', sObjects, selectNode, orderByNode);
+            sObjects = (List<SObject>) handleOrderByNode(QueryType.RECORD, sObjects, selectNode, orderByNode);
             sObjects = (List<SObject>) handleOffsetNode(QueryType.RECORD, offsetNode, sObjects, params);
             sObjects = (List<SObject>) handleLimitNode(QueryType.RECORD, limitNode, sObjects, params);
             results = sObjects;
