@@ -31,26 +31,6 @@ public with sharing class AggregateQueryHandler {
         return finalResults;
     }
 
-    private List<ProtoAggregate> replaceWithAliases(List<ProtoAggregate> aggregates) {
-        List<ProtoAggregate> aggregateResults = new List<ProtoAggregate>(aggregates);
-        Node selectNode = topLevelNodes.selectNode;
-        
-        for(ProtoAggregate aggr : aggregateResults) {
-            for(Node currSelect = selectNode.left; currSelect != null; currSelect = currSelect.left) {
-                String fieldOrAliasFromSelect = AliasService.getAlias(selectNode, currSelect).get('fieldApiName');
-                for(String key : aggr.keySet()) {
-                    if(key.toLowerCase() == currSelect.id && key != fieldOrAliasFromSelect) {
-                        aggr.put(fieldOrAliasFromSelect, aggr.get(key));
-                        aggr.remove(key);
-                        break;
-                    }
-                }
-            }
-        }
-
-        return aggregateResults;
-    }
-
     public void processRecord(SObject databaseRecord) {
         Node selectNode = topLevelNodes.selectNode;
         Node groupByNode = topLevelNodes.groupByNode;
@@ -129,43 +109,46 @@ public with sharing class AggregateQueryHandler {
                 throw new QueryException('Invalid field type');
             }
 
-            // mutates aggregate result
-            calculateAggregate(
-                currSelect, 
-                alias, 
+            List<ProtoAggregate> aggregates = new List<ProtoAggregate> {
                 aggregateResult,
-                comparableRecord.get(comparableField)
-            );
+                summaryResult,
+                summarySubResult,
+                grandSummaryResult
+            };
 
-            // mutates summary result
-            if(summaryResult != null) {
+            for(ProtoAggregate aggr : aggregates) {
+                if(aggr == null) {
+                    continue;
+                }
                 calculateAggregate(
                     currSelect, 
                     alias, 
-                    summaryResult,
+                    aggr,
                     comparableRecord.get(comparableField)
                 );
             }
 
-            if(summarySubResult != null) {
-                calculateAggregate(
-                    currSelect, 
-                    alias, 
-                    summarySubResult,
-                    comparableRecord.get(comparableField)
-                );
-            }
+        }
+    }
 
-            // grand summary result
-            if(grandSummaryResult != null) {
-                calculateAggregate(
-                    currSelect, 
-                    alias, 
-                    grandSummaryResult,
-                    comparableRecord.get(comparableField)
-                );
+    private List<ProtoAggregate> replaceWithAliases(List<ProtoAggregate> aggregates) {
+        List<ProtoAggregate> aggregateResults = new List<ProtoAggregate>(aggregates);
+        Node selectNode = topLevelNodes.selectNode;
+        
+        for(ProtoAggregate aggr : aggregateResults) {
+            for(Node currSelect = selectNode.left; currSelect != null; currSelect = currSelect.left) {
+                String fieldOrAliasFromSelect = AliasService.getAlias(selectNode, currSelect).get('fieldApiName');
+                for(String key : aggr.keySet()) {
+                    if(key.toLowerCase() == currSelect.id && key != fieldOrAliasFromSelect) {
+                        aggr.put(fieldOrAliasFromSelect, aggr.get(key));
+                        aggr.remove(key);
+                        break;
+                    }
+                }
             }
         }
+
+        return aggregateResults;
     }
 
     private ProtoAggregate createGrandSummaryAggregate() {
