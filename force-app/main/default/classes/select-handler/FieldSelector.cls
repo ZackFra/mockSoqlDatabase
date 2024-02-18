@@ -5,6 +5,8 @@ public with sharing class FieldSelector {
     public Node fieldNode;
     public Map<String, Object> params;
 
+    public MockDatabase db;
+
     public FieldSelector setDatabaseRecord(SObject databaseRecord) {
         this.databaseRecord = databaseRecord;
         return this;
@@ -22,6 +24,11 @@ public with sharing class FieldSelector {
 
     public FieldSelector setParams(Map<String, Object> params) {
         this.params = params;
+        return this;
+    }
+
+    public FieldSelector setDatabase(MockDatabase db) {
+        this.db = db;
         return this;
     }
 }

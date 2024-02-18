@@ -2,6 +2,9 @@ public with sharing class MockDatabase {
 
     public Map<String, Map<Id, sObject>> db = new Map<String, Map<Id, sObject>>();
     public MockDatabaseUtils utils = new MockDatabaseUtils(this);
+    public enum QueryType {
+        RECORD, AGGREGATE, COUNT
+    }
 
     /**
      * @description map of the top-level nodes of select nodes, is a map to account for subqueries
@@ -101,82 +104,8 @@ public with sharing class MockDatabase {
         throw new QueryException('Invalid relationship name: ' + fieldName);
     }
 
-    private sObject buildObjWithRelations(sObject sObj, List<String> fieldParts, String finalField) {
-        fieldParts = new List<String>(fieldParts);
-        String fieldPart = fieldParts[0];
-
-        Map<String, Object> parentInfo = ComparableService.getParentObject(this, findRecord(sObj.Id), fieldPart);
-
-        sObject parentRecord = (sObject) parentInfo.get('parentRecord');
-        String fieldApiName = (String) parentInfo.get('fieldApiName');
-        String fieldRelationshipName = (String) parentInfo.get('fieldRelationshipName');
-        String objApiName = (String) parentInfo.get('objApiName');
-
-        Map<String, Object> sObjClone = this.utils.mapFromSObject(sObj);
-        String parentRecordApiName = (String) parentInfo.get('parentObjApiName');
-        fieldParts.remove(0);
-        if(!fieldParts.isEmpty()) {
-            if(sObjClone.containsKey(fieldRelationshipName)) {
-                parentRecord = this.utils.sObjectFromMap((Map<String, Object>)sObjClone.get(fieldRelationshipName), parentRecordApiName);
-            }
-            sObject nextParent = buildObjWithRelations(parentRecord, fieldParts, finalField);
-            sObjClone.put(fieldApiName, nextParent.Id);
-            sObjClone.put(fieldRelationshipName, nextParent);
-        } else {
-            Map<Id, sObject> mockRecords = this.db.get(parentRecordApiName);
-            
-            Schema.SObjectType parentRecordSObjType = SchemaService.getSObjectType(parentRecord);
-            Boolean isRelationshipPolymorphic = (Boolean) parentInfo.get('isPolymorphic');
-            Map<String, String> polymorphicFieldMap = SchemaService.getPolymorphicFieldMap();
-            Boolean isNameField = polymorphicFieldMap.containsKey(finalField);
-            String finalFieldApiName;
-            if(isRelationshipPolymorphic && isNameField)  {
-                finalFieldApiName = polymorphicFieldMap.get(finalField);
-            } else {
-                finalFieldApiName = SchemaService.getFieldName(parentRecordSObjType, finalField);
-            }
-
-            Map<String, Object> parentRecordData = this.utils.mapFromSObject(parentRecord);
-
-            if(sObjClone.containsKey(fieldRelationshipName)) {
-                parentRecordData = (Map<String, Object>) sObjClone.get(fieldRelationshipName);
-            } 
-            
-            if(isRelationshipPolymorphic) {
-                if(finalFieldApiName == 'Type') {
-                    parentRecordData.put(finalFieldApiName, parentRecordApiName);
-                } else {
-                    SObject parentRecordFromDatabase = mockRecords.get(parentRecord.Id);
-                    try {
-                        parentRecordData.put(finalFieldApiName, parentRecordFromDatabase.get(finalFieldApiName));
-                    } catch(System.SObjectException e) {
-                        parentRecordData.put(finalFieldApiName, null);
-                    } catch(Exception e) {
-                        throw e;
-                    }
-                }
-
-                // the "Name" object is a hidden SF object for polymorphic relationships
-                Schema.SObjectType polymorphicSObjectSot = SchemaService.getPolymorphicSObjectType();
-                String polymorphicSObjectName = SchemaService.getSObjectName(polymorphicSObjectSot);
-
-                Map<String, String> attributes = new Map<String, String> {
-                    'type' => polymorphicSObjectName,
-                    'url' => '/' + parentRecord.Id
-                };
-                
-                parentRecordData.put('attributes', attributes);
-            } else {
-                parentRecordData.put(finalFieldApiName, mockRecords.get(parentRecord.Id).get(finalFieldApiName));
-            }
-            sObjClone.put(fieldApiName, parentRecord.Id);
-            sObjClone.put(fieldRelationshipName, parentRecordData);
-        }
-        return this.utils.sObjectFromMap(sObjClone, objApiName);
-    }
-
-    private SObject findRecord(Id recordId) {
-        String objApiName = recordId.getSObjectType().getDescribe().getName();
+    public SObject findRecord(Id recordId) {
+        String objApiName = SchemaService.getSObjectName(recordId);
         try {
             return this.db.get(objApiName).get(recordId);
         } catch(Exception e) {
@@ -184,253 +113,17 @@ public with sharing class MockDatabase {
         }
     }
 
-    private SObject handleTypeOfQuery(FieldSelector fSelector) {
-        SObject databaseRecord = fSelector.databaseRecord;
-        SObject queriedRecord = fSelector.queriedRecord;
-        Node fieldNode = fSelector.fieldNode;
-        Map<String, Object> params = fSelector.params;
-
-        if(fieldNode.nodeType != 'typeof') {
-            throw new QueryException('Unexpected error');
-        }
-
-        Node whenNode = fieldNode.right;
-        String relName = fieldNode.id;
-
-        Schema.SObjectType sot = SchemaService.getSObjectType(queriedRecord);
-        String fieldApiName = SchemaService.getFieldNameForRelationship(sot, relName);
-        String objApiName = SchemaService.getSObjectName(queriedRecord);
-        Schema.SObjectField field = SchemaService.getField(sot, fieldApiName);
-
-        if(!SchemaService.isFieldPolymorphic(field)) {
-            throw new QueryException('TYPEOF operand "' + fieldApiName + '" is not a polymorphic relationship field');
-        }
-
-        Id parentRecordId = (Id) databaseRecord.get(fieldApiName);
-
-        if(parentRecordId == null) {
-            return queriedRecord;
-        }
-        SObject parentRecord = findRecord(parentRecordId);
-        String parentObjApiName = SchemaService.getSObjectName(parentRecord).toLowerCase();
-
-        Node curr = whenNode;
-        Node fieldListNode;
-        while(true) {
-            if(curr == null) {
-                fieldListNode = null;
-                break;
-            }
-
-            Node objNode = curr.left;
-            Node thenNode = curr.right;
-            if(curr.nodeType == 'else') {
-                fieldListNode = curr.right;
-                break;
-            }
-
-            String expectedObjName = objNode.id;
-            if(expectedObjName == parentObjApiName) {
-                fieldListNode = thenNode;
-                break;
-            }
-
-            curr = curr.right.right;
-        }
-
-        if(fieldListNode == null) {
-            return queriedRecord;
-        }
-
-        curr = fieldListNode;
-        List<String> selectFields = new List<String>();
-        while(curr != null) {
-            Schema.SObjectType parentRecordSot = SchemaService.getSObjectType(parentRecord);
-            String parentRecordFieldApiName = SchemaService.getFieldName(parentRecordSot, curr.id);
-            selectFields.add(parentRecordFieldApiName);
-            curr = curr.left;
-        }
-
-        Map<String, Object> parentRecordData = new Map<String, Object>();
-        if(queriedRecord.getSObject(relName) != null) {
-            parentRecordData = this.utils.mapFromSObject(queriedRecord.getSObject(relName));
-        }
-
-        for(String parentRecordFieldApiName : selectFields) {
-            parentRecordData.put(parentRecordFieldApiName, parentRecord.get(parentRecordFieldApiName));
-        }
-        parentRecordData.put('Id', parentRecord.Id);
-        
-        Map<String, String> attributes = new Map<String, String> {
-            'type' => SchemaService.getSObjectName(parentRecord),
-            'url' => '/' + parentRecord.Id
-        };
-        parentRecordData.put('attributes', attributes);
-        Map<String, Object> sObjClone = this.utils.mapFromSObject(queriedRecord);
-
-        Schema.DescribeFieldResult dfr = SchemaService.describeField(objApiName, fieldApiName);
-        String relApiName = dfr.getRelationshipName();
-
-        sObjClone.put(relApiName, parentRecordData);
-        sObjClone.put(fieldApiName, parentRecord.Id);
-        return this.utils.sObjectFromMap(sObjClone, objApiName);
-
-    }
-
-    private sObject handleParentSubQuery(FieldSelector fSelector) {
-        SObject queriedRecord = fSelector.queriedRecord;
-        Node fieldNode = fSelector.fieldNode;
-        Map<String, Object> params = fSelector.params;
-
-        String fieldName = fieldNode.id;
-
-        List<String> fieldParts = fieldName.split('\\.');
-        String finalField = fieldParts[fieldParts.size()-1];
-        fieldParts.remove(fieldParts.size()-1);
-        return buildObjWithRelations(queriedRecord, fieldParts, finalField);
-    }
-
-    private SObject handleChildSubQuery(FieldSelector fSelector) {
-        SObject queriedRecord = fSelector.queriedRecord;
-        Node fieldNode = fSelector.fieldNode;
-        Map<String, Object> params = fSelector.params;
-
-        String objApiName = SchemaService.getSObjectName(queriedRecord);
-        Node subquerySelectNode = fieldNode.right;
-        Node subqueryFromNode = subquerySelectNode.right;
-
-        Node subqueryObjNode = subqueryFromNode.left;
-        String subqueryChildRelationshipName = subqueryObjNode.id;
-
-        Schema.SObjectType childObjectType = SchemaService.getSObjectType(objApiName);
-        List<Schema.ChildRelationship> childRelationships = SchemaService.getChildRelationships(childObjectType);
-
-        Schema.ChildRelationship subqueryChildRelationship = null;
-        for (Schema.ChildRelationship childRelationship : childRelationships) {
-            if(!SchemaService.isChildRelationship(childRelationship, subqueryChildRelationshipName)) {
-                continue;
-            }
-            subqueryChildRelationship = childRelationship;
-            break;
-        }
-
-        if(subqueryChildRelationship == null) {
-            throw new QueryException('Invalid relationship name: ' + subqueryChildRelationshipName);
-        }
-
-        String subQueryObjName = SchemaService.getChildRelationshipChildSObjectName(subQueryChildRelationship);
-        String subQueryFieldName = SchemaService.getChildRelationshipFieldName(subQueryChildRelationship);
-        subqueryChildRelationshipName = SchemaService.getChildRelationshipName(subQueryChildRelationship);
-
-        // clone the tree so we can modify it
-        Node subqueryCloneSelectNode = subQuerySelectNode.deepClone();
-        TopLevelNodes subqueryCloneTopLevelNodes = new TopLevelNodes(subqueryCloneSelectNode);
-
-        Node subqueryCloneFromNode = subqueryCloneTopLevelNodes.fromNode;
-        Node subqueryCloneWhereNode = subqueryCloneTopLevelNodes.whereNode;
-
-        subqueryCloneFromNode.left.id = subqueryObjName.toLowerCase();
-        if(subqueryCloneWhereNode == null) {
-            subqueryCloneWhereNode = new NodeBuilder()
-                .setId('where')
-                .setNodeType('where')
-                .build();
-            
-            // need to account for something being to the right of the from node
-            Node usingScopeNode = subqueryCloneTopLevelNodes.usingScopeNode;
-            if(usingScopeNode != null) {
-                Node nodeToRightOfUsingScopeNode = usingScopeNode.right;
-                usingScopeNode.right = subqueryCloneWhereNode;
-                subqueryCloneWhereNode.right = nodeToRightOfUsingScopeNode;
-            } else {
-                Node nodeToRightOfFromNode = subqueryCloneFromNode.right;
-                subqueryCloneFromNode.right = subqueryCloneWhereNode;
-                subqueryCloneWhereNode.right = nodeToRightOfFromNode;
-            }
-        }
-
-        Node queryConditionNode = new NodeBuilder()
-            .setId('=')
-            .setNodeType('operator')
-            .setLeft(new NodeBuilder()
-                .setId(subQueryFieldName.toLowerCase())
-                .setNodeType('field')
-                .build())
-            .setRight(new NodeBuilder()
-                .setId(((String) queriedRecord.Id).toLowerCase())
-                .setNodeType('string')
-                .build())
-            .build();
-
-        if(subqueryCloneWhereNode.left == null) {
-            subqueryCloneWhereNode.left = queryConditionNode;
-        } else {
-            subqueryCloneWhereNode.left = new NodeBuilder()
-                .setId('and')
-                .setNodeType('and')
-                .setLeft(queryConditionNode)
-                .setRight(subqueryCloneWhereNode.left)
-                .build();
-        }
-
-        List<SObject> subQueryRecords = (List<SObject>) doQuery(subqueryCloneSelectNode, params);
-
-        // so we can't mock the subquery results directly, but we can serialize them and then deserialize them
-        // here we serialize the subquery results, which can't be instaniated,
-        // then deserialize them into a map, then add the map to the parent object
-        Map<String, Object> objMap = this.utils.mapFromSObject(queriedRecord);
-        Map<String, Object> subQueryResultMap = new Map<String, Object>();
-        
-        subQueryResultMap.put('records', subQueryRecords);
-        subQueryResultMap.put('totalSize', subQueryRecords.size());
-        subQueryResultMap.put('done', true);
-
-        objMap.put(subQueryChildRelationshipName, subQueryResultMap);
-
-        return this.utils.sObjectFromMap(objMap, ObjApiName);
-    }
-
-    private SObject handleFieldQuery(FieldSelector fSelector) {
-        SObject queriedRecord = fSelector.queriedRecord;
-        SObject databaseRecord = fSelector.databaseRecord;
-        Node fieldNode = fSelector.fieldNode;
-
-        String fieldName = fieldNode.id;
-        Object fieldValue = databaseRecord.get(fieldName);
-
-        Schema.SObjectType sot = SchemaService.getSObjectType(databaseRecord);
-        String sObjectName = SchemaService.getSObjectName(sot);
-        if(fieldValue != null) {
-            Map<String, Object> objMap = this.utils.mapFromSObject(queriedRecord);
-            objMap.put(fieldName, fieldValue);
-            
-            queriedRecord = this.utils.sObjectFromMap(objMap, SObjectName);
-        }
-        return queriedRecord;
-    }
-
     private SObject handleSelectQuery(FieldSelector fSelector) {
         Node fieldNode = fSelector.fieldNode;
-        SObject queriedRecord = fSelector.queriedRecord;
 
+        SObject queriedRecord = fSelector.queriedRecord;
         if(fieldNode == null) {
             return queriedrecord;
         }
 
-        Boolean isTypeOf = (fieldNode.nodeType == 'typeof');
-        Boolean isChildSubQuery = (fieldNode.nodeType == 'subquery');
-        Boolean isParentSubQuery = (fieldNode.id.contains('.'));
-        
-        // Could use a strategy pattern here, but it's a bit overkill for now
-        if(isTypeOf) {
-            queriedRecord = handleTypeOfQuery(fSelector);
-        } else if(isChildSubQuery) {
-            queriedRecord = handleChildSubQuery(fSelector);
-        } else if(isParentSubQuery) {
-            queriedRecord = handleParentSubQuery(fSelector);
-        } else {
-            queriedRecord = handleFieldQuery(fSelector);
-        }
+        ISelectHandler selectHandler = new SelectHandlerFactory(fSelector)
+            .createHandler();
+        queriedRecord = selectHandler.handleSelect();
 
         // to check the next field node in the list, 
         // the only changes are the queriedRecord and the fieldNode
@@ -453,7 +146,8 @@ public with sharing class MockDatabase {
             .setDatabaseRecord(databaseRecord)
             .setQueriedRecord(queriedRecord)
             .setFieldNode(fieldNode)
-            .setParams(params);
+            .setParams(params)
+            .setDatabase(this);
 
         return handleSelectQuery(fSelector);
     }
@@ -481,49 +175,19 @@ public with sharing class MockDatabase {
         return false;
     }
 
-    private Object handleLimitNode(String typeOfQuery, Node limitNode, Object results, Map<String, Object> params) {
+    private Object handleLimitNode(QueryType typeOfQuery, Node limitNode, Object results, Map<String, Object> params) {
         if(limitNode == null) {
             return results;
         }
 
-        Node limitSizeNode = limitNode.left;
-        Integer limitSize;
+        LimitOptions options = new LimitOptions(limitNode, params)
+            .setType(typeOfQuery)
+            .setObj(results);
 
-        if(limitSizeNode.nodeType == 'bind variable' && (params == null || !params.containsKey(limitSizeNode.id))) {
-            throw new QueryException('Missing bind variable: ' + limitSizeNode.id);
-        }
-
-        if(limitSizeNode.nodeType == 'bind variable') {
-            limitSize = (Integer) params.get(limitSizeNode.id);
-        } else {
-            limitSize = Integer.valueOf(limitSizeNode.id);
-        }
-
-        if(typeOfQuery == 'count') {
-            Integer count = (Integer) results;
-            if(count > limitSize) {
-                return limitSize;
-            }
-            return count;
-        }
-
-        if(typeOfQuery == 'aggregate') {
-            List<ProtoAggregate> resultsList = new List<ProtoAggregate>((List<ProtoAggregate>) results);
-            while(resultsList.size() > limitSize) {
-                resultsList.remove(resultsList.size()-1);
-            }
-            return resultsList;
-        }
-
-        if(typeOfQuery == 'sObject') {
-            List<SObject> resultsList = new List<SObject>((List<SObject>) results);
-            while(resultsList.size() > limitSize) {
-                resultsList.remove(resultsList.size()-1);
-            }
-            return resultsList;
-        }
-
-        throw new QueryException('Invalid query type');
+        ILimitHandler limitHandler = new LimitHandlerFactory(options)
+            .createHandler();
+        
+        return limitHandler.handleLimit();
     }
 
     private TopLevelNodes getTopLevelNodes(Node selectNode) {
@@ -549,12 +213,14 @@ public with sharing class MockDatabase {
 
         List<ProtoAggregate> results = new List<ProtoAggregate>();
         for(ProtoAggregate ar : aggregateResults) {
+
             BooleanLogicOptions havingLogicOptions = new BooleanLogicOptions()
                 .setDatabase(this)
                 .setHead(havingNode)
                 .setSelectNode(selectNode)
                 .setObj(ar)
                 .setParams(params);
+            
             if(checkHavingClause(havingLogicOptions)) {
                 results.add(ar);
             }
@@ -585,7 +251,7 @@ public with sharing class MockDatabase {
      * @description : given an offset node, return the offset value
      */
     private Object handleOffsetNode(
-        String typeOfQuery, 
+        QueryType typeOfQuery, 
         Node offsetNode, 
         Object results, 
         Map<String, Object> params
@@ -593,41 +259,15 @@ public with sharing class MockDatabase {
         if(offsetNode == null) {
             return results;
         }
-        Integer offset;
-        Node offsetSizeNode = offsetNode.left;
-    
-        if(offsetNode.nodeType == 'bind variable' && (params == null || !params.containsKey(offsetSizeNode.id))) {
-            throw new QueryException('Missing bind variable: ' + offsetSizeNode.id);
-        }
-        if(offsetSizeNode.nodeType == 'bind variable') {
-            offset = (Integer) params.get(offsetSizeNode.id);
-        } else {
-            offset = Integer.valueOf(offsetSizeNode.id);
-        }
 
-        if(typeOfQuery == 'aggregate') {
-            List<ProtoAggregate> aggrResults = new List<ProtoAggregate>((List<ProtoAggregate>) results);
-            while(offset > 0) {
-                aggrResults.remove(0);
-                offset--;
-            }
-            return aggrResults;
-        } else if(typeOfQuery == 'sObject') {
-            List<SObject> sObjResults = new List<SObject>((List<SObject>) results);
-            while(offset > 0) {
-                sObjResults.remove(0);
-                offset--;
-            }
-            return sObjResults;
-        } else if(typeOfQuery == 'count') {
-            Integer value = (Integer) results - offset;
-            if(value < 0) {
-                value = 0;
-            }
-            return value;
-        } else {
-            throw new QueryException('Invalid query type');
-        }
+        OffsetOptions offsetOptions = new OffsetOptions(offsetNode, params)
+            .setType(typeOfQuery)
+            .setObj(results);
+        
+        IOffsetHandler offsetHandler = new OffsetHandlerFactory(offsetOptions)
+            .createHandler();
+        
+        return offsetHandler.handleOffset();
     }
 
     public Map<String, Object> getComparables(SObject record, String field) {
@@ -770,10 +410,11 @@ public with sharing class MockDatabase {
         if(obj.Id != null) {
             throw new DmlException('Cannot insert an object with an Id');
         }
-        String objName = obj.getSObjectType().getDescribe().getName();
+        String objName = SchemaService.getSObjectName(obj);
         Map<Id, sObject> mockObjects = this.db.get(objName);
 
-        String fakeId = fflib_IDGenerator.generate(obj.getSObjectType());
+        Schema.SObjectType sot = SchemaService.getSObjectType(obj);
+        String fakeId = fflib_IDGenerator.generate(sot);
         obj.put('Id', fakeId);
 
         mockObjects = this.db.get(objName);
@@ -992,8 +633,8 @@ public with sharing class MockDatabase {
         if(isAggregateQuery) {
             aggregateResults = (List<ProtoAggregate>) handleHavingNode(aggregateResults, selectNode, params);
             aggregateResults = (List<ProtoAggregate>) handleOrderByNode('aggregate', aggregateResults, selectNode, orderByNode);
-            aggregateResults = (List<ProtoAggregate>) handleOffsetNode('aggregate', offsetNode, aggregateResults, params);
-            aggregateResults = (List<ProtoAggregate>) handleLimitNode('aggregate', limitNode, aggregateResults, params);
+            aggregateResults = (List<ProtoAggregate>) handleOffsetNode(QueryType.AGGREGATE, offsetNode, aggregateResults, params);
+            aggregateResults = (List<ProtoAggregate>) handleLimitNode(QueryType.AGGREGATE, limitNode, aggregateResults, params);
 
             // Remove internal fields from the aggregate result proto-records and return the list of aggregates
             List<Aggregate> aggregateResultsList = new AggregateBuilder()
@@ -1004,13 +645,13 @@ public with sharing class MockDatabase {
             
             results = aggregateResultsList;
         } else if(isCount) {
-            count = (Integer) handleOffsetNode('count', offsetNode, count, params);
-            count = (Integer) handleLimitNode('count', limitNode, count, params);
+            count = (Integer) handleOffsetNode(QueryType.COUNT, offsetNode, count, params);
+            count = (Integer) handleLimitNode(QueryType.COUNT, limitNode, count, params);
             results = count;
         } else {
             sObjects = (List<SObject>) handleOrderByNode('sObject', sObjects, selectNode, orderByNode);
-            sObjects = (List<SObject>) handleOffsetNode('sObject', offsetNode, sObjects, params);
-            sObjects = (List<SObject>) handleLimitNode('sObject', limitNode, sObjects, params);
+            sObjects = (List<SObject>) handleOffsetNode(QueryType.RECORD, offsetNode, sObjects, params);
+            sObjects = (List<SObject>) handleLimitNode(QueryType.RECORD, limitNode, sObjects, params);
             results = sObjects;
         }
         this.topLevelNodes.remove(selectNode);
