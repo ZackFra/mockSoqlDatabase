@@ -18,12 +18,36 @@ public with sharing class MockDatabase {
         return this.db.get(objApiName);
     }
 
+    /**
+     * @description Given a recor id, return the database record for it
+     * @param recordId : the record id
+     * @return : the database record
+     * @throws QueryException : if the record does not exist
+     */
     public SObject findRecord(Id recordId) {
         return this.utils.findRecord(recordId);
     }
 
+    /**
+     * @description Given a record and a field, return the parent record (i.e. the record that field looks up to)
+     * @param sObj : the record
+     * @param fieldName : the field name
+     * @return : the parent record
+     * @throws QueryException : if the parent record does not exist
+     */
     public Map<String, Object> findParentRecord(sObject sObj, String fieldName) {
         return this.utils.findParentRecord(sObj, fieldName);
+    }
+
+    /**
+     * @description Wrapper aroung the ComparableService.getComparables method
+     * @param record : the record
+     * @param field : the field
+     * @return : the comparables
+     * @throws QueryException : if the comparables cannot be found
+     */
+    public Map<String, Object> getComparables(SObject record, String field) {
+        return ComparableService.getComparables(this, record, field);
     }
     
     private Boolean checkHavingClause(BooleanLogicOptions havingLogicOptions) {
@@ -175,9 +199,6 @@ public with sharing class MockDatabase {
         return offsetHandler.handleOffset();
     }
 
-    public Map<String, Object> getComparables(SObject record, String field) {
-        return ComparableService.getComparables(this, record, field);
-    }
     /**
      * @description Filter on the "USING SCOPE" clause
      * @param sObject The SObject to filter
