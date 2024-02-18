@@ -161,24 +161,18 @@ public with sharing class AggregateQueryHandler {
         List<String> fields = buildRollupFields();
         ProtoAggregate aggregateResult = new ProtoAggregate();
 
-        if(fields.size() == 1) {
+        if(fields.size() >= 1) {
             String alias1 = AliasService.getRollupFieldOrAlias(selectNode, groupByNode.left).get('fieldOrAlias');
             aggregateResult.put(alias1, null);
         }
 
-        if(fields.size() == 2) {
-            String alias1 = AliasService.getRollupFieldOrAlias(selectNode, groupByNode.left).get('fieldOrAlias');
+        if(fields.size() >= 2) {
             String alias2 = AliasService.getRollupFieldOrAlias(selectNode, groupByNode.left.left).get('fieldOrAlias');
-            aggregateResult.put(alias1, null);
             aggregateResult.put(alias2, null);
         }
 
         if(fields.size() == 3) {
-            String alias1 = AliasService.getRollupFieldOrAlias(selectNode, groupByNode.left).get('fieldOrAlias');
-            String alias2 = AliasService.getRollupFieldOrAlias(selectNode, groupByNode.left.left).get('fieldOrAlias');
             String alias3 = AliasService.getRollupFieldOrAlias(selectNode, groupByNode.left.left.left).get('fieldOrAlias');
-            aggregateResult.put(alias1, null);
-            aggregateResult.put(alias2, null);
             aggregateResult.put(alias3, null);
         }
         return aggregateResult;
