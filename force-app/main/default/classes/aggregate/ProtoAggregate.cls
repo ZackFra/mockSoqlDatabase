@@ -3,7 +3,7 @@
  * i.e. a Map<String, Object> that will be used to store the aggregate
  */
 public with sharing class ProtoAggregate {
-    Map<String, Object> prototype = new Map<String, Object>();
+    public Map<String, Object> prototype = new Map<String, Object>();
 
     public ProtoAggregate(Map<String, Object> prototype) {
         this.prototype = prototype;

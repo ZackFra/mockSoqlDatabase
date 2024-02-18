@@ -853,22 +853,225 @@ public with sharing class MockDatabase {
         return aggregateResult; 
     }
 
-    private List<ProtoAggregate> handleAggregateQuery(
+    // only called when there are three fields to group by
+    ProtoAggregate findSummaryAggregateFieldTwo(
+        SObject databaseRecord, 
+        List<ProtoAggregate> summarySubResults, 
+        Node selectNode
+    ) {
+        TopLevelNodes topLevelNodes = getTopLevelNodes(selectNode);
+        Node groupByNode = topLevelNodes.groupByNode;
+
+        List<String> fields = buildRollupFields(selectNode);
+        String field1 = fields[0];
+        String alias1 = getRollupFieldOrAlias(selectNode, groupByNode.left).get('fieldOrAlias');
+        String field2 = fields[1];
+        String alias2 = getRollupFieldOrAlias(selectNode, groupByNode.left.left).get('fieldOrAlias');
+        String alias3 = getRollupFieldOrAlias(selectNode, groupByNode.left.left.left).get('fieldOrAlias');
+
+        // find the aggregate result that matches the current rollup aggregate
+        for(ProtoAggregate sr : summarySubResults) {
+            if(
+                sr.get(alias1) == databaseRecord.get(field1) && 
+                sr.get(alias2) == databaseRecord.get(field2) && 
+                sr.get(alias3) == null
+            ) {
+                return sr;
+            }
+        }
+        return null;
+    }
+
+    // expects there are two fields to group by
+    ProtoAggregate findSummaryAggregateFieldOne(SObject databaseRecord, List<ProtoAggregate> summaryResults, Node selectNode) {
+        TopLevelNodes topLevelNodes = getTopLevelNodes(selectNode);
+        Node groupByNode = topLevelNodes.groupByNode;
+
+        List<String> fields = buildRollupFields(selectNode);
+        String field1 = fields[0];
+        String alias1 = getRollupFieldOrAlias(selectNode, groupByNode.left).get('fieldOrAlias');
+        String alias2 = getRollupFieldOrAlias(selectNode, groupByNode.left.left).get('fieldOrAlias');
+
+        // find the aggregate result that matches the current rollup aggregate
+        for(ProtoAggregate sr : summaryResults) {
+            // if field == null, there's only the grand total in the list
+            if(
+                sr.get(alias1) == databaseRecord.get(field1) && 
+                sr.get(alias2) == null
+            ) {
+                return sr;
+            }
+        }
+        return null;
+    }
+
+    private ProtoAggregate createSummaryAggregateFieldTwo(SObject databaseRecord, Node selectNode) {
+        TopLevelNodes topLevelNodes = getTopLevelNodes(selectNode);
+        Node groupByNode = topLevelNodes.groupByNode;
+
+        List<String> fields = buildRollupFields(selectNode);
+
+        ProtoAggregate aggregateResult = new ProtoAggregate();
+
+        String field1 = fields[0];
+        String alias1 = getRollupFieldOrAlias(selectNode, groupByNode.left).get('fieldOrAlias');
+        String field2 = fields[1];
+        String alias2 = getRollupFieldOrAlias(selectNode, groupByNode.left.left).get('fieldOrAlias');
+        String field3 = fields[2];
+        String alias3 = getRollupFieldOrAlias(selectNode, groupByNode.left.left.left).get('fieldOrAlias');
+        aggregateResult.put(alias1, databaseRecord.get(field1));
+        aggregateResult.put(alias2, databaseRecord.get(field2));
+        aggregateResult.put(alias3, null);
+
+        return aggregateResult;        
+    }
+
+    private ProtoAggregate createSummaryAggregateFieldOne(SObject databaseRecord, Node selectNode) {
+        TopLevelNodes topLevelNodes = getTopLevelNodes(selectNode);
+        Node groupByNode = topLevelNodes.groupByNode;
+
+        List<String> fields = buildRollupFields(selectNode);
+
+        ProtoAggregate aggregateResult = new ProtoAggregate();
+
+        String field1 = fields[0];
+        String alias1 = getRollupFieldOrAlias(selectNode, groupByNode.left).get('fieldOrAlias');
+        String field2 = fields[1];
+        String alias2 = getRollupFieldOrAlias(selectNode, groupByNode.left.left).get('fieldOrAlias');
+        aggregateResult.put(alias1, databaseRecord.get(field1));
+        aggregateResult.put(alias2, null);
+
+        return aggregateResult;
+    }
+
+    private ProtoAggregate createGrandSummaryAggregate(Node selectNode) {
+        TopLevelNodes topLevelNodes = getTopLevelNodes(selectNode);
+        Node groupByNode = topLevelNodes.groupByNode;
+
+        List<String> fields = buildRollupFields(selectNode);
+        ProtoAggregate aggregateResult = new ProtoAggregate();
+
+        if(fields.size() == 1) {
+            String alias1 = getRollupFieldOrAlias(selectNode, groupByNode.left).get('fieldOrAlias');
+            aggregateResult.put(alias1, null);
+        }
+
+        if(fields.size() == 2) {
+            String alias1 = getRollupFieldOrAlias(selectNode, groupByNode.left).get('fieldOrAlias');
+            String alias2 = getRollupFieldOrAlias(selectNode, groupByNode.left.left).get('fieldOrAlias');
+            aggregateResult.put(alias1, null);
+            aggregateResult.put(alias2, null);
+        }
+
+        if(fields.size() == 3) {
+            String alias1 = getRollupFieldOrAlias(selectNode, groupByNode.left).get('fieldOrAlias');
+            String alias2 = getRollupFieldOrAlias(selectNode, groupByNode.left.left).get('fieldOrAlias');
+            String alias3 = getRollupFieldOrAlias(selectNode, groupByNode.left.left.left).get('fieldOrAlias');
+            aggregateResult.put(alias1, null);
+            aggregateResult.put(alias2, null);
+            aggregateResult.put(alias3, null);
+        }
+        return aggregateResult;
+    }
+
+    private ProtoAggregate findGrandSummaryAggregate(Node selectNode, List<ProtoAggregate> summaryResults) {
+        TopLevelNodes topLevelNodes = getTopLevelNodes(selectNode);
+        Node groupByNode = topLevelNodes.groupByNode;
+
+        List<String> fields = buildRollupFields(selectNode);
+        ProtoAggregate aggregateResult = new ProtoAggregate();
+
+        String alias1 = null;
+        String alias2 = null;
+        String alias3 = null;
+
+        if(fields.size() == 1) {
+            alias1 = getRollupFieldOrAlias(selectNode, groupByNode.left).get('fieldOrAlias');
+        }
+
+        if(fields.size() == 2) {
+            alias2 = getRollupFieldOrAlias(selectNode, groupByNode.left.left).get('fieldOrAlias');
+        }
+
+        if(fields.size() == 3) {
+            alias3 = getRollupFieldOrAlias(selectNode, groupByNode.left.left.left).get('fieldOrAlias');
+        }
+
+        for(ProtoAggregate sr : summaryResults) {
+            if(
+                fields.size() == 1 && 
+                sr.get(alias1) == null
+            ) {
+                return sr;
+            }
+
+            if(
+                fields.size() == 2 && 
+                sr.get(alias1) == null && 
+                sr.get(alias2) == null
+            ) {
+                return sr;
+            }
+
+            if(
+                fields.size() == 3 && 
+                sr.get(alias1) == null && 
+                sr.get(alias2) == null && 
+                sr.get(alias3) == null
+            ) {
+                return sr;
+            }
+        }
+        return null;
+    }
+
+    private Map<String, List<ProtoAggregate>> handleAggregateQuery(
         SObject databaseRecord,
         Node selectNode, 
-        List<ProtoAggregate> aggregateResults
+        List<ProtoAggregate> aggregateResults,
+        List<ProtoAggregate> summaryResults,
+        List<ProtoAggregate> summarySubResults,
+        ProtoAggregate grandSummaryResult
     ) {
+
         aggregateResults = new List<ProtoAggregate>(aggregateResults);
+        summaryResults = new List<ProtoAggregate>(summaryResults);
         
         Map<String, List<String>> aggrFields = getAggregateFields(selectNode);
         List<String> groupByFields = aggrFields.get('groupByFields');
-
+        
         ProtoAggregate aggregateResult = findGroupedAggregate(databaseRecord, aggregateResults, groupByFields);
-
         if(aggregateResult == null) {
             aggregateResult = createGroupedAggregate(databaseRecord, groupByFields);
-            // pointer logic, we won't have to add this again
             aggregateResults.add(aggregateResult);
+        }
+
+        // if it's not a rollup, then we don't need to calculate the summary results
+        // if there's only one field, the grand summary is the same as the grouped aggregate
+        TopLevelNodes topLevelNodes = getTopLevelNodes(selectNode);
+        Node groupByNode = topLevelNodes.groupByNode;
+
+        ProtoAggregate summaryResult = null;
+        ProtoAggregate summarySubResult = null;
+        
+
+        if(isRollup(groupByNode)) {
+
+            if(groupByFields.size() >= 2) {
+                summaryResult = findSummaryAggregateFieldOne(databaseRecord, summaryResults, selectNode);
+                if(summaryResult == null) {
+                    summaryResult = createSummaryAggregateFieldOne(databaseRecord, selectNode);
+                    summaryResults.add(summaryResult);
+                }
+            } 
+            
+            if(groupByFields.size() == 3) {
+                summarySubResult = findSummaryAggregateFieldTwo(databaseRecord, summarySubResults, selectNode);
+                if(summarySubResult == null) {
+                    summarySubResult = createSummaryAggregateFieldTwo(databaseRecord, selectNode);
+                    summarySubResults.add(summarySubResult);
+                }
+            }
         }
 
         Integer exprNumber = 0;
@@ -910,6 +1113,9 @@ public with sharing class MockDatabase {
                 throw new QueryException('Invalid field type');
             }
 
+            System.debug(comparableField);
+            System.debug(comparableRecord.get(comparableField));
+
             // mutates aggregate result
             calculateAggregate(
                 currSelect, 
@@ -917,8 +1123,41 @@ public with sharing class MockDatabase {
                 aggregateResult,
                 comparableRecord.get(comparableField)
             );
+
+            // mutates summary result
+            if(summaryResult != null) {
+                calculateAggregate(
+                    currSelect, 
+                    alias, 
+                    summaryResult,
+                    comparableRecord.get(comparableField)
+                );
+            }
+
+            if(summarySubResult != null) {
+                calculateAggregate(
+                    currSelect, 
+                    alias, 
+                    summarySubResult,
+                    comparableRecord.get(comparableField)
+                );
+            }
+
+            // grand summary result
+            if(grandSummaryResult != null) {
+                calculateAggregate(
+                    currSelect, 
+                    alias, 
+                    grandSummaryResult,
+                    comparableRecord.get(comparableField)
+                );
+            }
         }
-        return aggregateResults;
+        return new Map<String, List<ProtoAggregate>> {
+            'aggregateResults' => aggregateResults,
+            'summaryResults' => summaryResults,
+            'summarySubResults' => summarySubResults
+        };
     }
 
     private ProtoAggregate cleanUpAggregateResult(
@@ -1424,6 +1663,7 @@ public with sharing class MockDatabase {
         Node limitNode = topLevelNodes.limitNode;
         Node offsetNode = topLevelNodes.offsetNode;
         Node usingScopeNode = topLevelNodes.usingScopeNode;
+        Node groupByNode = topLevelNodes.groupByNode;
 
         // validate the query, throws exception if invalid
         QueryValidator validator = new QueryValidator(topLevelNodes);
@@ -1446,6 +1686,11 @@ public with sharing class MockDatabase {
         // results will either be a count, a list of sObjects, or a list of aggregates
         Integer count = 0;
         List<ProtoAggregate> aggregateResults = new List<ProtoAggregate>();
+
+        List<ProtoAggregate> summaryResults = new List<ProtoAggregate>();
+        List<ProtoAggregate> summarySubResults = new List<ProtoAggregate>();
+        ProtoAggregate grandSummaryResult = new ProtoAggregate();
+
         List<sObject> sObjects = new List<sObject>();
 
         // process the query, whether it's a count, aggregate, or regular query
@@ -1475,14 +1720,30 @@ public with sharing class MockDatabase {
                 sObjects.add(queriedRecord);
                 continue;
             }
+            Map<String, List<ProtoAggregate>> aggregateData = handleAggregateQuery(
+                databaseRecord, 
+                selectNode, 
+                aggregateResults,
+                summaryResults,
+                summarySubResults,
+                grandSummaryResult
+            );
+            aggregateResults = aggregateData.get('aggregateResults');
+            summaryResults = aggregateData.get('summaryResults');
+            summarySubResults = aggregateData.get('summarySubResults');
+        }
 
-            aggregateResults = handleAggregateQuery(databaseRecord, selectNode, aggregateResults);
+        if(isRollup(groupByNode)) {
+            aggregateResults.addAll(summaryResults);
+            aggregateResults.addAll(summarySubResults);
+            aggregateResults.add(grandSummaryResult);
+            AggregateComparator comparator = buildRollupComparator(selectNode);
+            aggregateResults.sort(comparator);
         }
 
         // handle the ORDER BY and LIMIT logic here
         if(isAggregateQuery) {
             replaceWithAliases(selectNode, aggregateResults);
-            aggregateResults = (List<ProtoAggregate>) handleGroupByRollup(aggregateResults, selectNode);
             aggregateResults = (List<ProtoAggregate>) handleHavingNode(aggregateResults, selectNode, params);
             aggregateResults = (List<ProtoAggregate>) handleOrderByNode('aggregate', aggregateResults, selectNode, orderByNode);
             aggregateResults = (List<ProtoAggregate>) handleOffsetNode('aggregate', offsetNode, aggregateResults, params);

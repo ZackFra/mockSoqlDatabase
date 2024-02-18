@@ -13,6 +13,13 @@ public with sharing class AverageCalculator implements IAggregateCalculator {
     }
 
     private ProtoAggregate calculate(ProtoAggregate aggregateResult, String alias, Object value) {
+        if(value == null) {
+            // make sure it's explicitly set to null
+            if(!aggregateResult.containsKey(alias)) {
+                aggregateResult.put(alias, null);
+            }
+            return aggregateResult;
+        }
         Decimal currValue = (Decimal) aggregateResult.get(alias);
         Decimal newValue = (Decimal) value;
         Decimal n = (Decimal) aggregateResult.get(alias + '__n');

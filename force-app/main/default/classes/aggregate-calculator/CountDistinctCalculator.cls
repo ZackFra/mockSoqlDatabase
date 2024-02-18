@@ -13,6 +13,7 @@ public with sharing class CountDistinctCalculator implements IAggregateCalculato
     }
 
     private ProtoAggregate calculate(ProtoAggregate aggregateResult, String alias, Object value) {
+
         Integer currValue = (Integer) aggregateResult.get(alias);
         if(currValue == null) {
             currValue = 0;

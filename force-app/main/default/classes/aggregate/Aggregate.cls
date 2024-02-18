@@ -18,6 +18,9 @@ public with sharing class Aggregate {
      * @return the value to which the specified key is mapped, or null if this map contains no mapping for the key
      */
     public Object get(String key) {
+        if(this.ar.get(key) == null) {
+            throw new SObjectException('Invalid field ' + key + ' for AggregateResult');
+        }
         return this.ar.get(key);
     }
 
@@ -31,6 +34,6 @@ public with sharing class Aggregate {
      * @return the map as a string
      */
     public override String toString() {
-        return this.ar.toString();
+        return this.ar.prototype.toString();
     }
 }
