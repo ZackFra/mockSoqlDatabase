@@ -39,7 +39,7 @@ public with sharing class WhereLogicHandler extends BooleanLogicHandler {
             do {
                 String field = fieldParts[0];
                 childRecord = parentRecord;
-                parentInfo = this.db.utils.getParentObject(parentRecord, field);
+                parentInfo = ComparableService.getParentObject(db, parentRecord, field);
                 parentRecord = (sObject) parentInfo.get('parentRecord');
                 parentObjApiName = (String) parentInfo.get('parentObjApiName');
                 fieldParts.remove(0);
