@@ -3159,4 +3159,32 @@ private with sharing class MockDatabaseTest {
         Assert.areEqual(40, queriedAccts.size(), 'Incorrect number of aggregates');
         Assert.areEqual(21996, Math.floor( (Decimal) queriedAccts[39].get('expr0')), 'Expected expr0 to be 21996');        
     }
+
+    @IsTest
+    private static void testGroupByRollupMax() {
+        MockDatabase mockDb = new MockDatabase();
+        List<Account> acctList = TestDataFactory.createTrailheadAccounts();
+        mockDb.doInsert(acctList);
+
+        Test.startTest();
+        List<Aggregate> queriedAccts = (List<Aggregate>) mockDb.query('SELECT Name, MAX(NumberOfEmployees) FROM Account GROUP BY ROLLUP(Name)');
+        Test.stopTest();
+
+        Assert.areEqual(14, queriedAccts.size(), 'Incorrect number of aggregates');
+        Assert.areEqual(145000, queriedAccts[13].get('expr0'), 'Expected expr0 to be 100000');
+    }
+
+    @IsTest
+    private static void testGroupByRollupMin() {
+        MockDatabase mockDb = new MockDatabase();
+        List<Account> acctList = TestDataFactory.createTrailheadAccounts();
+        mockDb.doInsert(acctList);
+
+        Test.startTest();
+        List<Aggregate> queriedAccts = (List<Aggregate>) mockDb.query('SELECT Name, MIN(NumberOfEmployees) FROM Account GROUP BY ROLLUP(Name)');
+        Test.stopTest();
+
+        Assert.areEqual(14, queriedAccts.size(), 'Incorrect number of aggregates');
+        Assert.areEqual(120, queriedAccts[13].get('expr0'), 'Expected expr0 to be 5');
+    }
 }
