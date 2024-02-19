@@ -1,8 +1,8 @@
 /**
  * @description A class to compare two pre-Aggregate based on a set of fields
- *              (a pre-Aggregate is a Map<String, Object> where the keys are the field names and the values are the field values)
+ *              (a pre-Aggregate is a ProtoAggregate where the keys are the field names and the values are the field values)
  */
-public with sharing class AggregateComparator implements Comparator<Map<String, Object>>{
+public with sharing class AggregateComparator implements Comparator<ProtoAggregate>{
     private Map<String, Map<String, String>> fields;
 
     /**
@@ -13,7 +13,7 @@ public with sharing class AggregateComparator implements Comparator<Map<String, 
         this.fields = fields;
     }
 
-    private Object getFieldValue(Map<String, Object> sObj, Map<String, String> fieldData) {
+    private Object getFieldValue(ProtoAggregate sObj, Map<String, String> fieldData) {
         String relationshipName = fieldData.get('relationshipName');
         String fieldApiName = fieldData.get('fieldApiName');
 
@@ -68,12 +68,12 @@ public with sharing class AggregateComparator implements Comparator<Map<String, 
     }
 
     /**
-     * @description Compare two SObjects based on the fields provided in the constructor
+     * @description Compare two ProtoAggregates based on the fields provided in the constructor
      * @param a The first proto-Aggregate
      * @param b The second proto-Aggregate
      * @return Integer
      */
-    public Integer compare(Map<String, Object> a, Map<String, Object> b) {
+    public Integer compare(ProtoAggregate a, ProtoAggregate b) {
         for (String field : this.fields.keySet()) {
 
             Map<String, String> fieldData = this.fields.get(field);

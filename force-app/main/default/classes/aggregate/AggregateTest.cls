@@ -2,7 +2,7 @@
 private class AggregateTest {
     @IsTest
     private static void testInstantiation() {
-        Map<String, Object> protoAggregate = new Map<String, Object>();
+        ProtoAggregate protoAggregate = new ProtoAggregate();
         protoAggregate.put('expr0', 1);
         protoAggregate.put('expr1', 2);
         protoAggregate.put('expr2', 3);
@@ -18,7 +18,7 @@ private class AggregateTest {
 
     @IsTest
     private static void testToString() {
-        Map<String, Object> protoAggregate = new Map<String, Object>();
+        ProtoAggregate protoAggregate = new ProtoAggregate();
         protoAggregate.put('expr0', 1);
         protoAggregate.put('expr1', 2);
         protoAggregate.put('expr2', 3);
