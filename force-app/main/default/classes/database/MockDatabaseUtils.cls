@@ -301,4 +301,16 @@ public with sharing class MockDatabaseUtils {
             }
         }
     }
+
+    public Object emptyResponse(TopLevelNodes topLevelNodes) {
+        Boolean isAggregateQuery = NodeService.isAggregateQuery(topLevelNodes);
+        Boolean isCount = NodeService.isSingularCount(topLevelNodes);
+        if(isAggregateQuery) {
+            return new List<Aggregate>();
+        } else if(isCount) {
+            return 0;
+        } else {
+            return new List<SObject>();
+        }
+    }
 }

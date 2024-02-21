@@ -414,13 +414,7 @@ public with sharing class MockDatabase {
 
         Map<Id, sObject> mockObjects = this.db.get(objApiName);
         if (mockObjects == null) {
-            if(isAggregateQuery) {
-                return new List<Aggregate>();
-            } else if(isCount) {
-                return 0;
-            } else {
-                return new List<SObject>();
-            }
+            return this.utils.emptyResponse(topLevelNodes);
         }
 
         Object results;
