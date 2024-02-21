@@ -405,17 +405,18 @@ public with sharing class MockDatabase {
         QueryValidator validator = new QueryValidator(topLevelNodes);
         validator.validate();
 
+        // otherwise valid query, but there's no data in the database
+        Map<Id, sObject> mockObjects = this.db.get(objApiName);
+        if (mockObjects == null) {
+            return this.utils.emptyResponse(topLevelNodes);
+        }
+
         Node objNode = fromNode.left;
         String objName = objNode.id;
         String objApiName = SchemaService.getSObjectName(objName);
 
         Boolean isAggregateQuery = NodeService.isAggregateQuery(topLevelNodes);
         Boolean isCount = NodeService.isSingularCount(topLevelNodes);
-
-        Map<Id, sObject> mockObjects = this.db.get(objApiName);
-        if (mockObjects == null) {
-            return this.utils.emptyResponse(topLevelNodes);
-        }
 
         Object results;
 
