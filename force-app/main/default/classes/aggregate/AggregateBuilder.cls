@@ -62,6 +62,7 @@ public with sharing class AggregateBuilder {
     ) {
         aggr = aggr.clone();
 
+        // remove any fields that are grouped by, but not selected
         for(String groupByField : groupByFields) {
             if(selectFields.contains(groupByField)) {
                 continue;
@@ -74,6 +75,7 @@ public with sharing class AggregateBuilder {
             }
         }
         
+        // remove the internal fields used for COUNT_DISTINCT and AVG
         for(String key : aggr.keySet()) {
             Boolean isAvg = key.endsWith('__n');
             Boolean isDistinct = key.endsWith('__distinct');
