@@ -261,7 +261,8 @@ public class TestDataFactory {
     }
 
     public static void createTrailheadUsers(MockDatabase db) {
-        UserRole role = ((List<UserRole>) db.query('SELECT Name, Id FROM UserRole WHERE Name = \'CEO\''))[0];
+        UserRole ceoRole = ((List<UserRole>) db.query('SELECT Name, Id FROM UserRole WHERE Name = \'CEO\''))[0];
+        UserRole svpSalesMarketingRole = ((List<UserRole>) db.query('SELECT Name, Id FROM UserRole WHERE Name = \'SVP, Sales & Marketing\''))[0];
         Profile prof = ((List<Profile>) db.query('SELECT Name, Id FROM Profile WHERE Name = \'System Administrator\''))[0];
         User u = new User(
             FirstName = 'John', 
@@ -270,7 +271,7 @@ public class TestDataFactory {
             Username = 'fakeemail@email.com',
             Alias = 'JD',
             ProfileId = prof.Id,
-            UserRoleId = role.Id,
+            UserRoleId = ceoRole.Id,
             CommunityNickname = 'JDoe',
             TimeZoneSidKey = 'America/Los_Angeles',
             LocaleSidKey = 'en_US',
@@ -282,7 +283,29 @@ public class TestDataFactory {
             ReceivesAdminInfoEmails = false,
             DefaultGroupNotificationFrequency = 'N'
         );
-        db.doInsert(u);
+        User u2 = new User(
+            FirstName = 'Jason', 
+            LastName = 'Bourne', 
+            Email = 'fakeemail1@email.com',
+            Username = 'fakeemail1@email.com',
+            Alias = 'JB',
+            ProfileId = prof.Id,
+            UserRoleId = svpSalesMarketingRole.Id,
+            CommunityNickname = 'JBourne',
+            TimeZoneSidKey = 'America/Los_Angeles',
+            LocaleSidKey = 'en_US',
+            EmailEncodingKey = 'UTF-8',
+            LanguageLocaleKey = 'en_US',
+            IsActive = true,
+            DigestFrequency = 'None',
+            ReceivesInfoEmails = false,
+            ReceivesAdminInfoEmails = false,
+            DefaultGroupNotificationFrequency = 'N'
+        );
+        List<User> userList = new List<User> {
+            u, u2
+        };
+        db.doInsert(userList);
     }
 
     public static void createUsers(MockDatabase db) {
