@@ -409,13 +409,19 @@ public with sharing class MockDatabase {
         String objName = objNode.id;
         String objApiName = SchemaService.getSObjectName(objName);
 
-        Map<Id, sObject> mockObjects = this.db.get(objApiName);
-        if (mockObjects == null) {
-            return new List<sObject>();
-        }
-
         Boolean isAggregateQuery = NodeService.isAggregateQuery(topLevelNodes);
         Boolean isCount = NodeService.isSingularCount(topLevelNodes);
+
+        Map<Id, sObject> mockObjects = this.db.get(objApiName);
+        if (mockObjects == null) {
+            if(isAggregateQuery) {
+                return new List<Aggregate>();
+            } else if(isCount) {
+                return 0;
+            } else {
+                return new List<SObject>();
+            }
+        }
 
         Object results;
 
