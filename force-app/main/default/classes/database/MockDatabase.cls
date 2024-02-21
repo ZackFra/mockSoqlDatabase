@@ -405,15 +405,15 @@ public with sharing class MockDatabase {
         QueryValidator validator = new QueryValidator(topLevelNodes);
         validator.validate();
 
+        Node objNode = fromNode.left;
+        String objName = objNode.id;
+        String objApiName = SchemaService.getSObjectName(objName);
+
         // otherwise valid query, but there's no data in the database
         Map<Id, sObject> mockObjects = this.db.get(objApiName);
         if (mockObjects == null) {
             return this.utils.emptyResponse(topLevelNodes);
         }
-
-        Node objNode = fromNode.left;
-        String objName = objNode.id;
-        String objApiName = SchemaService.getSObjectName(objName);
 
         Boolean isAggregateQuery = NodeService.isAggregateQuery(topLevelNodes);
         Boolean isCount = NodeService.isSingularCount(topLevelNodes);
@@ -439,19 +439,21 @@ public with sharing class MockDatabase {
                 continue;
             }
 
-            if(isCount && !isAggregateQuery) {
+            if(isAggregateQuery) {
+                aggrHandler.processRecord(databaseRecord);
+                continue;
+            }
+
+            if(isCount) {
                 count++;
                 continue;
             }
 
             // handle fields
-            if(!isAggregateQuery) {
-                SObject queriedRecord = handleSelectQuery(databaseRecord, selectNode, params);
-                sObjects.add(queriedRecord);
-                continue;
-            }
+            SObject queriedRecord = handleSelectQuery(databaseRecord, selectNode, params);
+            sObjects.add(queriedRecord);
 
-            aggrHandler.processRecord(databaseRecord);
+            
         }
         aggregateResults = aggrHandler.finish();
 
