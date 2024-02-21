@@ -623,4 +623,23 @@ public with sharing class SchemaService {
             foundChildRelationshipName.toLowerCase() == childRelationshipName
         );
     }
+
+    /**
+     * @description Given a field, determine if it is required (system-level)
+     * @param field : the field
+     * @return : whether the field is required or not
+     */
+    public static Boolean isRequiredField(Schema.SObjectField field) {
+        Map<String, Object> args = new Map<String, Object> {
+            'field' => field
+        };
+        Common.nullCheck(args);
+
+        Schema.DescribeFieldResult describeFieldResult = field.getDescribe();
+        return (
+            describeFieldResult.isCreateable() && 
+            !describeFieldResult.isNillable() && 
+            describeFieldResult.getType() != DisplayType.BOOLEAN
+        );
+    }
 }
