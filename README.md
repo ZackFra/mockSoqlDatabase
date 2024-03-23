@@ -28,10 +28,11 @@ There are three categories of support for a SOQL query done via the mock SOQL da
 * Not Supported
   * Throws a QueryException when read by the parser
 
+# Supported Clauses
 * SELECT fieldList \[subquery\]\[...\] (Fully Supported)
 * \[TYPEOF typeOfField whenExpression\[...\] elseExpression END\]\[...\] (Fully Supported)
 * FROM objectType\[,...\] (Fully Supported)
-  * \[USING SCOPE filterScope\] (Ignored)
+* \[USING SCOPE filterScope\] (Ignored)
 * \[WHERE conditionExpression\] (Fully Supported)
 * \[WITH \[DATA CATEGORY\] filteringExpression\] (Not Supported)
 * \[GROUP BY fieldGroupByList\]
