@@ -59,6 +59,9 @@ public with sharing class TopLevelNodes {
         Node curr = selectNode;
         for(String nodeName : SUPPORTED_NODES) {
             curr = put(nodeName, curr);
+            if(curr == null) {
+                break;
+            }
         }
     }
 
