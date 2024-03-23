@@ -218,6 +218,21 @@ public with sharing class SchemaService {
         return sot.getDescribe().getName();
     }
 
+    public Boolean isSObject(String sObjName) {
+        Map<String, Object> args = new Map<String, Object> {
+            'sObjName' => sObjName
+        };
+        Common.nullCheck(args);
+        sObjName = sObjName.toLowerCase();
+
+        try {
+            getSObjectType(sObjName);
+            return true;
+        } catch (TypeException e) {
+            return false;
+        }
+    }
+
     /**
      * @description this method returns the API name of a given SObject
      * @param sObj the sobject
