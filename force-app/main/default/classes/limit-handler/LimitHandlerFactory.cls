@@ -1,3 +1,8 @@
+/**
+ * @description Used to create a limit handler based on the query type
+ * @author Zackary Frazier
+ * @since 3/23/2024
+ */
 public with sharing class LimitHandlerFactory {
 
     private LimitOptions options = new LimitOptions();
@@ -5,21 +10,41 @@ public with sharing class LimitHandlerFactory {
     Node limitNode;
     Map<String, Object> params;
 
+    /**
+     * @description Sets the type of the query 
+     * @param type `MockDatabase.QueryType`
+     * @return  `LimitHandlerFactory`
+     */
     public LimitHandlerFactory setType(MockDatabase.QueryType type) {
         options.setType(type);
         return this;
     }
 
+    /**
+     * @description Sets the object to which the limit is applied
+     * @param obj `List<ProtoAggregate> | List<SObject> | Integer`
+     * @return  `LimitHandlerFactory`
+     */
     public LimitHandlerFactory setObj(Object obj) {
         options.setObj(obj);
         return this;
     }
 
+    /**
+     * @description Sets the limit node
+     * @param limitNode `Node`
+     * @return  `LimitHandlerFactory`
+     */
     public LimitHandlerFactory setLimitNode(Node limitNode) {
         this.limitNode = limitNode;
         return this;
     }
 
+    /**
+     * @description Sets the params for a queryWithBinds call
+     * @param params `Map<String, Object>`
+     * @return  `LimitHandlerFactory`
+     */
     public LimitHandlerFactory setParams(Map<String, Object> params) {
         this.params = params;
         return this;
@@ -40,6 +65,11 @@ public with sharing class LimitHandlerFactory {
 
     private class LimitHandlerException extends Exception {}
 
+    /**
+     * @description Creates the appropriate limit handler based on the query type 
+     * @return  `ILimitHandler`
+     * @exception LimitHandlerException
+     */
     public ILimitHandler createHandler() {
         Map<String, Object> args = new Map<String, Object> {
             'type' => options.getType(),
