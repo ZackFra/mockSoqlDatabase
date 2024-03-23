@@ -1,10 +1,24 @@
 /**
  * @description : Builder class for the Node class, used to create a Node
+ * @author Zackary Frazier
+ * @since 3/23/2024
  */
 public class NodeBuilder {
+    /**
+     * @description The id of the node
+     */
     public String id {get; private set;}
+    /**
+     * @description The type of the node
+     */
     public String nodeType {get; private set;}
+    /**
+     * @description The left child of the node
+     */
     public Node left {get; private set;}
+    /**
+     * @description The right child of the node
+     */
     public Node right {get; private set;}
     
     /**

@@ -1,66 +1,111 @@
 /**
  * @description This class is used to parse the top level nodes of a SOQL query.
  * Designed to refresh the instance if the head node changes, i.e. if a new SOQL query is made.
+ * @author Zackary Frazier
+ * @since 3/23/2024
  */
 public with sharing class TopLevelNodes {
     
+    final static List<String> SUPPORTED_NODES = new List<String> {
+        'select', 'from', 'where', 'group by', 'having', 'order by', 'limit', 'offset', 'for update', 'using scope'
+    };
+
+    /**
+     * @description The main node of the SOQL query, the SELECT node.
+     */
     public Node selectNode { get; private set; }
+    /**
+     * @description The FROM node of the SOQL query.
+     */
     public Node fromNode { get; private set; }
+    /**
+     * @description The WHERE node of the SOQL query.
+     */
     public Node whereNode { get; private set; }
+    /**
+     * @description The GROUP BY node of the SOQL query.
+     */
     public Node groupByNode { get; private set; }
+    /**
+     * @description The HAVING node of the SOQL query.
+     */
     public Node havingNode { get; private set; }
+    /**
+     * @description The ORDER BY node of the SOQL query.
+     */
     public Node orderByNode { get; private set; }
+    /**
+     * @description The LIMIT node of the SOQL query.
+     */
     public Node limitNode { get; private set; }
+    /**
+     * @description The OFFSET node of the SOQL query.
+     */
     public Node offsetNode { get; private set; }
+    /**
+     * @description The FOR UPDATE node of the SOQL query.
+     */
     public Node forUpdateNode { get; private set; }
+    /**
+     * @description The USING SCOPE node of the SOQL query.
+     */
     public Node usingScopeNode { get; private set; }
-    
 
+    /**
+     * @description Constructor for the TopLevelNodes class.
+     * @param selectNode `Node` the head node of the SOQL query.
+     */
     public TopLevelNodes(Node selectNode) {
-        this.selectNode = selectNode;
-        this.fromNode = selectNode.right;
-
-        Node curr = fromNode.right;
-
-        if(isNode(curr, 'using scope')) {
-            this.usingScopeNode = curr;
-            curr = curr.right;
+        Node curr = selectNode;
+        for(String nodeName : SUPPORTED_NODES) {
+            curr = put(nodeName, curr);
         }
+    }
 
-        if(isNode(curr, 'where')) {
-            this.whereNode = curr;
-            curr = curr.right;
-        }
-
-        if(isNode(curr, 'group by')) {
-            this.groupByNode = curr;
-            curr = curr.right;
-            // can only have a HAVING node if there's a group by node
-            if(isNode(curr, 'having')) {
-                this.havingNode = curr;
-                curr = curr.right;
+    /**
+     * @description Sets the appropriate node based on the nodeName. Returns the right node of the current node.
+     *              or the node itself if the nodeName is not supported.
+     * @param nodeName `String`
+     * @param node `Node`
+     * @return  `Node`
+     */
+    private Node put(String nodeName, Node node) {
+        switch on nodeName {
+            when 'select' { 
+                this.selectNode = node; 
+            }
+            when 'from' { 
+                this.fromNode = node; 
+            }
+            when 'where' { 
+                this.whereNode = node; 
+            }
+            when 'group by' { 
+                this.groupByNode = node; 
+            }
+            when 'having' { 
+                this.havingNode = node; 
+            }
+            when 'order by' { 
+                this.orderByNode = node; 
+            }
+            when 'limit' { 
+                this.limitNode = node; 
+            }
+            when 'offset' { 
+                this.offsetNode = node; 
+            }
+            when 'for update' { 
+                this.forUpdateNode = node; 
+            }
+            when 'using scope' { 
+                this.usingScopeNode = node; 
+            }
+            when else {
+                return node;
             }
         }
-
-        if(isNode(curr, 'order by')) {
-            this.orderByNode = curr;
-            curr = curr.right;
-        }
-
-        if(isNode(curr, 'limit')) {
-            this.limitNode = curr;
-            curr = curr.right;
-        }
-
-        if(isNode(curr, 'offset')) {
-            this.offsetNode = curr;
-            curr = curr.right;
-        }
-
-        if(isNode(curr, 'for update')) {
-            this.forUpdateNode = curr;
-            curr = curr.right;
-        }
+        return node.right;
     }
 
     private Boolean isNode(Node node, String nodeType) {
