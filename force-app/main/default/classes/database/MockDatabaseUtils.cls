@@ -264,4 +264,53 @@ public with sharing class MockDatabaseUtils {
 
         return valueNode.Id;
     }
+
+    /**
+     * @description : check if the required fields are set on a record
+     * @param record : the record
+     * @return : first required field that is not set
+     */
+    public String getUnfulfilledField(SObject record) {
+        Schema.SObjectType sot = SchemaService.getSObjectType(record);
+        for(
+            Schema.SObjectField field : SchemaService.getFields(sot)
+        ) {
+            if(SchemaService.isRequiredField(field)) {
+                if(record.get(field) == null) {
+                    return SchemaService.getFieldName(field);
+                }
+            }
+        }
+        return null;
+    }
+
+    public void checkForRequiredFieldsOnInsert(SObject record) {
+        String unfulfilledField = getUnfulfilledField(record);
+        if(unfulfilledField != null) {
+            throw new QueryException('Required field not set: ' + unfulfilledField);
+        }
+    }
+
+    public void checkForRequiredFieldsOnUpdate(SObject record) {
+        Map<String, Object> newRecordMap = SObjectService.mapFromSObject(record);
+        for(String fieldName : newRecordMap.keySet()) {
+            Schema.SObjectField field = SchemaService.getField(record, fieldName);
+            if(SchemaService.isRequiredField(field) &&
+                newRecordMap.get(fieldName) == null) {
+                throw new DmlException('Field ' + fieldName + ' is required');
+            }
+        }
+    }
+
+    public Object emptyResponse(TopLevelNodes topLevelNodes) {
+        Boolean isAggregateQuery = NodeService.isAggregateQuery(topLevelNodes);
+        Boolean isCount = NodeService.isSingularCount(topLevelNodes);
+        if(isAggregateQuery) {
+            return new List<Aggregate>();
+        } else if(isCount) {
+            return 0;
+        } else {
+            return new List<SObject>();
+        }
+    }
 }

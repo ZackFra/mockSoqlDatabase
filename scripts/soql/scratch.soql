@@ -1,6 +1,1 @@
-SELECT 
-    TYPEOF What 
-        WHEN Account 
-        THEN Name 
-    END 
-FROM Task
+SELECT FIELDS(ALL) FROM Profile LIMIT 10

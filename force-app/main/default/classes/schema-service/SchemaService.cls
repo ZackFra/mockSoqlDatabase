@@ -218,6 +218,21 @@ public with sharing class SchemaService {
         return sot.getDescribe().getName();
     }
 
+    public Boolean isSObject(String sObjName) {
+        Map<String, Object> args = new Map<String, Object> {
+            'sObjName' => sObjName
+        };
+        Common.nullCheck(args);
+        sObjName = sObjName.toLowerCase();
+
+        try {
+            getSObjectType(sObjName);
+            return true;
+        } catch (TypeException e) {
+            return false;
+        }
+    }
+
     /**
      * @description this method returns the API name of a given SObject
      * @param sObj the sobject
@@ -621,6 +636,25 @@ public with sharing class SchemaService {
         return (
             foundChildRelationshipName != null && 
             foundChildRelationshipName.toLowerCase() == childRelationshipName
+        );
+    }
+
+    /**
+     * @description Given a field, determine if it is required (system-level)
+     * @param field : the field
+     * @return : whether the field is required or not
+     */
+    public static Boolean isRequiredField(Schema.SObjectField field) {
+        Map<String, Object> args = new Map<String, Object> {
+            'field' => field
+        };
+        Common.nullCheck(args);
+
+        Schema.DescribeFieldResult describeFieldResult = field.getDescribe();
+        return (
+            describeFieldResult.isCreateable() && 
+            !describeFieldResult.isNillable() && 
+            describeFieldResult.getType() != DisplayType.BOOLEAN
         );
     }
 }

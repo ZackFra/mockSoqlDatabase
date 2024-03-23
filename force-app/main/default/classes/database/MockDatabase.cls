@@ -6,6 +6,12 @@ public with sharing class MockDatabase {
         RECORD, AGGREGATE, COUNT
     }
 
+    Boolean enforceRequiredFields = false;
+    public MockDatabase setEnforceRequiredFields(Boolean isEnforced) {
+        this.enforceRequiredFields = isEnforced;
+        return this;
+    }
+
     /**
      * @description map of the top-level nodes of select nodes, is a map to account for subqueries
      */
@@ -219,23 +225,28 @@ public with sharing class MockDatabase {
      * @description: This method is used to insert an sObject into the mock database
      * @param obj : the sObject to insert
      */
-    public void doInsert(SObject obj) {
-        if(obj.Id != null) {
+    public void doInsert(SObject record) {
+        if(record.Id != null) {
             throw new DmlException('Cannot insert an object with an Id');
         }
-        String objName = SchemaService.getSObjectName(obj);
+
+        if(enforceRequiredFields) {
+            this.utils.checkForRequiredFieldsOnInsert(record);
+        }
+
+        String objName = SchemaService.getSObjectName(record);
         Map<Id, sObject> mockObjects = this.db.get(objName);
 
-        Schema.SObjectType sot = SchemaService.getSObjectType(obj);
+        Schema.SObjectType sot = SchemaService.getSObjectType(record);
         String fakeId = fflib_IDGenerator.generate(sot);
-        obj.put('Id', fakeId);
+        record.put('Id', fakeId);
 
         mockObjects = this.db.get(objName);
         if(mockObjects == null) {
             mockObjects = new Map<Id, sObject>();
             this.db.put(objName, mockObjects);
         }
-        mockObjects.put(obj.Id, obj);
+        mockObjects.put(record.Id, record);
     }
 
     /**
@@ -252,38 +263,43 @@ public with sharing class MockDatabase {
      * @description: This method is used to update an sObject in the mock database
      * @param obj : the sObject to update
      */
-    public void doUpdate(sObject obj) {
-        if(obj == null) {
+    public void doUpdate(SObject record) {
+        if(record == null) {
             throw new DmlException('Argument cannot be null');
         }
 
-        String objName = SchemaService.getSObjectName(obj);
+        String objName = SchemaService.getSObjectName(record);
         Map<Id, sObject> mockObjects = this.db.get(objName);
 
         if (mockObjects == null) {
             throw new DmlException('Object does not exist');
-        } else if (mockObjects.get(obj.Id) == null) {
+        } else if (mockObjects.get(record.Id) == null) {
             throw new DmlException('Object does not exist');
         }
 
+        if(enforceRequiredFields) {
+            this.utils.checkForRequiredFieldsOnUpdate(record);
+        }
+
+        SObject databaseRecord = mockObjects.get(record.Id);
         
-        for(String field : obj.getPopulatedFieldsAsMap().keySet()) {
+        for(String field : record.getPopulatedFieldsAsMap().keySet()) {
 
             // check for foreign key references
-            Schema.SObjectType  sot = SchemaService.getSObjectType(obj);
+            Schema.SObjectType  sot = SchemaService.getSObjectType(record);
             Schema.DisplayType fieldType = SchemaService.getFieldType(sot, field);
             Boolean isRef = (fieldType == Schema.DisplayType.REFERENCE);
             if(!isRef) {
-                mockObjects.get(obj.Id).put(field, obj.get(field));
+                databaseRecord.put(field, record.get(field));
                 continue;
             }
 
-            Id recordId = (Id) obj.get(field);
+            Id parentRecordId = (Id) record.get(field);
 
-            if(isRef && !this.utils.isRecordInDatabase(recordId)) {
+            if(isRef && !this.utils.isRecordInDatabase(parentRecordId)) {
                 throw new DmlException('Foreign key reference does not exist');
             }
-            mockObjects.get(obj.Id).put(field, obj.get(field));
+            databaseRecord.put(field, record.get(field));
         }
     }
 
@@ -393,9 +409,10 @@ public with sharing class MockDatabase {
         String objName = objNode.id;
         String objApiName = SchemaService.getSObjectName(objName);
 
+        // otherwise valid query, but there's no data in the database
         Map<Id, sObject> mockObjects = this.db.get(objApiName);
         if (mockObjects == null) {
-            return new List<sObject>();
+            return this.utils.emptyResponse(topLevelNodes);
         }
 
         Boolean isAggregateQuery = NodeService.isAggregateQuery(topLevelNodes);
@@ -422,19 +439,21 @@ public with sharing class MockDatabase {
                 continue;
             }
 
-            if(isCount && !isAggregateQuery) {
+            if(isAggregateQuery) {
+                aggrHandler.processRecord(databaseRecord);
+                continue;
+            }
+
+            if(isCount) {
                 count++;
                 continue;
             }
 
             // handle fields
-            if(!isAggregateQuery) {
-                SObject queriedRecord = handleSelectQuery(databaseRecord, selectNode, params);
-                sObjects.add(queriedRecord);
-                continue;
-            }
+            SObject queriedRecord = handleSelectQuery(databaseRecord, selectNode, params);
+            sObjects.add(queriedRecord);
 
-            aggrHandler.processRecord(databaseRecord);
+            
         }
         aggregateResults = aggrHandler.finish();
 
