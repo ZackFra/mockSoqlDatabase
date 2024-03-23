@@ -1,18 +1,48 @@
-# Salesforce DX Project: Next Steps
+# Mock SOQL Database
 
-Now that you’ve created a Salesforce DX project, what’s next? Here are some documentation resources to get you started.
 
-## How Do You Plan to Deploy Your Changes?
+A SOQL query will have the following format.
 
-Do you want to deploy a set of changes, or create a self-contained application? Choose a [development model](https://developer.salesforce.com/tools/vscode/en/user-guide/development-models).
+```
+SELECT fieldList [subquery][...]
+[TYPEOF typeOfField whenExpression[...] elseExpression END][...]
+FROM objectType[,...] 
+    [USING SCOPE filterScope]
+[WHERE conditionExpression]
+[WITH [DATA CATEGORY] filteringExpression]
+[GROUP BY {fieldGroupByList|ROLLUP (fieldSubtotalGroupByList)|CUBE (fieldSubtotalGroupByList)} 
+    [HAVING havingConditionExpression] ] 
+[ORDER BY fieldOrderByList {ASC|DESC} [NULLS {FIRST|LAST}] ]
+[LIMIT numberOfRowsToReturn]
+[OFFSET numberOfRowsToSkip]
+[{FOR VIEW  | FOR REFERENCE} ]
+[UPDATE {TRACKING|VIEWSTAT} ]
+[FOR UPDATE]
+```
 
-## Configure Your Salesforce DX Project
+# Levels of Support
+There are three categories of support for a SOQL query done via the mock SOQL database.
+* Fully Supported
+* Partially Supported
+* Ignored
+  * It won't throw an exception when parsed, but won't be applied by the mock database
+* Not Supported
+  * Throws a QueryException when read by the parser
 
-The `sfdx-project.json` file contains useful configuration information for your project. See [Salesforce DX Project Configuration](https://developer.salesforce.com/docs/atlas.en-us.sfdx_dev.meta/sfdx_dev/sfdx_dev_ws_config.htm) in the _Salesforce DX Developer Guide_ for details about this file.
-
-## Read All About It
-
-- [Salesforce Extensions Documentation](https://developer.salesforce.com/tools/vscode/)
-- [Salesforce CLI Setup Guide](https://developer.salesforce.com/docs/atlas.en-us.sfdx_setup.meta/sfdx_setup/sfdx_setup_intro.htm)
-- [Salesforce DX Developer Guide](https://developer.salesforce.com/docs/atlas.en-us.sfdx_dev.meta/sfdx_dev/sfdx_dev_intro.htm)
-- [Salesforce CLI Command Reference](https://developer.salesforce.com/docs/atlas.en-us.sfdx_cli_reference.meta/sfdx_cli_reference/cli_reference.htm)
+# Supported Clauses
+| Clause      | Level of Support    | Notes |
+|-------------|---------------------|-------|
+| SELECT      | Fully Supported     ||
+| TYPEOF      | Fully Supported     ||
+| FROM        | Fully Supported     ||
+| USING SCOPE | Ignored             ||
+| WHERE       | Fully Supported     ||
+| WITH        | Not Supported       ||
+| GROUP BY    | Partially Supported | GROUP BY ROLLUP and GROUP BY CUBE are not supported |
+| HAVING | Fully Supported ||
+| ORDER BY | Fully Supported ||
+| LIMIT | Fully Supported ||
+| OFFSET | Fully Supported ||
+| FOR VIEW\|REFERENCE | Ignored ||
+| UPDATE TRACKING\|VIEWSTAT | Not Supported ||
+| FOR UPDATE | Ignored ||

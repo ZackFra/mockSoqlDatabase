@@ -3,7 +3,7 @@ private with sharing class MockDatabaseTest {
 
     /** DML Tests */
     @IsTest
-    private static void testDelete() {
+    static void testDelete() {
         Account a = new Account(Name = 'Test 1');
         Account b = new Account(Name = 'Test 2');
         Account c = new Account(Name = 'Test 3');
@@ -21,7 +21,7 @@ private with sharing class MockDatabaseTest {
     }
 
     @IsTest
-    private static void testUpdateList() {
+    static void testUpdateList() {
         Account a = new Account(Name = 'Test 1');
         Account b = new Account(Name = 'Test 2');
         Account c = new Account(Name = 'Test 3');
@@ -44,7 +44,7 @@ private with sharing class MockDatabaseTest {
     }
 
     @IsTest
-    private static void testInsert() {
+    static void testInsert() {
         Account a = new Account(Name = 'Test');
         MockDatabase mockDb = new MockDatabase();
         Test.startTest();
@@ -55,7 +55,7 @@ private with sharing class MockDatabaseTest {
     }
 
     @IsTest
-    private static void testInsertList() {
+    static void testInsertList() {
         Account a = new Account(Name = 'Test');
         Account b = new Account(Name = 'Test2');
         MockDatabase mockDb = new MockDatabase();
@@ -71,7 +71,7 @@ private with sharing class MockDatabaseTest {
     }
 
     @IsTest
-    private static void testUpdate() {
+    static void testUpdate() {
         Account a = new Account(Name = 'Test');
         MockDatabase mockDb = new MockDatabase();
         mockDb.doInsert(a);
@@ -88,7 +88,7 @@ private with sharing class MockDatabaseTest {
 
     /** SOQL Tests */
     @IsTest
-    private static void testQuerySingle() {
+    static void testQuerySingle() {
         Account a = new Account(Name = 'Test');
         MockDatabase mockDb = new MockDatabase();
         mockDb.doInsert(a);
@@ -102,7 +102,7 @@ private with sharing class MockDatabaseTest {
     }
 
     @IsTest
-    private static void testQueryMultiple() {
+    static void testQueryMultiple() {
         Account a = new Account(Name = 'Test');
         Account b = new Account(Name = 'Test2');
         MockDatabase mockDb = new MockDatabase();
@@ -118,7 +118,7 @@ private with sharing class MockDatabaseTest {
     }
 
     @IsTest
-    private static void testInsertMultiple() {
+    static void testInsertMultiple() {
         Account a = new Account(Name = 'Test');
         Account b = new Account(Name = 'Test2');
         MockDatabase mockDb = new MockDatabase();
@@ -135,7 +135,7 @@ private with sharing class MockDatabaseTest {
     }
 
     @IsTest
-    private static void testParentSubQuery() {
+    static void testParentSubQuery() {
         Account a = new Account(Name = 'Test');
         MockDatabase mockDb = new MockDatabase();
         mockDb.doInsert(a);
@@ -191,7 +191,7 @@ private with sharing class MockDatabaseTest {
     }
 
     @IsTest
-    private static void testChildSubQueryMultiple() {
+    static void testChildSubQueryMultiple() {
         Account acct = new Account(Name = 'Test');
         MockDatabase mockDb = new MockDatabase();
         mockDb.doInsert(acct);
@@ -233,7 +233,7 @@ private with sharing class MockDatabaseTest {
     }
 
     @IsTest
-    private static void testMutipleChildSubQueries() {
+    static void testMutipleChildSubQueries() {
         Account acct = new Account(Name = 'Test');
         MockDatabase mockDb = new MockDatabase();
         mockDb.doInsert(acct);
@@ -298,7 +298,7 @@ private with sharing class MockDatabaseTest {
     }
 
     @IsTest
-    private static void testDisallowDuplicateSubQueries() {
+    static void testDisallowDuplicateSubQueries() {
         Account acct = new Account(Name = 'Test');
         MockDatabase mockDb = new MockDatabase();
         mockDb.doInsert(acct);
@@ -337,7 +337,7 @@ private with sharing class MockDatabaseTest {
     }
 
     @IsTest
-    private static void testQueryWithWhereClause() {
+    static void testQueryWithWhereClause() {
         Account a = new Account(Name = 'Test');
         MockDatabase mockDb = new MockDatabase();
         mockDb.doInsert(a);
@@ -352,7 +352,7 @@ private with sharing class MockDatabaseTest {
     }
 
     @IsTest
-    private static void testQueryWithWhereClauseMultiple() {
+    static void testQueryWithWhereClauseMultiple() {
         Account a = new Account(Name = 'Test');
         Account b = new Account(Name = 'Test2');
         MockDatabase mockDb = new MockDatabase();
@@ -369,7 +369,7 @@ private with sharing class MockDatabaseTest {
     }
 
     @IsTest
-    private static void testQueryWithWhereClauseNone() {
+    static void testQueryWithWhereClauseNone() {
         Account a = new Account(Name = 'Test');
         Account b = new Account(Name = 'Test2');
         MockDatabase mockDb = new MockDatabase();
@@ -384,7 +384,7 @@ private with sharing class MockDatabaseTest {
     }
 
     @IsTest
-    private static void testQueryWithWhereClauseMultipleFields() {
+    static void testQueryWithWhereClauseMultipleFields() {
         Account a = new Account(Name = 'Test');
         Account b = new Account(Name = 'Test2');
         MockDatabase mockDb = new MockDatabase();
@@ -398,7 +398,7 @@ private with sharing class MockDatabaseTest {
     }
 
     @IsTest
-    private static void testQueryWithWhereClauseMultipleFieldsNone() {
+    static void testQueryWithWhereClauseMultipleFieldsNone() {
         Account a = new Account(Name = 'Test');
         Account b = new Account(Name = 'Test2');
         MockDatabase mockDb = new MockDatabase();
@@ -413,7 +413,7 @@ private with sharing class MockDatabaseTest {
     }
 
     @IsTest
-    private static void testQueryWithWhereClauseMultipleFieldsOne() {
+    static void testQueryWithWhereClauseMultipleFieldsOne() {
         Account a = new Account(Name = 'Test');
         Account b = new Account(Name = 'Test2');
         MockDatabase mockDb = new MockDatabase();
@@ -428,7 +428,7 @@ private with sharing class MockDatabaseTest {
     }
 
     @IsTest
-    private static void testQueryWithSubQueryInWhereClause() {
+    static void testQueryWithSubQueryInWhereClause() {
         Account acct = new Account(Name = 'Test');
         MockDatabase mockDb = new MockDatabase();
         mockDb.doInsert(acct);
@@ -454,7 +454,7 @@ private with sharing class MockDatabaseTest {
     }
 
     @IsTest
-    private static void testDuplicateFieldsQueried() {
+    static void testDuplicateFieldsQueried() {
         Account acct = new Account(Name = 'Test');
         MockDatabase mockDb = new MockDatabase();
         mockDb.doInsert(acct);
@@ -470,7 +470,7 @@ private with sharing class MockDatabaseTest {
     }
 
     @IsTest
-    private static void testQueryWithSubQueryInWhereClauseMultiple() {
+    static void testQueryWithSubQueryInWhereClauseMultiple() {
         Account acct = new Account(Name = 'Test');
         MockDatabase mockDb = new MockDatabase();
         mockDb.doInsert(acct);
@@ -510,7 +510,7 @@ private with sharing class MockDatabaseTest {
     }
 
     @IsTest
-    private static void testQueryWithSubQueryInWhereClauseMultipleNone() {
+    static void testQueryWithSubQueryInWhereClauseMultipleNone() {
         Account acct = new Account(Name = 'Test');
         MockDatabase mockDb = new MockDatabase();
         mockDb.doInsert(acct);
@@ -534,7 +534,7 @@ private with sharing class MockDatabaseTest {
     }
 
     @IsTest
-    private static void testCount() {
+    static void testCount() {
         Account a = new Account(Name = 'Test');
         Account b = new Account(Name = 'Test2');
         MockDatabase mockDb = new MockDatabase();
@@ -549,7 +549,7 @@ private with sharing class MockDatabaseTest {
     }
 
     @IsTest
-    private static void testCountWithWhereClause() {
+    static void testCountWithWhereClause() {
         Account a = new Account(Name = 'Test');
         Account b = new Account(Name = 'Test2');
         MockDatabase mockDb = new MockDatabase();
@@ -564,7 +564,7 @@ private with sharing class MockDatabaseTest {
     }
 
     @IsTest
-    private static void testLikeOperator() {
+    static void testLikeOperator() {
         Account a = new Account(Name = 'Test');
         Account b = new Account(Name = 'Test2');
         Account c = new Account(Name = 'Test3');
@@ -580,7 +580,7 @@ private with sharing class MockDatabaseTest {
     }
 
     @IsTest
-    private static void testWhereConditionWithAnd() {
+    static void testWhereConditionWithAnd() {
         Account a = new Account(Name = 'Test');
         Account b = new Account(Name = 'Test2');
         Account c = new Account(Name = 'Test3');
@@ -597,7 +597,7 @@ private with sharing class MockDatabaseTest {
     }
 
     @IsTest
-    private static void testWhereConditionWithOr() {
+    static void testWhereConditionWithOr() {
         Account a = new Account(Name = 'Test');
         Account b = new Account(Name = 'Test2');
         Account c = new Account(Name = 'Test3');
@@ -613,7 +613,7 @@ private with sharing class MockDatabaseTest {
     }
 
     @IsTest
-    private static void testQueryWithBinds() {
+    static void testQueryWithBinds() {
         Account a = new Account(Name = 'Test');
         Account b = new Account(Name = 'Test2');
         Account c = new Account(Name = 'Test3');
@@ -633,7 +633,7 @@ private with sharing class MockDatabaseTest {
     }
 
     @IsTest
-    private static void testQueryWithBindsList() {
+    static void testQueryWithBindsList() {
         Account a = new Account(Name = 'Test');
         Account b = new Account(Name = 'Test2');
         Account c = new Account(Name = 'Test3');
@@ -656,7 +656,7 @@ private with sharing class MockDatabaseTest {
     }
 
     @IsTest
-    private static void testQueryWithValueList() {
+    static void testQueryWithValueList() {
         Account a = new Account(Name = 'Test');
         Account b = new Account(Name = 'Test2');
         Account c = new Account(Name = 'Test3');
@@ -673,7 +673,7 @@ private with sharing class MockDatabaseTest {
     }
 
     @IsTest
-    private static void testWhereClauseParentSubQuery() {
+    static void testWhereClauseParentSubQuery() {
         Account acct = new Account(Name = 'Test');
         Account acct2 = new Account(Name = 'Test2');
         List<Account> accts = new List<Account>{acct, acct2};
@@ -701,7 +701,7 @@ private with sharing class MockDatabaseTest {
     }
 
     @IsTest
-    private static void testAllOperators() {
+    static void testAllOperators() {
 
         Account a = new Account(Name = 'Test', NumberOfEmployees = 5);
         Account b = new Account(Name = 'Test2', NumberOfEmployees = 10);
@@ -719,7 +719,7 @@ private with sharing class MockDatabaseTest {
     }
 
     @IsTest
-    private static void testWhereClauseComparisonNonString() {
+    static void testWhereClauseComparisonNonString() {
             
         Account a = new Account(Name = 'Test', NumberOfEmployees = 5);
         Account b = new Account(Name = 'Test2', NumberOfEmployees = 10);
@@ -737,7 +737,7 @@ private with sharing class MockDatabaseTest {
     }
 
     @IsTest
-    private static void testWhereClauseNotIn() {
+    static void testWhereClauseNotIn() {
                 
         Account a = new Account(Name = 'Test', NumberOfEmployees = 5);
         Account b = new Account(Name = 'Test2', NumberOfEmployees = 10);
@@ -755,7 +755,7 @@ private with sharing class MockDatabaseTest {
     }
 
     @IsTest
-    private static void testWhereClauseSubQuery() {          
+    static void testWhereClauseSubQuery() {          
         Account a = new Account(Name = 'Test', NumberOfEmployees = 5);
         Account b = new Account(Name = 'Test2', NumberOfEmployees = 10);
         Account c = new Account(Name = 'Test3', NumberOfEmployees = 15);
@@ -779,7 +779,7 @@ private with sharing class MockDatabaseTest {
     }
 
     @IsTest
-    private static void testSumFunc() {
+    static void testSumFunc() {
         Account a = new Account(Name = 'Test', NumberOfEmployees = 5);
         Account b = new Account(Name = 'Test2', NumberOfEmployees = 10);
         Account c = new Account(Name = 'Test3', NumberOfEmployees = 15);
@@ -797,7 +797,7 @@ private with sharing class MockDatabaseTest {
     }
 
     @IsTest
-    private static void testSingulerCount() {
+    static void testSingulerCount() {
         Account a = new Account(Name = 'Test', NumberOfEmployees = 5);
         Account b = new Account(Name = 'Test2', NumberOfEmployees = 10);
         Account c = new Account(Name = 'Test3', NumberOfEmployees = 15);
@@ -814,7 +814,7 @@ private with sharing class MockDatabaseTest {
     }
 
     @IsTest
-    private static void testCountWithGroupBy() {
+    static void testCountWithGroupBy() {
         Account a = new Account(Name = 'Test', NumberOfEmployees = 5);
         Account b = new Account(Name = 'Test2', NumberOfEmployees = 10);
         Account c = new Account(Name = 'Test3', NumberOfEmployees = 15);
@@ -831,7 +831,7 @@ private with sharing class MockDatabaseTest {
     }
 
     @IsTest
-    private static void testCountDistinct() {
+    static void testCountDistinct() {
         Account a = new Account(Name = 'Test', NumberOfEmployees = 5);
         Account b = new Account(Name = 'Test2', NumberOfEmployees = 10);
         Account c = new Account(Name = 'Test3', NumberOfEmployees = 15);
@@ -849,7 +849,7 @@ private with sharing class MockDatabaseTest {
     }
 
     @IsTest
-    private static void testMinFunc() {
+    static void testMinFunc() {
         Account a = new Account(Name = 'Test', NumberOfEmployees = 5);
         Account b = new Account(Name = 'Test2', NumberOfEmployees = 10);
         Account c = new Account(Name = 'Test3', NumberOfEmployees = 15);
@@ -867,7 +867,7 @@ private with sharing class MockDatabaseTest {
     }
 
     @IsTest
-    private static void testMaxFunc() {
+    static void testMaxFunc() {
         Account a = new Account(Name = 'Test', NumberOfEmployees = 5);
         Account b = new Account(Name = 'Test2', NumberOfEmployees = 10);
         Account c = new Account(Name = 'Test3', NumberOfEmployees = 15);
@@ -885,7 +885,7 @@ private with sharing class MockDatabaseTest {
     }
 
     @IsTest
-    private static void testSumWithAlias() {
+    static void testSumWithAlias() {
         Account a = new Account(Name = 'Test', NumberOfEmployees = 5);
         Account b = new Account(Name = 'Test2', NumberOfEmployees = 10);
         Account c = new Account(Name = 'Test3', NumberOfEmployees = 15);
@@ -902,7 +902,7 @@ private with sharing class MockDatabaseTest {
     }
 
     @IsTest
-    private static void testAvgFunc() {
+    static void testAvgFunc() {
         Account a = new Account(Name = 'Test', NumberOfEmployees = 5);
         Account b = new Account(Name = 'Test2', NumberOfEmployees = 10);
         Account c = new Account(Name = 'Test3', NumberOfEmployees = 15);
@@ -920,7 +920,7 @@ private with sharing class MockDatabaseTest {
     }
 
     @IsTest 
-    private static void testSumWithGroupBy() {
+    static void testSumWithGroupBy() {
         Account a = new Account(Name = 'Test', NumberOfEmployees = 5);
         Account b = new Account(Name = 'Test', NumberOfEmployees = 10);
         Account c = new Account(Name = 'Test3', NumberOfEmployees = 5);
@@ -937,7 +937,7 @@ private with sharing class MockDatabaseTest {
     }
     
     @IsTest
-    private static void testGroupBySelectBadField() {
+    static void testGroupBySelectBadField() {
         Account a = new Account(Name = 'Test', NumberOfEmployees = 5);
         Account b = new Account(Name = 'Test2', NumberOfEmployees = 10);
         Account c = new Account(Name = 'Test3', NumberOfEmployees = 5);
@@ -961,7 +961,7 @@ private with sharing class MockDatabaseTest {
     }
 
     @IsTest
-    private static void testMultipleAggregateFuncs() {
+    static void testMultipleAggregateFuncs() {
         Account a = new Account(Name = 'Test', NumberOfEmployees = 5);
         Account b = new Account(Name = 'Test', NumberOfEmployees = 5);
         Account c = new Account(Name = 'Test', NumberOfEmployees = 5);
@@ -999,7 +999,7 @@ private with sharing class MockDatabaseTest {
     }
 
     @IsTest
-    private static void testAggrGroupByFail() {
+    static void testAggrGroupByFail() {
         Account a = new Account(Name = 'Test', NumberOfEmployees = 5);
         Account b = new Account(Name = 'Test', NumberOfEmployees = 5);
         Account c = new Account(Name = 'Test', NumberOfEmployees = 5);
@@ -1025,7 +1025,7 @@ private with sharing class MockDatabaseTest {
     }
 
     @IsTest
-    private static void testEmptyQuery() {
+    static void testEmptyQuery() {
         MockDatabase mockDb = new MockDatabase();
         Test.startTest();
         List<sObject> queriedAccts = (List<sObject>) mockDb.query('SELECT Id FROM Account');
@@ -1034,7 +1034,7 @@ private with sharing class MockDatabaseTest {
     }
 
     @IsTest
-    private static void testGroupByParentAccountName() {
+    static void testGroupByParentAccountName() {
         Account a = new Account(Name = 'Test 1');
         Account b = new Account(Name = 'Test 2');
         Account c = new Account(Name = 'Test 3');
@@ -1066,7 +1066,7 @@ private with sharing class MockDatabaseTest {
     }
 
     @IsTest
-    private static void testAliases() {
+    static void testAliases() {
         Account a = new Account(Name = 'Test 1');
         Account b = new Account(Name = 'Test 2');
         Account c = new Account(Name = 'Test 3');
@@ -1090,7 +1090,7 @@ private with sharing class MockDatabaseTest {
     }
 
     @IsTest
-    private static void testDuplicateAliases() {
+    static void testDuplicateAliases() {
         Account a = new Account(Name = 'Test 1');
         Account b = new Account(Name = 'Test 2');
         Account c = new Account(Name = 'Test 3');
@@ -1122,7 +1122,7 @@ private with sharing class MockDatabaseTest {
     }
 
     @IsTest
-    private static void testChildSubQueryWithWhereClause() {
+    static void testChildSubQueryWithWhereClause() {
         Account acct = new Account(Name = 'Test');
         MockDatabase mockDb = new MockDatabase();
         mockDb.doInsert(acct);
@@ -1151,7 +1151,7 @@ private with sharing class MockDatabaseTest {
     }
 
     @IsTest
-    private static void testChildSubQueryWithWhereClause2() {
+    static void testChildSubQueryWithWhereClause2() {
         Account acct = new Account(Name = 'Test');
         MockDatabase mockDb = new MockDatabase();
         mockDb.doInsert(acct);
@@ -1184,7 +1184,7 @@ private with sharing class MockDatabaseTest {
     }
 
     @IsTest
-    private static void testNot() {
+    static void testNot() {
         Account a = new Account(Name = 'Test');
         Account b = new Account(Name = 'Test2');
         Account c = new Account(Name = 'Test3');
@@ -1201,7 +1201,7 @@ private with sharing class MockDatabaseTest {
     }
 
     @IsTest
-    private static void testConditionalSubExpr() {
+    static void testConditionalSubExpr() {
         Account a = new Account(Name = 'Test');
         Account b = new Account(Name = 'Test2');
         Account c = new Account(Name = 'Test3');
@@ -1217,7 +1217,7 @@ private with sharing class MockDatabaseTest {
     }
 
     @IsTest
-    private static void testHavingClause() {
+    static void testHavingClause() {
         Account a = new Account(Name = 'Test1', NumberOfEmployees = 5);
         Account b = new Account(Name = 'Test1', NumberOfEmployees = 10);
         Account c = new Account(Name = 'Test2', NumberOfEmployees = 15);
@@ -1233,7 +1233,7 @@ private with sharing class MockDatabaseTest {
     }
 
     @IsTest
-    private static void testHavingClauseMixedConditions() {
+    static void testHavingClauseMixedConditions() {
         Account a = new Account(Name = 'Test1', NumberOfEmployees = 5);
         Account b = new Account(Name = 'Test1', NumberOfEmployees = 10);
         Account c = new Account(Name = 'Test2', NumberOfEmployees = 15);
@@ -1250,7 +1250,7 @@ private with sharing class MockDatabaseTest {
     }
 
     @IsTest 
-    private static void testHavingClauseWithMixedConditionsCorrectAnd() {
+    static void testHavingClauseWithMixedConditionsCorrectAnd() {
         Account a = new Account(Name = 'Test1', NumberOfEmployees = 5);
         Account b = new Account(Name = 'Test1', NumberOfEmployees = 10);
         Account c = new Account(Name = 'Test2', NumberOfEmployees = 15);
@@ -1267,7 +1267,7 @@ private with sharing class MockDatabaseTest {
     }
 
     @IsTest
-    private static void testHavingWithQueryWithBinds() {
+    static void testHavingWithQueryWithBinds() {
         Account a = new Account(Name = 'Test1', NumberOfEmployees = 5);
         Account b = new Account(Name = 'Test1', NumberOfEmployees = 10);
         Account c = new Account(Name = 'Test2', NumberOfEmployees = 15);
@@ -1287,7 +1287,7 @@ private with sharing class MockDatabaseTest {
     }
 
     @IsTest
-    private static void testHavingCrazyConditions() {
+    static void testHavingCrazyConditions() {
         Account a = new Account(Name = 'Test1', NumberOfEmployees = 5);
         Account b = new Account(Name = 'Test1', NumberOfEmployees = 10);
         Account c = new Account(Name = 'Test2', NumberOfEmployees = 15);
@@ -1304,7 +1304,7 @@ private with sharing class MockDatabaseTest {
     }
 
     @IsTest
-    private static void testOrderBy() {
+    static void testOrderBy() {
         Account a = new Account(Name = 'Test1', NumberOfEmployees = 5);
         Account b = new Account(Name = 'Test2', NumberOfEmployees = 10);
         Account c = new Account(Name = 'Test3', NumberOfEmployees = 15);
@@ -1324,7 +1324,7 @@ private with sharing class MockDatabaseTest {
     }
 
     @IsTest
-    private static void testOrderByDESC() {
+    static void testOrderByDESC() {
         Account a = new Account(Name = 'Test1', NumberOfEmployees = 5);
         Account b = new Account(Name = 'Test2', NumberOfEmployees = 10);
         Account c = new Account(Name = 'Test3', NumberOfEmployees = 15);
@@ -1345,7 +1345,7 @@ private with sharing class MockDatabaseTest {
     }
 
     @IsTest
-    private static void testOrderByASC() {
+    static void testOrderByASC() {
         Account a = new Account(Name = 'Test1', NumberOfEmployees = 5);
         Account b = new Account(Name = 'Test2', NumberOfEmployees = 10);
         Account c = new Account(Name = 'Test3', NumberOfEmployees = 15);
@@ -1366,7 +1366,7 @@ private with sharing class MockDatabaseTest {
     }
 
     @IsTest
-    private static void testOrderByWithGroupBy() {
+    static void testOrderByWithGroupBy() {
         Account a = new Account(Name = 'Test1', NumberOfEmployees = 5);
         Account b = new Account(Name = 'Test1', NumberOfEmployees = 10);
         Account c = new Account(Name = 'Test2', NumberOfEmployees = 15);
@@ -1383,7 +1383,7 @@ private with sharing class MockDatabaseTest {
     }
 
     @IsTest
-    private static void testOrderByWithGroupByDESC() {
+    static void testOrderByWithGroupByDESC() {
         Account a = new Account(Name = 'Test1', NumberOfEmployees = 5);
         Account b = new Account(Name = 'Test1', NumberOfEmployees = 10);
         Account c = new Account(Name = 'Test2', NumberOfEmployees = 15);
@@ -1401,7 +1401,7 @@ private with sharing class MockDatabaseTest {
     }
 
     @IsTest
-    private static void testOrderByWithGroupByASC() {
+    static void testOrderByWithGroupByASC() {
         Account a = new Account(Name = 'Test1', NumberOfEmployees = 5);
         Account b = new Account(Name = 'Test1', NumberOfEmployees = 10);
         Account c = new Account(Name = 'Test2', NumberOfEmployees = 15);
@@ -1417,7 +1417,7 @@ private with sharing class MockDatabaseTest {
     }
 
     @IsTest
-    private static void testOrderByTwoFields() {
+    static void testOrderByTwoFields() {
         Account a = new Account(Name = 'Test1', NumberOfEmployees = 5);
         Account b = new Account(Name = 'Test1', NumberOfEmployees = 10);
         Account c = new Account(Name = 'Test2', NumberOfEmployees = 15);
@@ -1468,7 +1468,7 @@ private with sharing class MockDatabaseTest {
     }
 
     @IsTest
-    private static void testOrderByThreeFields() {
+    static void testOrderByThreeFields() {
         Account a = new Account(Name = 'Test1', NumberOfEmployees = 5, AnnualRevenue = 1000);
         Account b = new Account(Name = 'Test1', NumberOfEmployees = 10, AnnualRevenue = 1000);
         Account c = new Account(Name = 'Test2', NumberOfEmployees = 5, AnnualRevenue = 2000);
@@ -1544,7 +1544,7 @@ private with sharing class MockDatabaseTest {
     }
 
     @IsTest
-    private static void testOrderByWithParentField() {
+    static void testOrderByWithParentField() {
         Account a = new Account(Name = 'Test1', NumberOfEmployees = 5, AnnualRevenue = 1000);
         Account b = new Account(Name = 'Test1', NumberOfEmployees = 10, AnnualRevenue = 1000);
         Account c = new Account(Name = 'Test2', NumberOfEmployees = 5, AnnualRevenue = 2000);
@@ -1600,7 +1600,7 @@ private with sharing class MockDatabaseTest {
     }
 
     @IsTest
-    private static void testOrderByWithGroupByParentField() {
+    static void testOrderByWithGroupByParentField() {
         Account a = new Account(Name = 'Test1', NumberOfEmployees = 5, AnnualRevenue = 1000);
         Account b = new Account(Name = 'Test1', NumberOfEmployees = 10, AnnualRevenue = 1000);
         Account c = new Account(Name = 'Test2', NumberOfEmployees = 5, AnnualRevenue = 2000);
@@ -1657,7 +1657,7 @@ private with sharing class MockDatabaseTest {
     }
 
     @IsTest
-    private static void testOrderByMutipleOrders() {
+    static void testOrderByMutipleOrders() {
         Account a = new Account(Name = 'Test1', NumberOfEmployees = 5, AnnualRevenue = 1000);
         Account b = new Account(Name = 'Test1', NumberOfEmployees = 10, AnnualRevenue = 1000);
         Account c = new Account(Name = 'Test2', NumberOfEmployees = 5, AnnualRevenue = 2000);
@@ -1713,7 +1713,7 @@ private with sharing class MockDatabaseTest {
     }
 
     @IsTest
-    private static void testOrderByMutipleOrdersDESC() {
+    static void testOrderByMutipleOrdersDESC() {
         Account a = new Account(Name = 'Test1', NumberOfEmployees = 5, AnnualRevenue = 1000);
         Account b = new Account(Name = 'Test1', NumberOfEmployees = 10, AnnualRevenue = 1000);
         Account c = new Account(Name = 'Test2', NumberOfEmployees = 5, AnnualRevenue = 2000);
@@ -1780,7 +1780,7 @@ private with sharing class MockDatabaseTest {
     }
 
     @IsTest
-    private static void testNullsFirst() {
+    static void testNullsFirst() {
         Account a = new Account(Name = 'Test1', NumberOfEmployees = 5, AnnualRevenue = 1000);
         Account b = new Account(Name = 'Test1', NumberOfEmployees = 10, AnnualRevenue = 1000);
         Account c = new Account(Name = 'Test2', NumberOfEmployees = 5, AnnualRevenue = 2000);
@@ -1823,7 +1823,7 @@ private with sharing class MockDatabaseTest {
     }
 
     @IsTest
-    private static void testNullsLast() {
+    static void testNullsLast() {
         Account a = new Account(Name = 'Test1', NumberOfEmployees = 5, AnnualRevenue = 1000);
         Account b = new Account(Name = 'Test1', NumberOfEmployees = 10, AnnualRevenue = 1000);
         Account c = new Account(Name = 'Test2', NumberOfEmployees = 5, AnnualRevenue = 2000);
@@ -1867,7 +1867,7 @@ private with sharing class MockDatabaseTest {
     }
 
     @IsTest
-    private static void testLimitSObject() {
+    static void testLimitSObject() {
         Account a = new Account(Name = 'Test1', NumberOfEmployees = 5, AnnualRevenue = 1000);
         Account b = new Account(Name = 'Test1', NumberOfEmployees = 10, AnnualRevenue = 1000);
         Account c = new Account(Name = 'Test2', NumberOfEmployees = 5, AnnualRevenue = 2000);
@@ -1906,7 +1906,7 @@ private with sharing class MockDatabaseTest {
     }
 
     @IsTest
-    private static void testLimitCount() {
+    static void testLimitCount() {
         Account a = new Account(Name = 'Test1', NumberOfEmployees = 5, AnnualRevenue = 1000);
         Account b = new Account(Name = 'Test1', NumberOfEmployees = 10, AnnualRevenue = 1000);
         Account c = new Account(Name = 'Test2', NumberOfEmployees = 5, AnnualRevenue = 2000);
@@ -1934,7 +1934,7 @@ private with sharing class MockDatabaseTest {
     }
 
     @IsTest
-    private static void testLimitAggregate() {
+    static void testLimitAggregate() {
         Account a = new Account(Name = 'Test1', NumberOfEmployees = 5, AnnualRevenue = 1000);
         Account b = new Account(Name = 'Test1', NumberOfEmployees = 10, AnnualRevenue = 1000);
         Account c = new Account(Name = 'Test2', NumberOfEmployees = 5, AnnualRevenue = 2000);
@@ -1969,7 +1969,7 @@ private with sharing class MockDatabaseTest {
     }
 
     @IsTest
-    private static void testOnlyQueriedFieldsReturned() {
+    static void testOnlyQueriedFieldsReturned() {
         Account a = new Account(Name = 'Test1', NumberOfEmployees = 5, AnnualRevenue = 1000);
         MockDatabase mockDb = new MockDatabase();
         mockDb.doInsert(new List<Account>{a});
@@ -1985,7 +1985,7 @@ private with sharing class MockDatabaseTest {
     }
 
     @IsTest
-    private static void testOffset() {
+    static void testOffset() {
         Account a = new Account(Name = 'Test1', NumberOfEmployees = 5, AnnualRevenue = 1000);
         Account b = new Account(Name = 'Test2', NumberOfEmployees = 10, AnnualRevenue = 2000);
         Account c = new Account(Name = 'Test3', NumberOfEmployees = 5, AnnualRevenue = 3000);
@@ -2024,7 +2024,7 @@ private with sharing class MockDatabaseTest {
     }
 
     @IsTest 
-    private static void testOffsetWithBindVar() {
+    static void testOffsetWithBindVar() {
         Account a = new Account(Name = 'Test1', NumberOfEmployees = 5, AnnualRevenue = 1000);
         Account b = new Account(Name = 'Test2', NumberOfEmployees = 10, AnnualRevenue = 2000);
         Account c = new Account(Name = 'Test3', NumberOfEmployees = 5, AnnualRevenue = 3000);
@@ -2065,7 +2065,7 @@ private with sharing class MockDatabaseTest {
     }
 
     @IsTest
-    private static void testLimitWithBindVar() {
+    static void testLimitWithBindVar() {
         Account a = new Account(Name = 'Test1', NumberOfEmployees = 5, AnnualRevenue = 1000);
         Account b = new Account(Name = 'Test2', NumberOfEmployees = 10, AnnualRevenue = 2000);
         Account c = new Account(Name = 'Test3', NumberOfEmployees = 5, AnnualRevenue = 3000);
@@ -2096,7 +2096,7 @@ private with sharing class MockDatabaseTest {
     }
 
     @IsTest
-    private static void testLimitAndOffsetTogether() {
+    static void testLimitAndOffsetTogether() {
         Account a = new Account(Name = 'Test1', NumberOfEmployees = 5, AnnualRevenue = 1000);
         Account b = new Account(Name = 'Test2', NumberOfEmployees = 10, AnnualRevenue = 2000);
         Account c = new Account(Name = 'Test3', NumberOfEmployees = 5, AnnualRevenue = 3000);
@@ -2134,7 +2134,7 @@ private with sharing class MockDatabaseTest {
     }
 
     @IsTest
-    private static void testForUpdate() {
+    static void testForUpdate() {
         Account acct = new Account(Name = 'Test1', NumberOfEmployees = 5, AnnualRevenue = 1000);
 
         MockDatabase mockDb = new MockDatabase();
@@ -2148,7 +2148,7 @@ private with sharing class MockDatabaseTest {
     }
 
     @IsTest
-    private static void testForUpdateFailOnGroupBy() {
+    static void testForUpdateFailOnGroupBy() {
         Account acct = new Account(Name = 'Test1', NumberOfEmployees = 5, AnnualRevenue = 1000);
 
         MockDatabase mockDb = new MockDatabase();
@@ -2171,7 +2171,7 @@ private with sharing class MockDatabaseTest {
     }
 
     @IsTest
-    private static void testForUpdateFailOnCount() {
+    static void testForUpdateFailOnCount() {
         Account acct = new Account(Name = 'Test1', NumberOfEmployees = 5, AnnualRevenue = 1000);
 
         MockDatabase mockDb = new MockDatabase();
@@ -2844,347 +2844,5 @@ private with sharing class MockDatabaseTest {
 
         Assert.areEqual('Contact', queriedTasks[0].What.Type, 'Incorrect Type');
         Assert.areEqual('Account', queriedTasks[1].What.Type, 'Incorrect Type');
-    }
-
-    @IsTest
-    private static void testGroupByRollupCount() {
-        MockDatabase mockDb = new MockDatabase();
-        Account a = new Account(Name = 'Test1', NumberOfEmployees = 5, AnnualRevenue = 1000);
-        Account c = new Account(Name = 'Test3', NumberOfEmployees = 5, AnnualRevenue = 3000);
-        Account e = new Account(Name = 'Test5', NumberOfEmployees = 5, AnnualRevenue = 5000);
-        Account i = new Account(Name = 'Test9', NumberOfEmployees = 5, AnnualRevenue = 9000);
-        Account l = new Account(Name = 'Test12', NumberOfEmployees = 5, AnnualRevenue = 12000);
-        Account m = new Account(Name = 'Test13', NumberOfEmployees = 5, AnnualRevenue = 13000);
-        Account n = new Account(Name = 'Test14', NumberOfEmployees = 5, AnnualRevenue = 14000);
-        Account o = new Account(Name = 'Test15', NumberOfEmployees = 5, AnnualRevenue = 15000);
-
-        Account b = new Account(Name = 'Test2', NumberOfEmployees = 10, AnnualRevenue = 2000);
-        Account f = new Account(Name = 'Test6', NumberOfEmployees = 10, AnnualRevenue = 6000);
-        Account h = new Account(Name = 'Test8', NumberOfEmployees = 10, AnnualRevenue = 8000);
-        Account j = new Account(Name = 'Test10', NumberOfEmployees = 10, AnnualRevenue = 10000);
-        Account k = new Account(Name = 'Test11', NumberOfEmployees = 10, AnnualRevenue = 11000);
-
-        Account g = new Account(Name = 'Test7', NumberOfEmployees = 15, AnnualRevenue = 7000);
-
-        Account d = new Account(Name = 'Test4', NumberOfEmployees = 20, AnnualRevenue = 4000);
-        
-    
-        List<Account> acctList = new List<Account>{a, b, c, d, e, f, g, h, i, j, k, l, m, n, o};
-        mockDb.doInsert(acctList);
-
-        Test.startTest();
-        List<Aggregate> queriedAccts = (List<Aggregate>) mockDb.query('SELECT NumberOfEmployees, COUNT(Id) FROM Account GROUP BY ROLLUP(NumberOfEmployees)');
-        Test.stopTest();
-
-        Assert.areEqual(5, queriedAccts.size(), 'Incorrect number of aggregates');
-        Assert.areEqual(15, queriedAccts[4].get('expr0'), 'Incorrect count');
-    }
-
-    @IsTest
-    private static void testGroupByRollupCountTwoFields() {
-        MockDatabase mockDb = new MockDatabase();
-        Account a = new Account(Name = 'Test1', NumberOfEmployees = 5, AnnualRevenue = 3000);
-        Account c = new Account(Name = 'Test3', NumberOfEmployees = 5, AnnualRevenue = 3000);
-        Account e = new Account(Name = 'Test5', NumberOfEmployees = 5, AnnualRevenue = 3000);
-        Account i = new Account(Name = 'Test9', NumberOfEmployees = 5, AnnualRevenue = 3000);
-        Account l = new Account(Name = 'Test12', NumberOfEmployees = 5, AnnualRevenue = 3000);
-        Account m = new Account(Name = 'Test13', NumberOfEmployees = 5, AnnualRevenue = 3000);
-        Account n = new Account(Name = 'Test14', NumberOfEmployees = 5, AnnualRevenue = 3000);
-
-        Account o = new Account(Name = 'Test15', NumberOfEmployees = 5, AnnualRevenue = 4000);
-
-        Account b = new Account(Name = 'Test2', NumberOfEmployees = 10, AnnualRevenue = 2000);
-        Account f = new Account(Name = 'Test6', NumberOfEmployees = 10, AnnualRevenue = 2000);
-        Account h = new Account(Name = 'Test8', NumberOfEmployees = 10, AnnualRevenue = 2000);
-        Account j = new Account(Name = 'Test10', NumberOfEmployees = 10, AnnualRevenue = 2000);
-
-        Account k = new Account(Name = 'Test11', NumberOfEmployees = 10, AnnualRevenue = 3000);
-
-        Account g = new Account(Name = 'Test7', NumberOfEmployees = 15, AnnualRevenue = 7000);
-
-        Account d = new Account(Name = 'Test4', NumberOfEmployees = 20, AnnualRevenue = 4000);
-        
-    
-        List<Account> acctList = new List<Account>{a, b, c, d, e, f, g, h, i, j, k, l, m, n, o};
-        mockDb.doInsert(acctList);
-
-        Test.startTest();
-        List<Aggregate> queriedAccts = (List<Aggregate>) mockDb.query('SELECT Name, NumberOfEmployees, COUNT(Id) FROM Account GROUP BY ROLLUP(Name, NumberOfEmployees)');
-        Test.stopTest();
-
-
-        Assert.areEqual(31, queriedAccts.size(), 'Incorrect number of aggregates');
-        Assert.areEqual(15, queriedAccts[30].get('expr0'), 'Incorrect count');
-    }
-
-    @IsTest
-    private static void testGroupByRollupCountThreeFields() {
-        MockDatabase mockDb = new MockDatabase();
-
-    
-        List<Account> acctList = TestDataFactory.createTrailheadAccounts();
-        mockDb.doInsert(acctList);
-
-        Test.startTest();
-        List<Aggregate> queriedAccts = (List<Aggregate>) mockDb.query('SELECT Name, AccountNumber, NumberOfEmployees, COUNT(Id) FROM Account GROUP BY ROLLUP(Name, AccountNumber, NumberOfEmployees)');
-        Test.stopTest();
-
-        Assert.areEqual(40, queriedAccts.size(), 'Incorrect number of aggregates');
-        Assert.areEqual(13, queriedAccts[39].get('expr0'), 'Incorrect count');        
-    }
-
-    @IsTest
-    private static void testGroupByRollupSum() {
-        MockDatabase mockDb = new MockDatabase();
-        List<Account> acctList = TestDataFactory.createTrailheadAccounts();
-        mockDb.doInsert(acctList);
-
-        Test.startTest();
-        List<Aggregate> queriedAccts = (List<Aggregate>) mockDb.query('SELECT Name, SUM(NumberOfEmployees) FROM Account GROUP BY ROLLUP(Name)');
-        Test.stopTest();
-
-        Assert.areEqual(14, queriedAccts.size(), 'Incorrect number of aggregates');
-        Assert.areEqual(241965.0, queriedAccts[13].get('expr0'), 'Incorrect sum');
-    }
-
-    @IsTest
-    private static void testGroupByRollupSumTwoFields() {
-        MockDatabase mockDb = new MockDatabase();
-        List<Account> acctList = TestDataFactory.createTrailheadAccounts();        
-        mockDb.doInsert(acctList);
-
-        Test.startTest();
-        List<Aggregate> queriedAccts = (List<Aggregate>) mockDb.query('SELECT NumberOfEmployees, Name, SUM(AnnualRevenue) annualRevSum FROM Account GROUP BY ROLLUP(NumberOfEmployees, Name)');
-        Test.stopTest();
-
-        Assert.areEqual(26, queriedAccts.size(), 'Incorrect number of aggregates');
-        Assert.areEqual(8569000000.0, queriedAccts[25].get('annualRevSum'), 'Incorrect sum');
-    }
-
-    @IsTest
-    private static void testGroupByRollupSumThreeFields() {
-        MockDatabase mockDb = new MockDatabase();
-        List<Account> acctList = TestDataFactory.createTrailheadAccounts();
-        mockDb.doInsert(acctList);
-
-        Test.startTest();
-        List<Aggregate> queriedAccts = (List<Aggregate>) mockDb.query(
-            'SELECT NumberOfEmployees, Name, BillingState, SUM(AnnualRevenue) annualRevSum ' + 
-            'FROM Account ' + 
-            'GROUP BY ROLLUP(NumberOfEmployees, Name, BillingState)'
-        );
-        Test.stopTest();
-
-        Assert.areEqual(39, queriedAccts.size(), 'Incorrect number of aggregates');
-        Assert.areEqual(8569000000.0, queriedAccts[38].get('annualRevSum'), 'Incorrect sum');
-    }
-
-    @IsTest
-    private static void testGroupByRollupSumThreeFieldsOneNotSelected() {
-        MockDatabase mockDb = new MockDatabase();
-    
-        List<Account> acctList = TestDataFactory.createTrailheadAccounts();
-        mockDb.doInsert(acctList);
-
-        Test.startTest();
-        List<Aggregate> queriedAccts = (List<Aggregate>) mockDb.query('SELECT NumberOfEmployees, Name, SUM(AnnualRevenue) annualRevSum FROM Account GROUP BY ROLLUP(NumberOfEmployees, Name, BillingState)');
-        Test.stopTest();
-        String exMessage = null;
-        try {
-            queriedAccts[0].get('BillingState');
-        } catch(Exception e) {
-            exMessage = e.getMessage();
-        }
-        Assert.isTrue(
-            exMessage != null && 
-            exMessage.contains('Invalid field BillingState'), 
-            'Expected exception to be thrown'
-        );
-        Assert.areEqual(39, queriedAccts.size(), 'Incorrect number of aggregates');
-        Assert.areEqual(8569000000.0, queriedAccts[38].get('annualRevSum'), 'Incorrect sum');
-    }
-
-    @IsTest
-    private static void testGroupByRollupSumWithAlias() {
-        MockDatabase mockDb = new MockDatabase();
-        Account a = new Account(Name = 'Test1', NumberOfEmployees = 5, AnnualRevenue = 1000);
-        Account c = new Account(Name = 'Test3', NumberOfEmployees = 5, AnnualRevenue = 3000);
-        Account e = new Account(Name = 'Test5', NumberOfEmployees = 5, AnnualRevenue = 5000);
-        Account i = new Account(Name = 'Test9', NumberOfEmployees = 5, AnnualRevenue = 9000);
-        Account l = new Account(Name = 'Test12', NumberOfEmployees = 5, AnnualRevenue = 12000);
-        Account m = new Account(Name = 'Test13', NumberOfEmployees = 5, AnnualRevenue = 13000);
-        Account n = new Account(Name = 'Test14', NumberOfEmployees = 5, AnnualRevenue = 14000);
-        Account o = new Account(Name = 'Test15', NumberOfEmployees = 5, AnnualRevenue = 15000);
-
-        Account b = new Account(Name = 'Test2', NumberOfEmployees = 10, AnnualRevenue = 2000);
-        Account f = new Account(Name = 'Test6', NumberOfEmployees = 10, AnnualRevenue = 6000);
-        Account h = new Account(Name = 'Test8', NumberOfEmployees = 10, AnnualRevenue = 8000);
-        Account j = new Account(Name = 'Test10', NumberOfEmployees = 10, AnnualRevenue = 10000);
-        Account k = new Account(Name = 'Test11', NumberOfEmployees = 10, AnnualRevenue = 11000);
-
-        Account g = new Account(Name = 'Test7', NumberOfEmployees = 15, AnnualRevenue = 7000);
-
-        Account d = new Account(Name = 'Test4', NumberOfEmployees = 20, AnnualRevenue = 4000);
-        
-    
-        List<Account> acctList = new List<Account>{a, b, c, d, e, f, g, h, i, j, k, l, m, n, o};
-        mockDb.doInsert(acctList);
-
-        Test.startTest();
-        List<Aggregate> queriedAccts = (List<Aggregate>) mockDb.query('SELECT NumberOfEmployees numEmpl, SUM(AnnualRevenue) FROM Account GROUP BY ROLLUP(NumberOfEmployees)');
-        Test.stopTest();
-
-        Assert.areEqual(5, queriedAccts.size(), 'Incorrect number of aggregates');
-        Assert.isNotNull(queriedAccts[0].get('numEmpl'), 'Expected numEmpl to be not null');
-    }
-
-    @IsTest
-    private static void testGroupByRollupSumWithFuncAlias() {
-        MockDatabase mockDb = new MockDatabase();
-        Account a = new Account(Name = 'Test1', NumberOfEmployees = 5, AnnualRevenue = 1000);
-        Account c = new Account(Name = 'Test3', NumberOfEmployees = 5, AnnualRevenue = 3000);
-        Account e = new Account(Name = 'Test5', NumberOfEmployees = 5, AnnualRevenue = 5000);
-        Account i = new Account(Name = 'Test9', NumberOfEmployees = 5, AnnualRevenue = 9000);
-        Account l = new Account(Name = 'Test12', NumberOfEmployees = 5, AnnualRevenue = 12000);
-        Account m = new Account(Name = 'Test13', NumberOfEmployees = 5, AnnualRevenue = 13000);
-        Account n = new Account(Name = 'Test14', NumberOfEmployees = 5, AnnualRevenue = 14000);
-        Account o = new Account(Name = 'Test15', NumberOfEmployees = 5, AnnualRevenue = 15000);
-
-        Account b = new Account(Name = 'Test2', NumberOfEmployees = 10, AnnualRevenue = 2000);
-        Account f = new Account(Name = 'Test6', NumberOfEmployees = 10, AnnualRevenue = 6000);
-        Account h = new Account(Name = 'Test8', NumberOfEmployees = 10, AnnualRevenue = 8000);
-        Account j = new Account(Name = 'Test10', NumberOfEmployees = 10, AnnualRevenue = 10000);
-        Account k = new Account(Name = 'Test11', NumberOfEmployees = 10, AnnualRevenue = 11000);
-
-        Account g = new Account(Name = 'Test7', NumberOfEmployees = 15, AnnualRevenue = 7000);
-
-        Account d = new Account(Name = 'Test4', NumberOfEmployees = 20, AnnualRevenue = 4000);
-        
-        List<Account> acctList = new List<Account>{a, b, c, d, e, f, g, h, i, j, k, l, m, n, o};
-        mockDb.doInsert(acctList);
-
-        Decimal sum = 0;
-        for(Account acct : acctList) {
-            sum += acct.AnnualRevenue;
-        }
-
-        Test.startTest();
-        List<Aggregate> queriedAccts = (List<Aggregate>) mockDb.query('SELECT NumberOfEmployees numEmpl, SUM(AnnualRevenue) sumRev FROM Account GROUP BY ROLLUP(NumberOfEmployees)');
-        Test.stopTest();
-
-        Assert.areEqual(5, queriedAccts.size(), 'Incorrect number of aggregates');
-        Assert.areEqual(sum, queriedAccts[4].get('sumRev'), 'Expected sumRev to be ' + sum);
-    }
-
-    @IsTest
-    private static void testCountDistinctGroupByRollup() {
-        MockDatabase mockDb = new MockDatabase();
-        List<Account> acctList = TestDataFactory.createTrailheadAccounts();
-        mockDb.doInsert(acctList);
-
-        Test.startTest();
-        List<Aggregate> queriedAccts = (List<Aggregate>) mockDb.query('SELECT Name, COUNT_DISTINCT(NumberOfEmployees) FROM Account GROUP BY ROLLUP(Name)');
-        Test.stopTest();
-
-        Assert.areEqual(14, queriedAccts.size(), 'Incorrect number of aggregates');
-        Assert.areEqual(11, queriedAccts[13].get('expr0'), 'Expected expr0 to be 11');
-    }
-
-    @IsTest
-    private static void testCountDistinctGroupByRollupTwoFields() {
-        MockDatabase mockDb = new MockDatabase();
-        List<Account> acctList = TestDataFactory.createTrailheadAccounts();
-        mockDb.doInsert(acctList);
-
-        Test.startTest();
-        List<Aggregate> queriedAccts = (List<Aggregate>) mockDb.query('SELECT Name, AccountNumber, COUNT_DISTINCT(NumberOfEmployees) FROM Account GROUP BY ROLLUP(Name, AccountNumber)');
-        Test.stopTest();
-
-        Assert.areEqual(27, queriedAccts.size(), 'Incorrect number of aggregates');
-        Assert.areEqual(11, queriedAccts[26].get('expr0'), 'Expected expr0 to be 11');
-    }
-
-    @IsTest
-    private static void testCountDistinctGroupByRollupThreeFields() {
-        MockDatabase mockDb = new MockDatabase();
-        List<Account> acctList = TestDataFactory.createTrailheadAccounts();
-        mockDb.doInsert(acctList);
-
-        Test.startTest();
-        List<Aggregate> queriedAccts = (List<Aggregate>) mockDb.query('SELECT Name, AccountNumber, COUNT_DISTINCT(NumberOfEmployees) FROM Account GROUP BY ROLLUP(Name, AccountNumber, BillingState)');
-        Test.stopTest();
-
-        Assert.areEqual(40, queriedAccts.size(), 'Incorrect number of aggregates');
-        Assert.areEqual(11, queriedAccts[39].get('expr0'), 'Expected expr0 to be 11');
-    }
-
-    @IsTest
-    private static void testAvgGroupByRollup() {
-        MockDatabase mockDb = new MockDatabase();
-        List<Account> acctList = TestDataFactory.createTrailheadAccounts();
-        mockDb.doInsert(acctList);
-
-        Test.startTest();
-        List<Aggregate> queriedAccts = (List<Aggregate>) mockDb.query('SELECT Name, AVG(NumberOfEmployees) FROM Account GROUP BY ROLLUP(Name)');
-        Test.stopTest();
-
-        Assert.areEqual(14, queriedAccts.size(), 'Incorrect number of aggregates');
-        Assert.areEqual(21996, Math.floor( (Decimal) queriedAccts[13].get('expr0')), 'Expected expr0 to be 21996');
-    }
-
-    @IsTest
-    private static void testAvgGroupByRollupTwoFields() {
-        MockDatabase mockDb = new MockDatabase();
-        List<Account> acctList = TestDataFactory.createTrailheadAccounts();
-        mockDb.doInsert(acctList);
-
-        Test.startTest();
-        List<Aggregate> queriedAccts = (List<Aggregate>) mockDb.query('SELECT Name, BillingState, AVG(NumberOfEmployees) FROM Account GROUP BY ROLLUP(Name, BillingState)');
-        Test.stopTest();
-
-        Assert.areEqual(27, queriedAccts.size(), 'Incorrect number of aggregates');
-        Assert.areEqual(21996, Math.floor( (Decimal) queriedAccts[26].get('expr0')), 'Expected expr0 to be 21996');
-    }
-
-    @IsTest
-    private static void testAvgGroupByRollupThreeFields() {
-        MockDatabase mockDb = new MockDatabase();
-        List<Account> acctList = TestDataFactory.createTrailheadAccounts();
-        mockDb.doInsert(acctList);
-
-        Test.startTest();
-        List<Aggregate> queriedAccts = (List<Aggregate>) mockDb.query('SELECT Name, BillingState, AVG(NumberOfEmployees) FROM Account GROUP BY ROLLUP(Name, BillingState, AccountNumber)');
-        Test.stopTest();
-
-        Assert.areEqual(40, queriedAccts.size(), 'Incorrect number of aggregates');
-        Assert.areEqual(21996, Math.floor( (Decimal) queriedAccts[39].get('expr0')), 'Expected expr0 to be 21996');        
-    }
-
-    @IsTest
-    private static void testGroupByRollupMax() {
-        MockDatabase mockDb = new MockDatabase();
-        List<Account> acctList = TestDataFactory.createTrailheadAccounts();
-        mockDb.doInsert(acctList);
-
-        Test.startTest();
-        List<Aggregate> queriedAccts = (List<Aggregate>) mockDb.query('SELECT Name, MAX(NumberOfEmployees) FROM Account GROUP BY ROLLUP(Name)');
-        Test.stopTest();
-
-        Assert.areEqual(14, queriedAccts.size(), 'Incorrect number of aggregates');
-        Assert.areEqual(145000, queriedAccts[13].get('expr0'), 'Expected expr0 to be 100000');
-    }
-
-    @IsTest
-    private static void testGroupByRollupMin() {
-        MockDatabase mockDb = new MockDatabase();
-        List<Account> acctList = TestDataFactory.createTrailheadAccounts();
-        mockDb.doInsert(acctList);
-
-        Test.startTest();
-        List<Aggregate> queriedAccts = (List<Aggregate>) mockDb.query('SELECT Name, MIN(NumberOfEmployees) FROM Account GROUP BY ROLLUP(Name)');
-        Test.stopTest();
-
-        Assert.areEqual(14, queriedAccts.size(), 'Incorrect number of aggregates');
-        Assert.areEqual(120, queriedAccts[13].get('expr0'), 'Expected expr0 to be 5');
     }
 }

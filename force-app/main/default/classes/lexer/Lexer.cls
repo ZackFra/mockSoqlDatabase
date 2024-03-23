@@ -135,6 +135,9 @@ public with sharing class Lexer {
             nextLink.head.right = whereIntermediary.head;
             nextLink = whereIntermediary;
         }
+
+        // throws exception if WITH [DATA CATEGORY] is added to the query
+        parseWithDataCategory(query);
         
         Intermediary groupByIntermediary = parseGroupBy(query);
         if(groupByIntermediary != null) {
@@ -170,6 +173,16 @@ public with sharing class Lexer {
             nextLink.head.right = offsetIntermediary.head;
             nextLink = offsetIntermediary;
         }
+
+        Intermediary forViewOrReferenceIntermediary = parseForViewOrReference(query);
+        if(forViewOrReferenceIntermediary != null) {
+            query = forViewOrReferenceIntermediary.subquery;
+            nextLink.head.right = forViewOrReferenceIntermediary.head;
+            nextLink = forViewOrReferenceIntermediary;
+        }
+
+        // will throw an exception if UPDATE TRACKING or UPDATE VIEWSTAT is added to the query
+        parseUpdateTrackingOrViewStat(query);
         
         Intermediary forUpdateIntermediary = parseForUpdate(query);
         if(forUpdateIntermediary != null) {
@@ -187,6 +200,73 @@ public with sharing class Lexer {
         applyCasing(selectIntermediary.head);
         
         return selectIntermediary;
+    }
+
+    private Intermediary parseUpdateTrackingOrViewStat(String query) {
+        query = ParserUtils.skipWhitespace(query);
+        if(query.length() == 0) {
+            return null;
+        }
+        if(lookahead(query, 6) != 'update') {
+            return null;
+        }
+        
+        query = consume(query, 'update');
+        query = consume(query, ' ');
+        query = ParserUtils.skipWhitespace(query);
+
+        if(lookahead(query, 8) != 'tracking' && lookahead(query, 4) != 'view') {
+            return null;
+        }
+
+        String updateType = 'tracking';
+        if(lookahead(query, 8) == 'viewstat') {
+            updateType = 'viewstat';
+        }
+
+        query = consume(query, updateType);
+
+        // so it is either UPDATE VIEW or UPDATE TRACKING
+        throw new QueryException('UPDATE ' + updateType.toUpperCase() + ' is not supported by the mock SOQL parser');
+    }
+
+    private Intermediary parseWithDataCategory(String query) {
+        query = ParserUtils.skipWhitespace(query);
+        if(lookahead(query, 4) == 'with') {
+            throw new QueryException('WITH [DATA CATEGORY] is not supported by the mock SOQL parser');
+        }
+        return null;
+    }
+
+    private Intermediary parseForViewOrReference(String query) {
+        query = ParserUtils.skipWhitespace(query);
+        if(query.length() == 0) {
+            return null;
+        }
+        if(lookahead(query, 3) != 'for') {
+            return null;
+        }
+        query = consume(query, 'for');
+        query = ParserUtils.skipWhitespace(query);
+
+        // could be FOR UPDATE, if its not view or reference, return null
+        if(lookahead(query, 4) != 'view' && lookahead(query, 9) != 'reference') {
+            return null;
+        }
+
+        String forType = 'view';
+        if(lookahead(query, 9) == 'reference') {
+            forType = 'reference';
+        }
+
+        query = consume(query, forType);
+        return new Intermediary(
+        	new NodeBuilder()
+            	.setId('for ' + forType)
+            	.setNodeType('for ' + forType)
+            	.build(),
+            query
+        );
     }
 
     private Intermediary parseOffset(String query) {
@@ -1065,13 +1145,9 @@ public with sharing class Lexer {
         Intermediary fieldList;
         String nodeId = 'group by';
         if(lookahead(query, 6) == 'rollup') {
-            nodeId = 'rollup';
-            query = consume(query, 'rollup');
-            query = ParserUtils.skipWhitespace(query);
-            query = consume(query, '(');
-            fieldList = parseGroupByRollupFieldList(query);
-            query = fieldList.subquery;
-            query = consume(query, ')');
+            throw new QueryException('GROUP BY ROLLUP is not supported by the mock SOQL parser');
+        } else if (lookahead(query, 4) == 'cube') {
+            throw new QueryException('GROUP BY CUBE is not supported by the mock SOQL parser');
         } else {
             fieldList = parseFieldList(query);
         }
