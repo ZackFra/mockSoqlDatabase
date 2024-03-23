@@ -32,20 +32,20 @@ There are three categories of support for a SOQL query done via the mock SOQL da
 # Supported Clauses
 \begin{table}[]
 \begin{tabular}{lll}
-Clause                   & Level of Support    & Notes                                                                                       \\
-SELECT                   & Fully Supported     &                                                                                             \\
-TYPEOF                   & Fully Supported     &                                                                                             \\
-FROM                     & Fully Supported     &                                                                                             \\
-USING SCOPE              & Ignored             &                                                                                             \\
-WHERE                    & Fully Supported     &                                                                                             \\
-WITH                     & Not Supported       &                                                                                             \\
-GROUP BY                 & Partially Supported & GROUP BY ROLLUP and GROUP BY CUBE are not supported. Normal GROUP BY clauses are supported. \\
-HAVING                   & Fully Supported     &                                                                                             \\
-ORDER BY                 & Fully Supported     &                                                                                             \\
-LIMIT                    & Fully Supported     &                                                                                             \\
-OFFSET                   & Fully Supported     &                                                                                             \\
-FOR VIEW|REFERENCE       & Ignored             &                                                                                             \\
-UPDATE TRACKING|VIEWSTAT & Not Supported       &                                                                                             \\
-FOR UPDATE               & Ignored             &                                                                                            
+Clause & Level of Support & Notes \\
+SELECT & Fully Supported &  \\
+TYPEOF & Fully Supported &  \\
+FROM & Fully Supported &  \\
+USING SCOPE & Ignored &  \\
+WHERE & Fully Supported &  \\
+WITH & Not Supported &  \\
+GROUP BY & Partially Supported & GROUP BY ROLLUP and GROUP BY CUBE are not supported. Normal GROUP BY clauses are supported. \\
+HAVING & Fully Supported &  \\
+ORDER BY & Fully Supported &  \\
+LIMIT & Fully Supported &  \\
+OFFSET & Fully Supported &  \\
+FOR VIEW|REFERENCE & Ignored &  \\
+UPDATE TRACKING|VIEWSTAT & Not Supported &  \\
+FOR UPDATE & Ignored & 
 \end{tabular}
 \end{table}
