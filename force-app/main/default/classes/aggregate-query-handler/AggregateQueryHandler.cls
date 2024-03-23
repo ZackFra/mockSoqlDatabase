@@ -6,7 +6,6 @@ public with sharing class AggregateQueryHandler {
     TopLevelNodes topLevelNodes;
 
     AggregateProcessor standardProcessor;
-    AggregateProcessor rollupProcessor;
     
     public AggregateQueryHandler(MockDatabase db, TopLevelNodes topLevelNodes) {
         this.topLevelNodes = topLevelNodes;
@@ -15,11 +14,11 @@ public with sharing class AggregateQueryHandler {
         Node groupByNode = topLevelNodes.groupByNode;
 
         if(isRollup(groupByNode)) {
-            throw new AggregateQueryException('Rollup is not supported');
+            throw new AggregateQueryException('GROUP BY ROLLUP is not supported');
         }
 
         if(isCube(groupByNode)) {
-            throw new AggregateQueryException('Cube is not supported');
+            throw new AggregateQueryException('GROUP BY CUBE is not supported');
         }
 
         standardProcessor = new AggregateStandardProcessor()
@@ -37,12 +36,9 @@ public with sharing class AggregateQueryHandler {
     public void processRecord(SObject databaseRecord) {
         standardProcessor.processRecord(databaseRecord);
         Node groupByNode = topLevelNodes.groupByNode;
-        if(isRollup(groupByNode)) {
-            rollupProcessor.processRecord(databaseRecord);
-        }
     }
 
-    private class AggregateQueryException extends Exception {}
+    public class AggregateQueryException extends Exception {}
 
     private List<ProtoAggregate> replaceWithAliases(List<ProtoAggregate> aggregates) {
         List<ProtoAggregate> aggregateResults = new List<ProtoAggregate>(aggregates);
