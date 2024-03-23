@@ -1,12 +1,29 @@
+/**
+ * @description Order by handler for record data 
+ * @author Zackary Frazier
+ * @since 3/23/2024
+ */
 public with sharing class RecordOrderByHandler extends OrderByHandler {
+    /**
+     * @description Constructor for RecordOrderByHandler
+     * @param options `OrderByOptions`
+     */
     public RecordOrderByHandler(OrderByOptions options) {
         super(options);
     }
 
+    /**
+     * @description Handles the order by clause for record data 
+     * @return  `Object`
+     */
     public override Object handleOrderBy() {
         return sortByOrderBy();
     }
 
+    /**
+     * @description Sorts the records by the order by clause 
+     * @return  `Object`
+     */
     protected override Object sortByOrderBy() {
         TopLevelNodes topLevelNodes = options.getTopLevelNodes();
         Node orderByNode = topLevelNodes.orderByNode;
