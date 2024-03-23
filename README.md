@@ -38,7 +38,7 @@ There are three categories of support for a SOQL query done via the mock SOQL da
 | USING SCOPE | Ignored             ||
 | WHERE       | Fully Supported     ||
 | WITH        | Not Supported       ||
-| GROUP BY    | Partially Supported | GROUP BY ROLLUP and GROUP BY CUBE are not supported |
+| GROUP BY    | Partially Supported | GROUP BY ROLLUP and GROUP BY CUBE are not supported, the CPU time used to compute these defeats the point of using a mock SOQL database. |
 | HAVING | Fully Supported ||
 | ORDER BY | Fully Supported ||
 | LIMIT | Fully Supported ||
