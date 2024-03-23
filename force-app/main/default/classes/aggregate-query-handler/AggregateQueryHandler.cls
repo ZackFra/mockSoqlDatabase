@@ -14,27 +14,22 @@ public with sharing class AggregateQueryHandler {
 
         Node groupByNode = topLevelNodes.groupByNode;
 
+        if(isRollup(groupByNode)) {
+            throw new AggregateQueryException('Rollup is not supported');
+        }
+
+        if(isCube(groupByNode)) {
+            throw new AggregateQueryException('Cube is not supported');
+        }
+
         standardProcessor = new AggregateStandardProcessor()
             .setDatabase(db)
             .setTopLevelNodes(topLevelNodes);
-
-        if(isRollup(groupByNode)) {
-            rollupProcessor = new AggregateRollupProcessor()
-                .setDatabase(db)
-                .setTopLevelNodes(topLevelNodes);
-        }
     }
 
     public List<ProtoAggregate> finish() {
         List<ProtoAggregate> finalResults = new List<ProtoAggregate>();
         finalResults.addAll(standardProcessor.finish());
-
-
-        if(isRollup(topLevelNodes.groupByNode)) {
-            finalResults.addAll(rollupProcessor.finish());
-            AggregateComparator comparator = buildRollupComparator();
-            finalResults.sort(comparator);
-        }
         finalResults = replaceWithAliases(finalResults);
         return finalResults;
     }
@@ -46,6 +41,8 @@ public with sharing class AggregateQueryHandler {
             rollupProcessor.processRecord(databaseRecord);
         }
     }
+
+    private class AggregateQueryException extends Exception {}
 
     private List<ProtoAggregate> replaceWithAliases(List<ProtoAggregate> aggregates) {
         List<ProtoAggregate> aggregateResults = new List<ProtoAggregate>(aggregates);
@@ -67,33 +64,17 @@ public with sharing class AggregateQueryHandler {
         return aggregateResults;
     }
 
-    private AggregateComparator buildRollupComparator() {
-        Node selectNode = topLevelNodes.selectNode;
-        Node groupByNode = topLevelNodes.groupByNode;
-
-        Map<String, Map<String, String>> fieldsSortData = new Map<String, Map<String, String>>();
-        for(Node currNode = groupByNode.left; currNode != null; currNode = currNode.left) {
-            Map<String, String> rollupFieldOrAlias = AliasService.getRollupFieldOrAlias(selectNode, currNode);
-            String fieldOrAlias = rollupFieldOrAlias.get('fieldOrAlias');
-            String relationshipName = rollupFieldOrAlias.get('relationshipName');
-        
-            Map<String, String> fieldData = new Map<String, String> {
-                'fieldApiName' => fieldOrAlias,
-                'relationshipName' => relationshipName,
-                'order' => 'asc',
-                'nullDir' => 'last'
-            };
-            fieldsSortData.put(fieldOrAlias, fieldData);
-        }
-
-        AggregateComparator comparator = new AggregateComparator(fieldsSortData);
-        return comparator;
-    }
-
     private Boolean isRollup(Node groupByNode) {
         return (
             groupByNode != null && 
             groupByNode.id == 'rollup'
+        );
+    }
+
+    private Boolean isCube(Node groupByNode) {
+        return (
+            groupByNode != null && 
+            groupByNode.id == 'cube'
         );
     }
 }
