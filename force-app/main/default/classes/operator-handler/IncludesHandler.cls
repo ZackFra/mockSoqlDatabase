@@ -1,4 +1,16 @@
+/**
+ * @description Handles the includes operator 
+ * @author Zackary Frazier
+ * @since 3/23/2024
+ */
 public class IncludesHandler implements IOperatorHandler {
+    /**
+     * @description Handles the includes operator
+     * @param sObjectFieldValue `Object`
+     * @param fieldValue `Object`
+     * @return  `Boolean`
+     * @exception 
+     */
     public Boolean handle(Object sObjectFieldValue, Object fieldValue) {
         List<String> values = new List<String>();
         try {

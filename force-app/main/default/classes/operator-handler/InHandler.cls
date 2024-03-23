@@ -1,4 +1,15 @@
+/**
+ * @description Handler for IN operator 
+ * @author Zackary Frazier
+ * @since 3/23/2024
+ */
 public class InHandler implements IOperatorHandler {
+    /**
+     * @description Handles the IN operator
+     * @param sObjectFieldValue `Object`
+     * @param fieldValue `Object`
+     * @return  `Boolean`
+     */
     public Boolean handle(Object sObjectFieldValue, Object fieldValue) {
         if(sObjectFieldValue == null) {
             return false;

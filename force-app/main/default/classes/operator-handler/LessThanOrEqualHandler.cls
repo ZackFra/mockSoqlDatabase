@@ -1,4 +1,16 @@
+/**
+ * @description Handles the LessThanOrEqual operator 
+ * @author Zackary Frazier
+ * @since 3/23/2024
+ */
 public class LessThanOrEqualHandler implements IOperatorHandler {
+    /**
+     * @description Handles the LessThanOrEqual operator
+     * @param sObjectFieldValue `Object`
+     * @param fieldValue `Object`
+     * @return  `Boolean`
+     * @exception QueryException
+     */
     public Boolean handle(Object sObjectFieldValue, Object fieldValue) {
         if(sObjectFieldValue == null) {
             return false;
