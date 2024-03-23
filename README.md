@@ -23,7 +23,7 @@ FROM objectType[,...]
 # Levels of Support
 There are three categories of support for a SOQL query done via the mock SOQL database.
 * Fully Supported
-* Parially Supported
+* Partially Supported
 * Ignored
   * It won't throw an exception when parsed, but won't be applied by the mock database
 * Not Supported
