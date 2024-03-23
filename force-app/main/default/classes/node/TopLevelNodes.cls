@@ -5,10 +5,6 @@
  * @since 3/23/2024
  */
 public with sharing class TopLevelNodes {
-    
-    final static List<String> SUPPORTED_NODES = new List<String> {
-        'select', 'from', 'where', 'group by', 'having', 'order by', 'limit', 'offset', 'for update', 'using scope'
-    };
 
     /**
      * @description The main node of the SOQL query, the SELECT node.
@@ -57,11 +53,8 @@ public with sharing class TopLevelNodes {
      */
     public TopLevelNodes(Node selectNode) {
         Node curr = selectNode;
-        for(String nodeName : SUPPORTED_NODES) {
-            curr = put(nodeName, curr);
-            if(curr == null) {
-                break;
-            }
+        while(curr != null) {
+            curr = put(curr);
         }
     }
 
@@ -72,8 +65,8 @@ public with sharing class TopLevelNodes {
      * @param node `Node`
      * @return  `Node`
      */
-    private Node put(String nodeName, Node node) {
-        switch on nodeName {
+    private Node put(Node node) {
+        switch on node.nodeType {
             when 'select' { 
                 this.selectNode = node; 
             }
