@@ -1,9 +1,13 @@
+/**
+ * @description Standard processor for aggregate queries 
+ * @author Zackary Frazier
+ * @since 3/23/2024
+ */
 public with sharing class AggregateStandardProcessor extends AggregateProcessor {
     private List<ProtoAggregate> aggregateResults = new List<ProtoAggregate>();
 
     public override void processRecord(SObject databaseRecord) {
         Node selectNode = topLevelNodes.selectNode;
-        Node groupByNode = topLevelNodes.groupByNode;
 
         Map<String, List<String>> aggrFields = AggregateService.getAggregateFields(topLevelNodes);
         List<String> groupByFields = aggrFields.get('groupByFields');
@@ -100,12 +104,12 @@ public with sharing class AggregateStandardProcessor extends AggregateProcessor 
         return aggregateResult; 
     }
 
-        /**
-     * @description : find the grouped aggregate
-     * @param databaseRecord : the database record
-     * @param aggregateResults : the aggregate results list to search
-     * @param groupByFields : the fields to group by
-     * @return : the grouped aggregate
+
+    /**
+     * @description Find the grouped aggregate
+     * @param databaseRecord 
+     * @param groupByFields 
+     * @return  `ProtoAggregate`
      */
     private ProtoAggregate findGroupedAggregate(SObject databaseRecord, List<String> groupByFields) {
         for(ProtoAggregate ar : aggregateResults) {
@@ -115,8 +119,6 @@ public with sharing class AggregateStandardProcessor extends AggregateProcessor 
                 sObject comparableRecord = (sObject) comparableInfo.get('comparableRecord');
                 String comparableField = (String) comparableInfo.get('comparableField');
 
-                Schema.SObjectType sot = SchemaService.getSObjectType(comparableRecord);
-                Schema.SObjectField comparableSObjField = SchemaService.getField(sot, comparableField);
                 Boolean isPolymorphic = (Boolean) comparableInfo.get('isPolymorphic');
                 Boolean isType = (comparableField == 'Type');
                 if(isPolymorphic && isType) {
