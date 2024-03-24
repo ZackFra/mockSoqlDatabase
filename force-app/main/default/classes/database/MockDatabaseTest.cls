@@ -1,7 +1,10 @@
 @IsTest
+@SuppressWarnings('PMD.CognitiveComplexity, PMD.CyclomaticComplexity, PMD.NcssTypeCount')
 private with sharing class MockDatabaseTest {
 
-    /** DML Tests */
+    /* DML Tests */
+
+
     @IsTest
     static void testDelete() {
         Account a = new Account(Name = 'Test 1');
@@ -86,7 +89,9 @@ private with sharing class MockDatabaseTest {
         Assert.areEqual('Test2', updatedAcct.Name, 'Account was not updated');
     }
 
-    /** SOQL Tests */
+    /* SOQL Tests */
+
+
     @IsTest
     static void testQuerySingle() {
         Account a = new Account(Name = 'Test');
@@ -1468,6 +1473,7 @@ private with sharing class MockDatabaseTest {
     }
 
     @IsTest
+    @SuppressWarnings('PMD.NcssMethodCount')
     static void testOrderByThreeFields() {
         Account a = new Account(Name = 'Test1', NumberOfEmployees = 5, AnnualRevenue = 1000);
         Account b = new Account(Name = 'Test1', NumberOfEmployees = 10, AnnualRevenue = 1000);
