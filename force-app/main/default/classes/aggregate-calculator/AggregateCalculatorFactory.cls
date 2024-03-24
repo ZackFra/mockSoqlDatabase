@@ -14,28 +14,18 @@ public with sharing class AggregateCalculatorFactory {
      * @exception AggregateCalculatorException
      */
     public static IAggregateCalculator getCalculator(String type, AggregateCalculatorOptions options) {
-        switch on type {
-            when 'sum' {
-                return new SumCalculator(options);
-            }
-            when 'avg' {
-                return new AverageCalculator(options);
-            }
-            when 'max' {
-                return new MaxCalculator(options);
-            }
-            when 'min' {
-                return new MinCalculator(options);
-            }
-            when 'count_distinct' {
-                return new CountDistinctCalculator(options);
-            }
-            when 'count' {
-                return new CountCalculator(options);
-            }
-            when else {
-                throw new AggregateCalculatorException('Invalid type');
-            }
+        Map<String, IAggregateCalculator> calculators = new Map<String, IAggregateCalculator> {
+            'sum' => new SumCalculator(options),
+            'avg' => new AverageCalculator(options),
+            'max' => new MaxCalculator(options),
+            'min' => new MinCalculator(options),
+            'count_distinct' => new CountDistinctCalculator(options),
+            'count' => new CountCalculator(options)
+        };
+        IAggregateCalculator calculator = calculators.get(type);
+        if(calculator == null) {
+            throw new AggregateCalculatorException('Invalid type');
         }
+        return calculator;
     }
 }

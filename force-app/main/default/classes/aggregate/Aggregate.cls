@@ -1,5 +1,7 @@
 /**
  * @description Mock class for AggregateResult, acts as a read-only map
+ * @author Zackary Frazier
+ * @since 3/23/2024
  */
 public with sharing class Aggregate {
     private ProtoAggregate ar;

@@ -1,6 +1,6 @@
 /**
  * @description before we create an aggregate, wean a proto-aggregate,
- * i.e. a Map<String, Object> that will be used to store the aggregate
+ *              i.e. a Map<String, Object> that will be used to store the aggregate
  * @author Zackary Frazier
  * @since 3/23/2024
  */
