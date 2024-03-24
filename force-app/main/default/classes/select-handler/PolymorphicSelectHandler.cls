@@ -3,6 +3,7 @@
  * @author Zackary Frazier
  * @since 3/23/2024
  */
+@SuppressWarnings('PMD.StdCyclomaticComplexity')
 public with sharing class PolymorphicSelectHandler implements ISelectHandler {
     private FieldSelector fSelector;
 
@@ -19,11 +20,11 @@ public with sharing class PolymorphicSelectHandler implements ISelectHandler {
      * @return  `SObject`
      * @exception QueryException
      */
+    @SuppressWarnings('PMD.CyclomaticComplexity, PMD.NcssMethodCount')
     public SObject handleSelect() {
         SObject databaseRecord = fSelector.databaseRecord;
         SObject queriedRecord = fSelector.queriedRecord;
         Node fieldNode = fSelector.fieldNode;
-        Map<String, Object> params = fSelector.params;
         MockDatabase db = fSelector.db;
 
         if(fieldNode.nodeType != 'typeof') {
