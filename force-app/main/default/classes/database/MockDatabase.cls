@@ -6,13 +6,21 @@
 @SuppressWarnings('PMD.CognitiveComplexity, PMD.CyclomaticComplexity')
 public with sharing class MockDatabase {
 
-    public Map<String, Map<Id, sObject>> db = new Map<String, Map<Id, sObject>>();
+    public Map<String, Map<Id, sObject>> db;
     public MockDatabaseUtils utils = new MockDatabaseUtils(this);
     public enum QueryType {
         RECORD, AGGREGATE, COUNT
     }
 
     Boolean enforceRequiredFields = false;
+
+    public MockDatabase() {
+        this.db = new Map<String, Map<Id, SObject>>();
+    }
+
+    public MockDatabase(Map<String, Map<Id, SObject>> db) {
+        this.db = db;
+    }
 
     /**
      * @description map of the top-level nodes of select nodes, is a map to account for subqueries
