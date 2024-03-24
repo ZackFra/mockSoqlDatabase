@@ -1,6 +1,9 @@
 /**
- * Description: This class is used to compare two generic objects of the same type.
+ * @description This class is used to compare two generic objects of the same type.
+ * @author Zackary Frazier
+ * @since 3/23/2024
  */
+@SuppresWarnings('PMD.CognitiveComplexity')
 public with sharing class ObjectComparator implements Comparator<Object> {
 
     /**
@@ -31,6 +34,7 @@ public with sharing class ObjectComparator implements Comparator<Object> {
 
     private class UnsupportedTypeException extends Exception {}
 
+    @SuppresWarnings('PMD.CognitiveComplexity')
     private Boolean isTypeSupported(Object obj1, Object obj2) {
         if(obj1 == null || obj2 == null) {
             return true;
@@ -61,6 +65,7 @@ public with sharing class ObjectComparator implements Comparator<Object> {
      * @param obj2: The second object to compare.
      * @return: An integer value indicating the result of the comparison.
      */
+    @SuppresWarnings('PMD.CognitiveComplexity')
     private Integer compareSupportedObjects(Object obj1, Object obj2) {
 
         if (obj1 instanceof Id) {

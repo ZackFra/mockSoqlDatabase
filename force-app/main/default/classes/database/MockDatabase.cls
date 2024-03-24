@@ -1,3 +1,9 @@
+/**
+ * @description The MockDatabase class is used to simulate the Salesforce database in Apex unit tests 
+ * @author Zackary Frazier
+ * @since 3/23/2024
+ */
+@SuppressWarnings('PMD.CognitiveComplexity, PMD.CyclomaticComplexity')
 public with sharing class MockDatabase {
 
     public Map<String, Map<Id, sObject>> db = new Map<String, Map<Id, sObject>>();
@@ -7,18 +13,26 @@ public with sharing class MockDatabase {
     }
 
     Boolean enforceRequiredFields = false;
+
+    /**
+     * @description map of the top-level nodes of select nodes, is a map to account for subqueries
+     */
+    private final Map<Node, TopLevelNodes> topLevelNodes = new Map<Node, TopLevelNodes>();
+    
+    /**
+     * @description Set whether or not to enforce system-required fields on insert and update
+     * @param isEnforced 
+     * @return  `MockDatabase`
+     */
     public MockDatabase setEnforceRequiredFields(Boolean isEnforced) {
         this.enforceRequiredFields = isEnforced;
         return this;
     }
 
     /**
-     * @description map of the top-level nodes of select nodes, is a map to account for subqueries
-     */
-    private final Map<Node, TopLevelNodes> topLevelNodes = new Map<Node, TopLevelNodes>();
-
-    /**
      * @description return all SObjects of a given type
+     * @param objApiName : the object API name
+     * @return : the map of SObjects
      */
     public Map<Id, sObject> get(String objApiName) {
         return this.db.get(objApiName);
@@ -110,6 +124,7 @@ public with sharing class MockDatabase {
         return handleSelectQuery(fSelector);
     }
 
+    @SuppressWarnings('PMD.ExcessiveParameterList')
     private Object handleLimitNode(QueryType typeOfQuery, Node limitNode, Object results, Map<String, Object> params) {
         if(limitNode == null) {
             return results;
@@ -184,7 +199,13 @@ public with sharing class MockDatabase {
 
     /**
      * @description : given an offset node, return the offset value
+     * @param typeOfQuery : the type of query
+     * @param offsetNode : the offset node
+     * @param results : the results
+     * @param params : the query parameters
+     * @return : the offset value
      */
+    @SuppressWarnings('PMD.ExcessiveParameterList')
     private Object handleOffsetNode(
         QueryType typeOfQuery, 
         Node offsetNode, 
@@ -207,7 +228,7 @@ public with sharing class MockDatabase {
 
     /**
      * @description Filter on the "USING SCOPE" clause
-     * @param sObject The SObject to filter
+     * @param sObj The SObject to filter
      * @param usingScopeNode The "USING SCOPE" node
      * @param params The query parameters
      * @return Whether the SObject passes the filter
@@ -222,8 +243,8 @@ public with sharing class MockDatabase {
     /** DML methods **/
 
     /**
-     * @description: This method is used to insert an sObject into the mock database
-     * @param obj : the sObject to insert
+     * @description This method is used to insert an sObject into the mock database
+     * @param record : the sObject to insert
      */
     public void doInsert(SObject record) {
         if(record.Id != null) {
@@ -250,7 +271,7 @@ public with sharing class MockDatabase {
     }
 
     /**
-     * @description: This method is used to insert a list of sObjects into the mock database
+     * @description This method is used to insert a list of sObjects into the mock database
      * @param objList : the list of sObjects to insert
      */
     public void doInsert(List<sObject> objList) {
@@ -260,8 +281,8 @@ public with sharing class MockDatabase {
     }
 
     /**
-     * @description: This method is used to update an sObject in the mock database
-     * @param obj : the sObject to update
+     * @description This method is used to update an sObject in the mock database
+     * @param record : the sObject to update
      */
     public void doUpdate(SObject record) {
         if(record == null) {
@@ -304,7 +325,7 @@ public with sharing class MockDatabase {
     }
 
     /**
-     * @description: This method is used to update a list of sObjects in the mock database
+     * @description This method is used to update a list of sObjects in the mock database
      * @param objList : the list of sObjects to update
      */
     public void doUpdate(List<sObject> objList) {
@@ -314,7 +335,7 @@ public with sharing class MockDatabase {
     }
 
     /**
-     * @description: This method is used to delete an sObject from the mock database
+     * @description This method is used to delete an sObject from the mock database
      * @param obj : the sObject to delete
      */
     public void doDelete(sObject obj) {
@@ -331,7 +352,7 @@ public with sharing class MockDatabase {
     }
 
     /**
-     * @description: This method is used to delete a list of sObjects from the mock database
+     * @description This method is used to delete a list of sObjects from the mock database
      * @param objList : the list of sObjects to delete
      */
     public void doDelete(List<sObject> objList) {
@@ -344,7 +365,7 @@ public with sharing class MockDatabase {
     /** SOQL methods **/
 
     /**
-     * @description: This method is used to query the mock database by traversing the AST
+     * @description This method is used to query the mock database by traversing the AST
      * @param query : the query string
      * @return : the query results
      */
@@ -353,7 +374,7 @@ public with sharing class MockDatabase {
     }
 
     /**
-     * @description: This method is used to query the mock database by traversing the AST
+     * @description This method is used to query the mock database by traversing the AST
      * @param query : the query string
      * @param params : the query parameters
      * @return : the query results
@@ -367,7 +388,7 @@ public with sharing class MockDatabase {
     }
 
     /**
-     * @description: This method is used to query the mock database by traversing the AST
+     * @description This method is used to query the mock database by traversing the AST
      * @param query : the query string
      * @param params : the query parameters
      * @param access : the access level
@@ -391,15 +412,14 @@ public with sharing class MockDatabase {
      * @return : the query results
      * @throws QueryException : if the query is invalid
      */
+    @SuppressWarnings('PMD.NcssMethodCount')
     public Object doQuery(Node selectNode, Map<String, Object> params) {
         TopLevelNodes topLevelNodes = getTopLevelNodes(selectNode);
         Node fromNode = topLevelNodes.fromNode;
         Node whereNode = topLevelNodes.whereNode;
-        Node orderByNode = topLevelNodes.orderByNode;
         Node limitNode = topLevelNodes.limitNode;
         Node offsetNode = topLevelNodes.offsetNode;
         Node usingScopeNode = topLevelNodes.usingScopeNode;
-        Node groupByNode = topLevelNodes.groupByNode;
 
         // validate the query, throws exception if invalid
         QueryValidator validator = new QueryValidator(topLevelNodes);

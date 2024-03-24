@@ -3,6 +3,10 @@
  */
 public with sharing class HavingLogicHandler extends BooleanLogicHandler {
 
+    /**
+     * @description Constructor
+     * @param options 
+     */
     public HavingLogicHandler(BooleanLogicOptions options) {
         super(options);
     }

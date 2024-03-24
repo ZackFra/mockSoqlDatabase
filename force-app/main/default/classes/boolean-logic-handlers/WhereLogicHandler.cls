@@ -1,9 +1,23 @@
+/**
+ * @description This class is responsible for handling the WHERE clause logic 
+ * @author Zackary Frazier
+ * @since 3/23/2024
+ */
 public with sharing class WhereLogicHandler extends BooleanLogicHandler {
-
+    /**
+     * Constructor
+     * @param options - the options to be used for the handler
+     */
     public WhereLogicHandler(BooleanLogicOptions options) {
         super(options);
     }
 
+    /**
+     * @description Checks if the WHERE clause is met
+     * @param operatorNode 
+     * @return  `Boolean`
+     * @exception QueryException
+     */
     public override Boolean isCompareConditionMet(Node operatorNode) {
         Node fieldNode = operatorNode.left;
         Node valueNode = operatorNode.right;
