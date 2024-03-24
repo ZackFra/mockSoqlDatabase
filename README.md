@@ -32,7 +32,7 @@ There are three categories of support for a SOQL query done via the mock SOQL da
 # Supported Clauses
 | Clause      | Level of Support    | Notes |
 |-------------|---------------------|-------|
-| SELECT      | Fully Supported     ||
+| SELECT      | Partially Supported | FORMAT(), convertCurrency(), convertTimezone(), date functions, GROUPING(), and toLabel() are not supported |
 | TYPEOF      | Fully Supported     ||
 | FROM        | Fully Supported     ||
 | USING SCOPE | Ignored             ||
