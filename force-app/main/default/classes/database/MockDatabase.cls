@@ -3,9 +3,10 @@
  * @author Zackary Frazier
  * @since 3/23/2024
  */
-@SuppressWarnings('PMD.CognitiveComplexity, PMD.CyclomaticComplexity')
+@SuppressWarnings('PMD.CognitiveComplexity, PMD.CyclomaticComplexity, PMD.ExcessivePublicCount')
 public with sharing class MockDatabase {
 
+    private final Map<Node, TopLevelNodes> topLevelNodes = new Map<Node, TopLevelNodes>();
     public Map<String, Map<Id, sObject>> db;
     public MockDatabaseUtils utils = new MockDatabaseUtils(this);
     public enum QueryType {
@@ -14,239 +15,22 @@ public with sharing class MockDatabase {
 
     Boolean enforceRequiredFields = false;
 
+    /**
+     * @description The MockDatabase constructor
+     */
     public MockDatabase() {
         this.db = new Map<String, Map<Id, SObject>>();
     }
 
+    /**
+     * @description The MockDatabase constructor with a database parameter, used for integrating this class 
+     *              with other classes
+     * @param db The database to use
+     */
     public MockDatabase(Map<String, Map<Id, SObject>> db) {
         this.db = db;
     }
 
-    /**
-     * @description map of the top-level nodes of select nodes, is a map to account for subqueries
-     */
-    private final Map<Node, TopLevelNodes> topLevelNodes = new Map<Node, TopLevelNodes>();
-    
-    /**
-     * @description Set whether or not to enforce system-required fields on insert and update
-     * @param isEnforced 
-     * @return  `MockDatabase`
-     */
-    public MockDatabase setEnforceRequiredFields(Boolean isEnforced) {
-        this.enforceRequiredFields = isEnforced;
-        return this;
-    }
-
-    /**
-     * @description return all SObjects of a given type
-     * @param objApiName : the object API name
-     * @return : the map of SObjects
-     */
-    public Map<Id, sObject> get(String objApiName) {
-        return this.db.get(objApiName);
-    }
-
-    /**
-     * @description Given a recor id, return the database record for it
-     * @param recordId : the record id
-     * @return : the database record
-     * @throws QueryException : if the record does not exist
-     */
-    public SObject findRecord(Id recordId) {
-        return this.utils.findRecord(recordId);
-    }
-
-    /**
-     * @description Given a record and a field, return the parent record (i.e. the record that field looks up to)
-     * @param sObj : the record
-     * @param fieldName : the field name
-     * @return : the parent record
-     * @throws QueryException : if the parent record does not exist
-     */
-    public Map<String, Object> findParentRecord(sObject sObj, String fieldName) {
-        return this.utils.findParentRecord(sObj, fieldName);
-    }
-
-    /**
-     * @description Wrapper aroung the ComparableService.getComparables method
-     * @param record : the record
-     * @param field : the field
-     * @return : the comparables
-     * @throws QueryException : if the comparables cannot be found
-     */
-    public Map<String, Object> getComparables(SObject record, String field) {
-        return ComparableService.getComparables(this, record, field);
-    }
-    
-    private Boolean checkHavingClause(BooleanLogicOptions havingLogicOptions) {
-        HavingLogicHandler havingLogicHandler = new HavingLogicHandler(havingLogicOptions);
-        return havingLogicHandler.evaluate();
-    }
-
-    private Boolean checkWhereClause(SObject databaseRecord, node whereNode, Map<String, Object> params) {
-        BooleanLogicOptions whereLogicOptions = new BooleanLogicOptions()
-            .setDatabase(this)
-            .setHead(whereNode)
-            .setObj(databaseRecord)
-            .setParams(params);
-        WhereLogicHandler whereLogicHandler = new WhereLogicHandler(whereLogicOptions);
-        return whereLogicHandler.evaluate();
-    }
-
-    private SObject handleSelectQuery(FieldSelector fSelector) {
-        Node fieldNode = fSelector.fieldNode;
-
-        SObject queriedRecord = fSelector.queriedRecord;
-        if(fieldNode == null) {
-            return queriedrecord;
-        }
-
-        ISelectHandler selectHandler = new SelectHandlerFactory(fSelector)
-            .createHandler();
-        queriedRecord = selectHandler.handleSelect();
-
-        // to check the next field node in the list, 
-        // the only changes are the queriedRecord and the fieldNode
-        fSelector
-            .setQueriedRecord(queriedRecord)
-            .setFieldNode(fieldNode.left);
-
-        // Recursion, baby!
-        return handleSelectQuery(fSelector);
-    }
-
-    private SObject handleSelectQuery(sObject databaseRecord, Node selectNode, Map<String, Object> params) {
-        Node fieldNode = selectNode.left;
-        
-        String sObjApiName = SchemaService.getSObjectName(databaseRecord);
-        SObject queriedRecord = SchemaService.blankSObjectFrom(sObjApiName);
-        queriedRecord.put('Id', databaseRecord.Id);
-
-        FieldSelector fSelector = new FieldSelector()
-            .setDatabaseRecord(databaseRecord)
-            .setQueriedRecord(queriedRecord)
-            .setFieldNode(fieldNode)
-            .setParams(params)
-            .setDatabase(this);
-
-        return handleSelectQuery(fSelector);
-    }
-
-    @SuppressWarnings('PMD.ExcessiveParameterList')
-    private Object handleLimitNode(QueryType typeOfQuery, Node limitNode, Object results, Map<String, Object> params) {
-        if(limitNode == null) {
-            return results;
-        }
-
-        ILimitHandler limitHandler = new LimitHandlerFactory()
-            .setLimitNode(limitNode)
-            .setParams(params)
-            .setType(typeOfQuery)
-            .setObj(results)
-            .createHandler();
-        
-        return limitHandler.handleLimit();
-    }
-
-    private TopLevelNodes getTopLevelNodes(Node selectNode) {
-        TopLevelNodes topLevelNodes = this.topLevelNodes.get(selectNode);
-        if(topLevelNodes == null) {
-            topLevelNodes = new TopLevelNodes(selectNode);
-            this.topLevelNodes.put(selectNode, topLevelNodes);
-            return topLevelNodes;
-        }
-        return this.topLevelNodes.get(selectNode);
-    }
-
-    private List<ProtoAggregate> handleHavingNode(
-        List<ProtoAggregate> aggregateResults, 
-        Node selectNode, 
-        Map<String, Object> params
-    ) {
-        TopLevelNodes topLevelNodes = getTopLevelNodes(selectNode);
-        Node havingNode = topLevelNodes.havingNode;
-        if(havingNode == null) {
-            return aggregateResults;
-        }
-
-        List<ProtoAggregate> results = new List<ProtoAggregate>();
-        for(ProtoAggregate ar : aggregateResults) {
-
-            BooleanLogicOptions havingLogicOptions = new BooleanLogicOptions()
-                .setDatabase(this)
-                .setHead(havingNode)
-                .setSelectNode(selectNode)
-                .setObj(ar)
-                .setParams(params);
-            
-            if(checkHavingClause(havingLogicOptions)) {
-                results.add(ar);
-            }
-        }
-        return results;
-    }
-
-    private Object handleOrderByNode(
-        QueryType typeOfQuery, 
-        Object results, 
-        Node selectNode
-    ) {
-        if(results == null) {
-            return results;
-        }
-
-        TopLevelNodes topLevelNodes = getTopLevelNodes(selectNode);
-
-        OrderByHandler orderByHandler = new OrderByHandlerFactory()
-            .setObj(results)
-            .setTopLevelNodes(topLevelNodes)
-            .setType(typeOfQuery)
-            .createHandler();
-        return orderByHandler.handleOrderBy();
-    }
-
-    /**
-     * @description : given an offset node, return the offset value
-     * @param typeOfQuery : the type of query
-     * @param offsetNode : the offset node
-     * @param results : the results
-     * @param params : the query parameters
-     * @return : the offset value
-     */
-    @SuppressWarnings('PMD.ExcessiveParameterList')
-    private Object handleOffsetNode(
-        QueryType typeOfQuery, 
-        Node offsetNode, 
-        Object results, 
-        Map<String, Object> params
-    ) {
-        if(offsetNode == null) {
-            return results;
-        }
-        
-        IOffsetHandler offsetHandler = new OffsetHandlerFactory()
-            .setType(typeOfQuery)
-            .setObj(results)
-            .setOffsetNode(offsetNode)
-            .setParams(params)
-            .createHandler();
-        
-        return offsetHandler.handleOffset();
-    }
-
-    /**
-     * @description Filter on the "USING SCOPE" clause
-     * @param sObj The SObject to filter
-     * @param usingScopeNode The "USING SCOPE" node
-     * @param params The query parameters
-     * @return Whether the SObject passes the filter
-     */
-     private Boolean handleUsingScopeNode(SObject sObj, Node usingScopeNode, Map<String, Object> params) {
-        // Salesforce at some point will support evaluating formulas in Apex
-        // that day is not today, so until then we're just assuming the scope is good
-        // https://help.salesforce.com/s/articleView?id=release-notes.rn_apex_formulaeval.htm&release=248&type=5
-        return true;
-     }
 
     /** DML methods **/
 
@@ -513,4 +297,225 @@ public with sharing class MockDatabase {
         this.topLevelNodes.remove(selectNode);
         return results;
     }
+
+    /**
+     * @description Set whether or not to enforce system-required fields on insert and update
+     * @param isEnforced 
+     * @return  `MockDatabase`
+     */
+    public MockDatabase setEnforceRequiredFields(Boolean isEnforced) {
+        this.enforceRequiredFields = isEnforced;
+        return this;
+    }
+
+    /**
+     * @description return all SObjects of a given type
+     * @param objApiName : the object API name
+     * @return : the map of SObjects
+     */
+    public Map<Id, sObject> get(String objApiName) {
+        return this.db.get(objApiName);
+    }
+
+    /**
+     * @description Given a recor id, return the database record for it
+     * @param recordId : the record id
+     * @return : the database record
+     * @throws QueryException : if the record does not exist
+     */
+    public SObject findRecord(Id recordId) {
+        return this.utils.findRecord(recordId);
+    }
+
+    /**
+     * @description Given a record and a field, return the parent record (i.e. the record that field looks up to)
+     * @param sObj : the record
+     * @param fieldName : the field name
+     * @return : the parent record
+     * @throws QueryException : if the parent record does not exist
+     */
+    public Map<String, Object> findParentRecord(sObject sObj, String fieldName) {
+        return this.utils.findParentRecord(sObj, fieldName);
+    }
+
+    /**
+     * @description Wrapper aroung the ComparableService.getComparables method
+     * @param record : the record
+     * @param field : the field
+     * @return : the comparables
+     * @throws QueryException : if the comparables cannot be found
+     */
+    public Map<String, Object> getComparables(SObject record, String field) {
+        return ComparableService.getComparables(this, record, field);
+    }
+    
+    private Boolean checkHavingClause(BooleanLogicOptions havingLogicOptions) {
+        HavingLogicHandler havingLogicHandler = new HavingLogicHandler(havingLogicOptions);
+        return havingLogicHandler.evaluate();
+    }
+
+    private Boolean checkWhereClause(SObject databaseRecord, node whereNode, Map<String, Object> params) {
+        BooleanLogicOptions whereLogicOptions = new BooleanLogicOptions()
+            .setDatabase(this)
+            .setHead(whereNode)
+            .setObj(databaseRecord)
+            .setParams(params);
+        WhereLogicHandler whereLogicHandler = new WhereLogicHandler(whereLogicOptions);
+        return whereLogicHandler.evaluate();
+    }
+
+    private SObject handleSelectQuery(FieldSelector fSelector) {
+        Node fieldNode = fSelector.fieldNode;
+
+        SObject queriedRecord = fSelector.queriedRecord;
+        if(fieldNode == null) {
+            return queriedrecord;
+        }
+
+        ISelectHandler selectHandler = new SelectHandlerFactory(fSelector)
+            .createHandler();
+        queriedRecord = selectHandler.handleSelect();
+
+        // to check the next field node in the list, 
+        // the only changes are the queriedRecord and the fieldNode
+        fSelector
+            .setQueriedRecord(queriedRecord)
+            .setFieldNode(fieldNode.left);
+
+        // Recursion, baby!
+        return handleSelectQuery(fSelector);
+    }
+
+    private SObject handleSelectQuery(sObject databaseRecord, Node selectNode, Map<String, Object> params) {
+        Node fieldNode = selectNode.left;
+        
+        String sObjApiName = SchemaService.getSObjectName(databaseRecord);
+        SObject queriedRecord = SchemaService.blankSObjectFrom(sObjApiName);
+        queriedRecord.put('Id', databaseRecord.Id);
+
+        FieldSelector fSelector = new FieldSelector()
+            .setDatabaseRecord(databaseRecord)
+            .setQueriedRecord(queriedRecord)
+            .setFieldNode(fieldNode)
+            .setParams(params)
+            .setDatabase(this);
+
+        return handleSelectQuery(fSelector);
+    }
+
+    @SuppressWarnings('PMD.ExcessiveParameterList')
+    private Object handleLimitNode(QueryType typeOfQuery, Node limitNode, Object results, Map<String, Object> params) {
+        if(limitNode == null) {
+            return results;
+        }
+
+        ILimitHandler limitHandler = new LimitHandlerFactory()
+            .setLimitNode(limitNode)
+            .setParams(params)
+            .setType(typeOfQuery)
+            .setObj(results)
+            .createHandler();
+        
+        return limitHandler.handleLimit();
+    }
+
+    private TopLevelNodes getTopLevelNodes(Node selectNode) {
+        TopLevelNodes topLevelNodes = this.topLevelNodes.get(selectNode);
+        if(topLevelNodes == null) {
+            topLevelNodes = new TopLevelNodes(selectNode);
+            this.topLevelNodes.put(selectNode, topLevelNodes);
+            return topLevelNodes;
+        }
+        return this.topLevelNodes.get(selectNode);
+    }
+
+    private List<ProtoAggregate> handleHavingNode(
+        List<ProtoAggregate> aggregateResults, 
+        Node selectNode, 
+        Map<String, Object> params
+    ) {
+        TopLevelNodes topLevelNodes = getTopLevelNodes(selectNode);
+        Node havingNode = topLevelNodes.havingNode;
+        if(havingNode == null) {
+            return aggregateResults;
+        }
+
+        List<ProtoAggregate> results = new List<ProtoAggregate>();
+        for(ProtoAggregate ar : aggregateResults) {
+
+            BooleanLogicOptions havingLogicOptions = new BooleanLogicOptions()
+                .setDatabase(this)
+                .setHead(havingNode)
+                .setSelectNode(selectNode)
+                .setObj(ar)
+                .setParams(params);
+            
+            if(checkHavingClause(havingLogicOptions)) {
+                results.add(ar);
+            }
+        }
+        return results;
+    }
+
+    private Object handleOrderByNode(
+        QueryType typeOfQuery, 
+        Object results, 
+        Node selectNode
+    ) {
+        if(results == null) {
+            return results;
+        }
+
+        TopLevelNodes topLevelNodes = getTopLevelNodes(selectNode);
+
+        OrderByHandler orderByHandler = new OrderByHandlerFactory()
+            .setObj(results)
+            .setTopLevelNodes(topLevelNodes)
+            .setType(typeOfQuery)
+            .createHandler();
+        return orderByHandler.handleOrderBy();
+    }
+
+    /**
+     * @description : given an offset node, return the offset value
+     * @param typeOfQuery : the type of query
+     * @param offsetNode : the offset node
+     * @param results : the results
+     * @param params : the query parameters
+     * @return : the offset value
+     */
+    @SuppressWarnings('PMD.ExcessiveParameterList')
+    private Object handleOffsetNode(
+        QueryType typeOfQuery, 
+        Node offsetNode, 
+        Object results, 
+        Map<String, Object> params
+    ) {
+        if(offsetNode == null) {
+            return results;
+        }
+        
+        IOffsetHandler offsetHandler = new OffsetHandlerFactory()
+            .setType(typeOfQuery)
+            .setObj(results)
+            .setOffsetNode(offsetNode)
+            .setParams(params)
+            .createHandler();
+        
+        return offsetHandler.handleOffset();
+    }
+
+    /**
+     * @description Filter on the "USING SCOPE" clause
+     * @param sObj The SObject to filter
+     * @param usingScopeNode The "USING SCOPE" node
+     * @param params The query parameters
+     * @return Whether the SObject passes the filter
+     */
+     private Boolean handleUsingScopeNode(SObject sObj, Node usingScopeNode, Map<String, Object> params) {
+        // Salesforce at some point will support evaluating formulas in Apex
+        // that day is not today, so until then we're just assuming the scope is good
+        // https://help.salesforce.com/s/articleView?id=release-notes.rn_apex_formulaeval.htm&release=248&type=5
+        return true;
+     }
 }
