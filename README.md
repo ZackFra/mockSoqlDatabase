@@ -21,7 +21,7 @@ FROM objectType[,...]
 ```
 
 # Levels of Support
-There are three categories of support for a SOQL query done via the mock SOQL database.
+There are four categories of support for a SOQL query done via the mock SOQL database.
 * Fully Supported
 * Partially Supported
 * Ignored
