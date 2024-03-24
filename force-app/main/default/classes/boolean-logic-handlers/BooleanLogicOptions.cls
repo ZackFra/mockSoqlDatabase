@@ -1,3 +1,8 @@
+/**
+ * @description This class is used to store the options for the BooleanLogic class 
+ * @author Zackary Frazier
+ * @since 3/23/2024
+ */
 public with sharing class BooleanLogicOptions {
 
     /** 
