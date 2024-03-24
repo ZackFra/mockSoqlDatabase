@@ -4,9 +4,9 @@
  * @since 3/23/2024
  */
 public with sharing class OrderByHandlerFactory {
-    private class OrderByException extends Exception {}
-
     OrderByOptions options = new OrderByOptions();
+    
+    private class OrderByException extends Exception {}
 
     /**
      * @description Setter for the type of query to be executed 

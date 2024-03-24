@@ -25,7 +25,6 @@ public with sharing class ParentSubQuerySelectHandler implements ISelectHandler 
     public SObject handleSelect() {
         SObject queriedRecord = fSelector.queriedRecord;
         Node fieldNode = fSelector.fieldNode;
-        MockDatabase db = fSelector.db;
 
         String fieldName = fieldNode.id;
 
@@ -35,6 +34,7 @@ public with sharing class ParentSubQuerySelectHandler implements ISelectHandler 
         return buildObjWithRelations(queriedRecord, fieldParts, finalField);
     }
 
+    @SuppressWarnings('PMD.NcssMethodCount, PMD.CognitiveComplexity, PMD.CyclomaticComplexity')
     private sObject buildObjWithRelations(SObject sObj, List<String> fieldParts, String finalField) {
         MockDatabase db = fSelector.db;
 
