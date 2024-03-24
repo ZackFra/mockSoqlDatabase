@@ -9,8 +9,9 @@ public class IdFieldComparatorFactory {
      * @param field1 
      * @param field2 
      * @return  `Comparator<Schema.SObjectField>`
-     * @exception 
+     * @exception IllegalArgumentException
      */
+    @SuppressWarnings('PMD.CyclomaticComplexity')
     public static Comparator<Schema.SObjectField> create(Schema.SObjectField field1, Schema.SObjectField field2) {
         Schema.DisplayType field1Type = SchemaService.getFieldType(field1);
         Schema.DisplayType field2Type = SchemaService.getFieldType(field1);

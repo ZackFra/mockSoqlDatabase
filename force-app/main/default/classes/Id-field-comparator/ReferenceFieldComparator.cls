@@ -11,8 +11,6 @@ public class ReferenceFieldComparator implements Comparator<Schema.SObjectField>
      * @return  `Integer`
      */
     public Integer compare(Schema.SObjectField field1, Schema.SObjectField field2) {
-        Schema.DisplayType fieldType1 = SchemaService.getFieldType(field1);
-        Schema.DisplayType fieldType2 = SchemaService.getFieldType(field2);
 
         List<Schema.sObjectType> sObj1FieldRefs = SchemaService.getReferenceTo(field1);
         List<Schema.sObjectType> sObj2FieldRefs = SchemaService.getReferenceTo(field2);
