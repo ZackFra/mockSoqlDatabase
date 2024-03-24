@@ -3,16 +3,17 @@
  * @author Zackary Frazier
  * @since 3/23/2024
  */
-@SuppresWarnings('PMD.CognitiveComplexity')
+@SuppressWarnings('PMD.CognitiveComplexity, PMD.StdCyclomaticComplexity, PMD.CyclomaticComplexity')
 public with sharing class ObjectComparator implements Comparator<Object> {
 
     /**
-     * Description: This method compares two generic objects of the same type.
-     * @param obj1: The first object to compare.
-     * @param obj2: The second object to compare.
-     * @return: An integer value indicating the result of the comparison.
+     * @description This method compares two generic objects of the same type.
+     * @param obj1 The first object to compare.
+     * @param obj2 The second object to compare.
+     * @return An integer value indicating the result of the comparison.
      * @throws UnsupportedTypeException: If the type of the objects is not supported.
      */
+    @SuppressWarnings('PMD.CognitiveComplexity')
     public Integer compare(Object obj1, Object obj2) {
         if(!isTypeSupported(obj1, obj2)) {
             throw new UnsupportedTypeException('These objects must be of the same type');
@@ -34,7 +35,7 @@ public with sharing class ObjectComparator implements Comparator<Object> {
 
     private class UnsupportedTypeException extends Exception {}
 
-    @SuppresWarnings('PMD.CognitiveComplexity')
+    @SuppressWarnings('PMD.CognitiveComplexity')
     private Boolean isTypeSupported(Object obj1, Object obj2) {
         if(obj1 == null || obj2 == null) {
             return true;
@@ -60,12 +61,12 @@ public with sharing class ObjectComparator implements Comparator<Object> {
     }
 
     /**
-     * Description: This method compares two generic objects of the same type.
-     * @param obj1: The first object to compare.
-     * @param obj2: The second object to compare.
-     * @return: An integer value indicating the result of the comparison.
+     * @description This method compares two generic objects of the same type.
+     * @param obj1 The first object to compare.
+     * @param obj2 The second object to compare.
+     * @return An integer value indicating the result of the comparison.
      */
-    @SuppresWarnings('PMD.CognitiveComplexity')
+    @SuppressWarnings('PMD.CognitiveComplexity, PMD.NcssMethodCount')
     private Integer compareSupportedObjects(Object obj1, Object obj2) {
 
         if (obj1 instanceof Id) {
@@ -125,6 +126,9 @@ public with sharing class ObjectComparator implements Comparator<Object> {
 
     /**
      * @description This method compares two generic objects of the same type.
+     * @param obj1 The first object to compare.
+     * @param obj2 The second object to compare.
+     * @return An integer value indicating the result of the comparison.
      */
     private Integer compareNull(Object obj1, Object obj2) {
 

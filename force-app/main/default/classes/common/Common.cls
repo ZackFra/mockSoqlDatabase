@@ -10,7 +10,7 @@ public with sharing class Common {
 
     /**
      * @description Method to check if a field is null
-     * @param arg - Argument object containing the field and field name
+     * @param args - Argument object containing the field and field name
      * @throws IllegalArgumentException if the field is null
      */
     public static void nullCheck(Map<String, Object> args) {
@@ -26,7 +26,7 @@ public with sharing class Common {
     /**
      * @description parse a date string into an SF date
      * @param dateString - date string in the format YYYY-MM-DD
-     * @return Date - SF date
+     * @return `Date` - SF date
      * @throws QueryException if the date string is not in the correct format
      */
     public static Date parseDate(String dateString) {
@@ -48,6 +48,7 @@ public with sharing class Common {
      * @return DateTime - SF date time
      * @throws QueryException if the date time string is not in the correct format
      */
+    @SuppressWarnings('PMD.NcssMethodCount')
     public static DateTime parseDateTime(String dateTimeString) {
         // YYYY-MM-DDThh:mm:ss+hh:mm
         Pattern datePattern1 = Pattern.compile(DATE_TIME_PATTERN1);

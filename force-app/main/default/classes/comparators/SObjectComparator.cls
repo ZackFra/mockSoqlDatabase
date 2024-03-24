@@ -78,7 +78,7 @@ public with sharing class SObjectComparator implements Comparator<SObject> {
      * @param b The second SObject
      * @return Integer
      */
-    @SuppresWarnings('PMD.CognitiveComplexity')
+    @SuppressWarnings('PMD.CognitiveComplexity')
     public Integer compare(SObject a, SObject b) {
         for (String field : fields.keySet()) {
             Map<String, String> fieldData = fields.get(field);
