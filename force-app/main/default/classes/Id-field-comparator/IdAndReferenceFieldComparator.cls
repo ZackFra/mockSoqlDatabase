@@ -1,7 +1,17 @@
 /**
  * @description This class is used to compare two fields to determine if one is a reference to the other
+ * @author Zackary Frazier
+ * @since 3/23/2024
  */
 public class IdAndReferenceFieldComparator implements Comparator<Schema.SObjectField> {
+    /**
+     * @description Compares two fields to determine if one is a reference to the other
+     * @param field1 
+     * @param field2 
+     * @return  `Integer`
+     * @exception 
+     */
+    @SuppressWarnings('PMD.CyclomaticComplexity')
     public Integer compare(Schema.SObjectField field1, Schema.SObjectField field2) {
         Schema.DisplayType fieldType1 = SchemaService.getFieldType(field1);
         Schema.DisplayType fieldType2 = SchemaService.getFieldType(field2);

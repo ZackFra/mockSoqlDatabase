@@ -1,6 +1,7 @@
 /**
  * @description The lexer breaks down a SOQL query into an AST, to be fed into the parser (MockDatabase)
  */
+@SuppressWarnings('PMD.ExcessiveClassLength, PMD.CognitiveComplexity, PMD.CyclomaticComplexity, PMD.StdCyclomaticComplexity')
 public with sharing class Lexer {
 
     /**
@@ -79,13 +80,14 @@ public with sharing class Lexer {
     }
     
     /** 
-     * @description: Custom error thrown when a query cannot be parsed
+     * @description Custom error thrown when a query cannot be parsed
      */
     private class ParsingException extends Exception {
+
         /**
-         * @description : Constructor for a ParsingException
-         * @param message : String, the message to display
-         * @param expected : String, the expected token
+         * @description Constructor for a ParsingException
+         * @param message `String` the message to display
+         * @param expected : `String` the expected token
          */
         public ParsingException(String message, String expected) {
             if(expected == null) {
@@ -109,6 +111,7 @@ public with sharing class Lexer {
         applyCasing(head.right);
     }
     
+    @SuppressWarnings('PMD.NcssMethodCount')
     private Intermediary parseQuery(String query) {
         
         Intermediary selectIntermediary = parseSelect(query);
@@ -364,8 +367,12 @@ public with sharing class Lexer {
         return selectExpr;
     }
 
-    // @description : Parses a list of fields, with optional aliases
-    // @return : Intermediary, the head of the list of fields
+    /** 
+     * @description : Parses a list of fields, with optional aliases
+     * @param query `String`
+     * @return : `Intermediary`
+    */
+    @SuppressWarnings('PMD.NcssMethodCount')
     private Intermediary parseFieldListWithAliases(String query) {
         query = ParserUtils.skipWhitespace(query);
         Intermediary nextItem;
@@ -533,7 +540,6 @@ public with sharing class Lexer {
         }
         
         String nextChar = lookahead(query, 1);
-        String nextCharAfterThat = lookahead(ParserUtils.skipWhitespace(query.subString(1)), 1);
         
         if(nextChar == ',') {
             query = consume(query, ',');
@@ -1455,6 +1461,7 @@ public with sharing class Lexer {
         );
     }
     
+    @SuppressWarnings('PMD.NcssMethodCount')
     private Intermediary parseAggregateFunc(String query) {
         NodeBuilder nb = new NodeBuilder()
             .setNodeType('aggregate function');

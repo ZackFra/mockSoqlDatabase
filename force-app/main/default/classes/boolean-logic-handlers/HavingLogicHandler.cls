@@ -1,8 +1,14 @@
 /**
  * @description This class is used to handle the having clause logic
+ * @author Zackary Frazier
+ * @since 3/23/2024
  */
 public with sharing class HavingLogicHandler extends BooleanLogicHandler {
 
+    /**
+     * @description Constructor
+     * @param options 
+     */
     public HavingLogicHandler(BooleanLogicOptions options) {
         super(options);
     }

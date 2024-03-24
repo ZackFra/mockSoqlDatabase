@@ -1,7 +1,15 @@
 /**
  * @description : Returns a string representation of the AST
+ * @author Zackary Frazier
+ * @since 3/23/2024
  */
 public with sharing class Node {
+    public Node left;
+    public Node right;
+
+    /**
+     * @description The id of the node, cannot be null
+     */
     public String id {
         get; 
         set {
@@ -11,6 +19,10 @@ public with sharing class Node {
             id = value;
         }
     }
+
+    /**
+     * @description The type of the node, cannot be null
+     */
     public String nodeType {
         get;
         set {
@@ -20,8 +32,6 @@ public with sharing class Node {
             nodeType = value;
         }
     }
-    public Node left;
-    public Node right;
 
     /**
      * @description : Constructor for a Node, not to be used directly

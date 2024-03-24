@@ -1,4 +1,15 @@
+/**
+ * @description Handles the inequality operator 
+ * @author Zackary Frazier
+ * @since 3/23/2024
+ */
 public class InequalityHandler implements IOperatorHandler {
+    /**
+     * @description Handles the inequality operator
+     * @param sObjectFieldValue `Object`
+     * @param fieldValue `Object`
+     * @return  `Boolean`
+     */
     public Boolean handle(Object sObjectFieldValue, Object fieldValue) {
         Boolean isSObjNull = (sObjectFieldValue == null);
         Boolean isFieldNull = (fieldValue == null);

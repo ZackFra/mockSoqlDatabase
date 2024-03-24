@@ -2,6 +2,7 @@
  * @description Validate the AST of a query, this does not validate the query against the schema,
  * but rather checks for invalid queries that are not supported by the SOQL parser
  */
+@SuppressWarnings('PMD.CyclomaticComplexity, PMD.CognitiveComplexity')
 public with sharing class QueryValidator {
     /**
      * @description : The top level nodes of the query
@@ -17,7 +18,6 @@ public with sharing class QueryValidator {
     }
    /**
      * @description : given a select node, validate whether this query can be performed
-     * @param selectNode : the select node
      * @throws QueryException : if the query is invalid
      */
     public void validate() {

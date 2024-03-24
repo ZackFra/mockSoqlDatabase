@@ -1,6 +1,9 @@
 /**
  * @description Contains static methods for working with aggregates and proto-aggregates
+ * @author Zackary Frazier
+ * @since 3/23/2024
  */
+@SuppressWarnings('PMD.CyclomaticComplexity, PMD.StdCyclomaticComplexity')
 public with sharing class AggregateService {
 
     /**
@@ -8,6 +11,7 @@ public with sharing class AggregateService {
      * @param topLevelNodes : the top level nodes of the query
      * @return : a map with the fields to group by and the fields to select
      */
+    @SuppressWarnings('PMD.CyclomaticComplexity, PMD.CognitiveComplexity, PMD.StdCyclomaticComplexity, PMD.NcssMethodCount')
     public static Map<String, List<String>> getAggregateFields(TopLevelNodes topLevelNodes) {
         Node selectNode = topLevelNodes.selectNode;
         Node groupByNode = topLevelNodes.groupByNode;

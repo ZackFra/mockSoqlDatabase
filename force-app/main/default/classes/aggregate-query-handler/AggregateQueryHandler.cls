@@ -1,5 +1,7 @@
 /**
  * @description This class is responsible for handling the aggregate queries
+ * @author Zackary Frazier
+ * @since 3/23/2024
  */
 public with sharing class AggregateQueryHandler {
     MockDatabase db;
@@ -7,6 +9,12 @@ public with sharing class AggregateQueryHandler {
 
     AggregateProcessor standardProcessor;
     
+    /**
+     * @description Constructor 
+     * @param db 
+     * @param topLevelNodes 
+     * @exception AggregateQueryException
+     */
     public AggregateQueryHandler(MockDatabase db, TopLevelNodes topLevelNodes) {
         this.topLevelNodes = topLevelNodes;
         this.db = db;
@@ -26,6 +34,10 @@ public with sharing class AggregateQueryHandler {
             .setTopLevelNodes(topLevelNodes);
     }
 
+    /**
+     * @description Finish the processing of the aggregate query 
+     * @return  `List<ProtoAggregate>`
+     */
     public List<ProtoAggregate> finish() {
         List<ProtoAggregate> finalResults = new List<ProtoAggregate>();
         finalResults.addAll(standardProcessor.finish());
@@ -33,11 +45,17 @@ public with sharing class AggregateQueryHandler {
         return finalResults;
     }
 
+    /**
+     * @description Process the record
+     * @param databaseRecord 
+     */
     public void processRecord(SObject databaseRecord) {
         standardProcessor.processRecord(databaseRecord);
-        Node groupByNode = topLevelNodes.groupByNode;
     }
 
+    /**
+     * @description Exception class for Aggregate Query
+     */
     public class AggregateQueryException extends Exception {}
 
     private List<ProtoAggregate> replaceWithAliases(List<ProtoAggregate> aggregates) {

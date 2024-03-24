@@ -1,5 +1,7 @@
 /**
  * @description A class to handle boolean logic, when it comes to HAVING and WHERE clauses, it's all the same except for the comparison
+ * @author Zackary Frazier
+ * @since 3/23/2024
  */
 public virtual with sharing class BooleanLogicHandler {
 
@@ -30,10 +32,7 @@ public virtual with sharing class BooleanLogicHandler {
 
     /**
      * @description Constructor
-     * @param db The database to use for queries
-     * @param head The head conditional node
-     * @param obj The object being compared (either SObject or Aggregate)
-     * @param params Parameters for bind variables in the query
+     * @param options The options for the handler
      */
     public BooleanLogicHandler(BooleanLogicOptions options) {
         this.obj = options.obj;

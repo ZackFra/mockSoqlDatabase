@@ -1,7 +1,16 @@
 /**
  * @description Tool for finding the aliases on nodes
+ * @author Zackary Frazier
+ * @since 3/23/2024
  */
 public with sharing class AliasService {
+    /**
+     * @description Get the field alias 
+     * @param curr 
+     * @param fieldNode 
+     * @param selectNode 
+     * @return  `Map<String, String>`
+     */
     public static Map<String, String> getFieldAlias(Node curr, Node fieldNode, Node selectNode) {
         Node aliasNode = curr.right;
         String fieldApiName;
@@ -36,7 +45,13 @@ public with sharing class AliasService {
             'relationshipName' => null
         };
     }
-    
+    /**
+     * @description Get the alias for a field node
+     * @param selectNode 
+     * @param fieldNode 
+     * @return  `Map<String, String>`
+     * @exception 
+     */
     public static Map<String, String> getAlias(Node selectNode, Node fieldNode) {
         Integer exprNumber = 0;
 
@@ -58,44 +73,5 @@ public with sharing class AliasService {
             curr = curr.left;
         }
         throw new QueryException('No alias found');
-    }
-
-    /** scary function, needs refactor */
-    public static Map<String, String> getRollupFieldOrAlias(Node selectNode, Node rollupNode) {
-        String fieldApiName;
-        String relationshipName;
-        Map<String, Object> aliasData;
-
-        for(Node currSelect = selectNode.left; currSelect != null; currSelect = currSelect.left) {
-            if(currSelect.id == rollupNode.id) {
-                try {
-                    aliasData = AliasService.getAlias(selectNode, currSelect);
-                    fieldApiName = (String) aliasData.get('fieldApiName');
-                    relationshipName = (String) aliasData.get('relationshipName');
-                    break;
-                } catch(QueryException ex) {
-                    aliasData = ComparableService.getComparableDataFromNodes(currSelect, selectNode);
-                    fieldApiName = (String) aliasData.get('comparableField');
-                    relationshipName = (String) aliasData.get('relationshipName');
-                    break;
-                } catch(Exception ex) {
-                    throw new QueryException('Invalid field or relationship name');
-                }
-            }
-        }
-
-        if(fieldApiName == null) {
-            aliasData = ComparableService.getComparableDataFromNodes(rollupNode, selectNode);
-            fieldApiName = (String) aliasData.get('comparableField');
-            relationshipName = (String) aliasData.get('relationshipName');
-            if(fieldApiName == null) {
-                throw new QueryException('Invalid field or relationship name');
-            }
-        }
-
-        return new Map<String, String> {
-            'fieldOrAlias' => fieldApiName,
-            'relationshipName' => relationshipName
-        };
     }
 }

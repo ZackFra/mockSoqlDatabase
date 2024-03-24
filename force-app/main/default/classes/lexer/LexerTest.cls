@@ -1,4 +1,5 @@
 @IsTest
+@SuppressWarnings('PMD.NcssTypeCount, PMD.CyclomaticComplexity')
 private with sharing class LexerTest {
 
     @IsTest
@@ -269,7 +270,8 @@ private with sharing class LexerTest {
         Assert.isNull(forUpdateNode.right, 'Expected right to be null');
     }
 
-    @IsTest 
+    @IsTest
+    @SuppressWarnings('PMD.NcssMethodCount')
     private static void testHavingClause() {
         Test.startTest();
         Lexer t = new Lexer();
@@ -501,6 +503,7 @@ private with sharing class LexerTest {
     }
 
     @IsTest
+    @SuppressWarnings('PMD.NcssMethodCount')
     private static void testMixedFieldsSubQueries() {
         Test.startTest();
         Lexer t = new Lexer();
@@ -662,6 +665,7 @@ private with sharing class LexerTest {
     }
 
     @IsTest
+    @SuppressWarnings('PMD.NcssMethodCount')
     private static void testMultipleSubQueries() {
         Test.startTest();
         Lexer t = new Lexer();
@@ -742,6 +746,7 @@ private with sharing class LexerTest {
     }
 
     @IsTest
+    @SuppressWarnings('PMD.NcssMethodCount')
     private static void testSubQueryWithQueryInWhereClause() {
         Test.startTest();
         Lexer t = new Lexer();
@@ -821,6 +826,7 @@ private with sharing class LexerTest {
     }
 
     @IsTest
+    @SuppressWarnings('PMD.NcssMethodCount')
     private static void testSubQueryWithQueryInWhereClause2() {
         Test.startTest();
         Lexer t = new Lexer();
@@ -977,6 +983,7 @@ private with sharing class LexerTest {
     }
 
     @IsTest
+    @SuppressWarnings('PMD.NcssMethodCount')
     private static void testAndStatements() {
         Test.startTest();
         Lexer t = new Lexer();
@@ -1080,6 +1087,7 @@ private with sharing class LexerTest {
     }
 
     @IsTest
+    @SuppressWarnings('PMD.NcssMethodCount')
     private static void testQueryWithOrAnd() {
         Test.startTest();
         Lexer t = new Lexer();
@@ -1185,6 +1193,7 @@ private with sharing class LexerTest {
     }
 
     @IsTest
+    @SuppressWarnings('PMD.NcssMethodCount')
     private static void testNot() {
         Test.startTest();
         Lexer t = new Lexer();
@@ -1246,6 +1255,7 @@ private with sharing class LexerTest {
     }
 
     @IsTest
+    @SuppressWarnings('PMD.NcssMethodCount')
     private static void testCorrectsForAndWithOr() {
         Test.startTest();
         Lexer t = new Lexer();
@@ -1373,6 +1383,7 @@ private with sharing class LexerTest {
     }
 
     @IsTest
+    @SuppressWarnings('PMD.NcssMethodCount')
     private static void testCorrectsForAndWithOrWithSubExpr() {
         Test.startTest();
         Lexer t = new Lexer();
@@ -1586,6 +1597,7 @@ private with sharing class LexerTest {
     }
 
     @IsTest
+    @SuppressWarnings('PMD.NcssMethodCount')
     private static void testParseValueList() {
         Test.startTest();
         Lexer t = new Lexer();
@@ -1725,6 +1737,7 @@ private with sharing class LexerTest {
     }
 
     @IsTest
+    @SuppressWarnings('PMD.NcssMethodCount')
     private static void testAliases() {
         Test.startTest();
         Lexer t = new Lexer();
@@ -1797,6 +1810,7 @@ private with sharing class LexerTest {
     }
 
     @IsTest
+    @SuppressWarnings('PMD.NcssMethodCount')
     private static void testSubQueryNoAlias() {
         Test.startTest();
         Lexer t = new Lexer();
@@ -1875,6 +1889,7 @@ private with sharing class LexerTest {
     }
 
     @IsTest
+    @SuppressWarnings('PMD.NcssMethodCount')
     private static void testHavingClauseWithMultipleConditions() {
         Test.startTest();
         Lexer t = new Lexer();
@@ -1990,6 +2005,7 @@ private with sharing class LexerTest {
     }
 
     @IsTest
+    @SuppressWarnings('PMD.NcssMethodCount')
     private static void testHavingClauseWhereAdjust() {
         Lexer l = new Lexer();
         
@@ -2316,6 +2332,7 @@ private with sharing class LexerTest {
     }
 
     @IsTest
+    @SuppressWarnings('PMD.NcssMethodCount')
     private static void testTypeOf() {
         Test.startTest();
         Lexer t = new Lexer();
@@ -2396,6 +2413,7 @@ private with sharing class LexerTest {
     }
 
     @IsTest
+    @SuppressWarnings('PMD.NcssMethodCount')
     private static void testTypeOfMultipleFields() {
         Test.startTest();
         Lexer t = new Lexer();
@@ -2513,7 +2531,7 @@ private with sharing class LexerTest {
         Test.startTest();
         Lexer t = new Lexer();
         try {
-            Node head = t.parse('SELECT Name, COUNT(Id) FROM Account GROUP BY ROLLUP(Name)');
+            t.parse('SELECT Name, COUNT(Id) FROM Account GROUP BY ROLLUP(Name)');
         } catch(QueryException ex) {
             exMessage = ex.getMessage();
         } catch(Exception ex) {
@@ -2534,7 +2552,7 @@ private with sharing class LexerTest {
         String exMessage;
         Test.startTest();
         try {
-            Node head = t.parse('SELECT Name, COUNT(Id) FROM Account GROUP BY CUBE(Name, CreatedDate, LastModifiedDate)');
+            t.parse('SELECT Name, COUNT(Id) FROM Account GROUP BY CUBE(Name, CreatedDate, LastModifiedDate)');
         } catch(QueryException ex) {
             exMessage = ex.getMessage();
         } catch(Exception ex) {
@@ -2653,7 +2671,7 @@ private with sharing class LexerTest {
         String exMessage;
         Test.startTest();
         try {
-            Node head = t.parse('SELECT Name, COUNT(Id) FROM Account UPDATE TRACKING');
+            t.parse('SELECT Name, COUNT(Id) FROM Account UPDATE TRACKING');
         } catch(QueryException ex) {
             exMessage = ex.getMessage();
         } catch(Exception ex) {
@@ -2674,7 +2692,7 @@ private with sharing class LexerTest {
         String exMessage;
         Test.startTest();
         try {
-            Node head = t.parse('SELECT Name, COUNT(Id) FROM Account UPDATE VIEWSTAT');
+            t.parse('SELECT Name, COUNT(Id) FROM Account UPDATE VIEWSTAT');
         } catch(QueryException ex) {
             exMessage = ex.getMessage();
         } catch(Exception ex) {

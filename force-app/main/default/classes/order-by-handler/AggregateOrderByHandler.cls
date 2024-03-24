@@ -1,12 +1,29 @@
+/**
+ * @description Handles the ORDER BY clause for aggregate queries 
+ * @author Zackary Frazier
+ * @since 3/23/2024
+ */
 public with sharing class AggregateOrderByHandler extends OrderByHandler {
+    /**
+     * @description Constructor
+     * @param options `OrderByOptions`
+     */
     public AggregateOrderByHandler(OrderByOptions options) {
         super(options);
     }
 
+    /**
+     * @description Handles the ORDER BY clause for aggregate queries 
+     * @return  `Object`
+     */
     public override Object handleOrderBy() {
         return sortByOrderBy();
     }
 
+    /**
+     * @description Sorts the list of aggregates by the ORDER BY clause 
+     * @return  `Object`
+     */
     protected override Object sortByOrderBy() {
         TopLevelNodes topLevelNodes = options.getTopLevelNodes();
         List<ProtoAggregate> aggregates = (List<ProtoAggregate>) options.getObj();

@@ -1,5 +1,7 @@
 /**
  * @description Creates Aggregate objects from ProtoAggregates
+ * @author Zackary Frazier
+ * @since 3/23/2024
  */
 public with sharing class AggregateBuilder {
     List<ProtoAggregate> protoAggregates;
@@ -8,6 +10,8 @@ public with sharing class AggregateBuilder {
     
     /**
      * @description Setter for proto-aggregates
+     * @param protoAggregates the proto-aggregates
+     * @return the aggregate builder
      */
     public AggregateBuilder setProtoAggregates(List<ProtoAggregate> protoAggregates) {
         this.protoAggregates = protoAggregates;
@@ -16,6 +20,8 @@ public with sharing class AggregateBuilder {
 
     /**
      * @description sets the top level nodes
+     * @param topLevelNodes the top level nodes
+     * @return the aggregate builder
      */
     public AggregateBuilder setTopLevelNodes(TopLevelNodes topLevelNodes) {
         this.topLevelNodes = topLevelNodes;
@@ -24,6 +30,8 @@ public with sharing class AggregateBuilder {
 
     /**
      * @description sets the params
+     * @param params the bind params
+     * @return the aggregate builder
      */
     public AggregateBuilder setParams(Map<String, Object> params) {
         this.params = params;
@@ -32,13 +40,10 @@ public with sharing class AggregateBuilder {
 
     /**
      * @description Remove the fields that are not in the select clause
-     * @param aggregateResults : the aggregate result list
-     * @param selectNode : the select node
-     * @return : the cleaned up aggregate result list
+     * @return The cleaned up aggregate result list
      */
     public List<Aggregate> build() {
-        Node selectNode = topLevelNodes.selectNode;
-
+        
         // get list of all fields to group by, if is aggregate query
         Map<String, List<String>> aggregateFields = AggregateService.getAggregateFields(topLevelNodes);
         List<String> groupByFields = aggregateFields.get('groupByFields');

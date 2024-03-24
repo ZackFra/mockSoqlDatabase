@@ -1,14 +1,30 @@
+/**
+ * @description Select handler for TYPEOF operator 
+ * @author Zackary Frazier
+ * @since 3/23/2024
+ */
+@SuppressWarnings('PMD.StdCyclomaticComplexity')
 public with sharing class PolymorphicSelectHandler implements ISelectHandler {
     private FieldSelector fSelector;
+
+    /**
+     * @description Constructor
+     * @param fSelector 
+     */
     public PolymorphicSelectHandler(FieldSelector fSelector) {
         this.fSelector = fSelector;
     }
 
+    /**
+     * @description Handles the TYPEOF operator in a SELECT statement 
+     * @return  `SObject`
+     * @exception QueryException
+     */
+    @SuppressWarnings('PMD.CyclomaticComplexity, PMD.NcssMethodCount')
     public SObject handleSelect() {
         SObject databaseRecord = fSelector.databaseRecord;
         SObject queriedRecord = fSelector.queriedRecord;
         Node fieldNode = fSelector.fieldNode;
-        Map<String, Object> params = fSelector.params;
         MockDatabase db = fSelector.db;
 
         if(fieldNode.nodeType != 'typeof') {

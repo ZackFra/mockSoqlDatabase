@@ -3,9 +3,15 @@
  *              : a method in here must be dependent on the database, but not necessary to understand
  *              : the database
  */
+@SuppressWarnings('PMD.CognitiveComplexity, PMD.StdCyclomaticComplexity, PMD.CyclomaticComplexity')
 public with sharing class MockDatabaseUtils {
 
     private MockDatabase db;
+
+    /**
+     * @description Constructor 
+     * @param db 
+     */
     public MockDatabaseUtils(MockDatabase db) {
         this.db = db;
     }
@@ -39,6 +45,7 @@ public with sharing class MockDatabaseUtils {
       * @param sObj : the child sObject
       * @param fieldName : the field name of the parent sObject from the child
       *                  : ex. OpportunityLineItem, the field is Opportunity
+      * @return : the parent sObject
       */
       public Map<String, Object> findParentRecord(sObject sObj, String fieldName) {
         // api name of the child sObject
@@ -107,6 +114,13 @@ public with sharing class MockDatabaseUtils {
     }
 
 
+    /**
+     * @description Get the value of an aggregate node
+     * @param aggrNode 
+     * @param selectNode 
+     * @return  `Map<String, Object>`
+     * @exception 
+     */
     public Map<String, Object> getAggrNodeValue(Node aggrNode, Node selectNode) {
 
         if(aggrNode.nodeType == 'field') {
@@ -167,7 +181,15 @@ public with sharing class MockDatabaseUtils {
         };
     }
 
-
+    /**
+     * @description Get the value of a field node
+     * @param valueNode 
+     * @param sObj 
+     * @param params 
+     * @return  `Object`
+     * @exception QueryException
+     */
+    @SuppressWarnings('PMD.StdCyclomaticComplexity, PMD.CognitiveComplexity, PMD.NcssMethodCount')
     public Object getFieldNodeValue(Node valueNode, sObject sObj, Map<String, Object> params) {
 
         Boolean isBindVar = (valueNode.nodeType == 'bind variable');
@@ -245,8 +267,6 @@ public with sharing class MockDatabaseUtils {
             String parentFieldApiName = SchemaService.getFieldName(childObj, fieldName);
             Schema.SObjectField parentField = SchemaService.getField(childObj, parentFieldApiName);
             
-            String childObjFieldName = SchemaService.getFieldName(childObjField);
-            String childObjApiName = SchemaService.getSObjectName(childObj);
 
             Boolean isSameType = SchemaService.idsReferenceSameSObject(parentField, childObjField);
 
@@ -284,13 +304,23 @@ public with sharing class MockDatabaseUtils {
         return null;
     }
 
+    /**
+     * @description Check if the required fields are set on a record
+     * @param record 
+     * @exception DMLException
+     */
     public void checkForRequiredFieldsOnInsert(SObject record) {
         String unfulfilledField = getUnfulfilledField(record);
         if(unfulfilledField != null) {
-            throw new QueryException('Required field not set: ' + unfulfilledField);
+            throw new DMLException('Required field not set: ' + unfulfilledField);
         }
     }
 
+    /**
+     * @description Check if the required fields are set on a record
+     * @param record 
+     * @exception DMLException
+     */
     public void checkForRequiredFieldsOnUpdate(SObject record) {
         Map<String, Object> newRecordMap = SObjectService.mapFromSObject(record);
         for(String fieldName : newRecordMap.keySet()) {
@@ -302,6 +332,11 @@ public with sharing class MockDatabaseUtils {
         }
     }
 
+    /**
+     * @description Returns an empty response based on the top level nodes
+     * @param topLevelNodes 
+     * @return  `Object`
+     */
     public Object emptyResponse(TopLevelNodes topLevelNodes) {
         Boolean isAggregateQuery = NodeService.isAggregateQuery(topLevelNodes);
         Boolean isCount = NodeService.isSingularCount(topLevelNodes);

@@ -73,6 +73,7 @@ public with sharing class AggregateComparator implements Comparator<ProtoAggrega
      * @param b The second proto-Aggregate
      * @return Integer
      */
+    @SuppressWarnings('PMD.CognitiveComplexity')
     public Integer compare(ProtoAggregate a, ProtoAggregate b) {
         for (String field : this.fields.keySet()) {
 

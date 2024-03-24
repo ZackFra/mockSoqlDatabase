@@ -1,3 +1,8 @@
+/**
+ * @description This class is used to store the options for the BooleanLogic class 
+ * @author Zackary Frazier
+ * @since 3/23/2024
+ */
 public with sharing class BooleanLogicOptions {
 
     /** 
@@ -25,26 +30,51 @@ public with sharing class BooleanLogicOptions {
      */
     public Node selectNode;
 
+    /**
+     * @description Setter for `params`
+     * @param params 
+     * @return  `BooleanLogicOptions`
+     */
     public BooleanLogicOptions setParams(Map<String, Object> params) {
         this.params = params;
         return this;
     }
 
+    /**
+     * @description Setter for `db` 
+     * @param db 
+     * @return  `BooleanLogicOptions`
+     */
     public BooleanLogicOptions setDatabase(MockDatabase db) {
         this.db = db;
         return this;
     }
 
+    /**
+     * @description Setter for `obj` 
+     * @param obj 
+     * @return  `BooleanLogicOptions`
+     */
     public BooleanLogicOptions setObj(Object obj) {
         this.obj = obj;
         return this;
     }
 
+    /**
+     * @description Setter for `head` node 
+     * @param head 
+     * @return  `BooleanLogicOptions`
+     */
     public BooleanLogicOptions setHead(Node head) {
         this.head = head;
         return this;
     }
 
+    /**
+     * @description Setter for `selectNode`
+     * @param selectNode 
+     * @return  `BooleanLogicOptions`
+     */
     public BooleanLogicOptions setSelectNode(Node selectNode) {
         this.selectNode = selectNode;
         return this;

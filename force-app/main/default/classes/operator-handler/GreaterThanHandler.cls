@@ -1,4 +1,18 @@
+/**
+ * @description Handles the greater than operator 
+ * @author Zackary Frazier
+ * @since 3/23/2024
+ */
+@SuppressWarnings('PMD.StdCyclomaticComplexity')
 public class GreaterThanHandler implements IOperatorHandler {
+    /**
+     * @description Handler for the greater than operator
+     * @param sObjectFieldValue `Object`
+     * @param fieldValue `Object`
+     * @return  `Boolean`
+     * @exception QueryException
+     */
+    @SuppressWarnings('PMD.CyclomaticComplexity')
     public Boolean handle(Object sObjectFieldValue, Object fieldValue) {
         if(sObjectFieldValue == null) {
             return false;

@@ -1,9 +1,22 @@
+/**
+ * @description Calculates the average of a set of values. 
+ * @author Zackary Frazier
+ * @since 3/23/2024
+ */
 public with sharing class AverageCalculator implements IAggregateCalculator {
     AggregateCalculatorOptions options;
+    /**
+     * @description Constructor for the AverageCalculator class
+     * @param options 
+     */
     public AverageCalculator(AggregateCalculatorOptions options) {
         this.options = options;
     }
 
+    /**
+     * @description Calculates the average of a set of values. 
+     * @return  `ProtoAggregate`
+     */
     public ProtoAggregate calculate() {
         return calculate(
             options.aggregateResult,
@@ -12,6 +25,13 @@ public with sharing class AverageCalculator implements IAggregateCalculator {
         );
     }
 
+    /**
+     * @description Calculates the average of a set of values with an alias.
+     * @param aggregateResult 
+     * @param alias 
+     * @param value 
+     * @return  `ProtoAggregate`
+     */
     private ProtoAggregate calculate(ProtoAggregate aggregateResult, String alias, Object value) {
         if(value == null) {
             // make sure it's explicitly set to null

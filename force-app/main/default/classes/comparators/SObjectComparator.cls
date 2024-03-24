@@ -1,5 +1,7 @@
 /**
  * @description This class is used to compare two SObjects based on the fields provided in the constructor.
+ * @author Zackary Frazier
+ * @since 3/23/2024
  */
 public with sharing class SObjectComparator implements Comparator<SObject> {
     private Map<String, Map<String, String>> fields;
@@ -76,6 +78,7 @@ public with sharing class SObjectComparator implements Comparator<SObject> {
      * @param b The second SObject
      * @return Integer
      */
+    @SuppressWarnings('PMD.CognitiveComplexity')
     public Integer compare(SObject a, SObject b) {
         for (String field : fields.keySet()) {
             Map<String, String> fieldData = fields.get(field);

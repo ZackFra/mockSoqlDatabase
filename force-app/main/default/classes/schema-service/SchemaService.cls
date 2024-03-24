@@ -5,6 +5,7 @@
  *              anything named "getName" are understood to return proper API names
  *              every argument is understood to be non-null
  */
+@SuppressWarnings('PMD.CyclomaticComplexity, PMD.ExcessivePublicCount, PMD.CognitiveComplexity')
 public with sharing class SchemaService {
     final private static List<Schema.DisplayType> NUMERIC_FIELD_TYPES = new List<Schema.DisplayType> {
         Schema.DisplayType.CURRENCY,
@@ -16,7 +17,9 @@ public with sharing class SchemaService {
     private class SchemaServiceException extends Exception {}
 
     /**
-     * 
+     * @description Describe the field of a given sObject
+     * @param field 
+     * @return  `Schema.DescribeFieldResult`
      */
     public static Schema.DescribeFieldResult describeField(Schema.SObjectField field) {
         Map<String, Object> args = new Map<String, Object> {
@@ -29,7 +32,7 @@ public with sharing class SchemaService {
 
     /**
      * @description This method is used primarily to discover if a field is polymorphic, 
-     * @param objApiName : the api name of the sObject
+     * @param sObjApiName : the api name of the sObject
      * @param fieldApiName : the api name of the field
      * @return the describe field result
      */
@@ -82,7 +85,7 @@ public with sharing class SchemaService {
 
     /**
      * @description this method returns the field name of a given field
-     * @param fieldApiName the field api name
+     * @param field `Schema.SObjectField`
      * @return the field name
      */
     public static String getFieldName(Schema.SObjectField field) {
@@ -203,7 +206,7 @@ public with sharing class SchemaService {
 
     /**
      * @description this method returns the API name of a given SObject
-     * @param sObjectName the sobject name
+     * @param sObjName the sobject name
      * @return the sobject api name
      * @throws TypeException if the type is not found
      */
@@ -218,6 +221,11 @@ public with sharing class SchemaService {
         return sot.getDescribe().getName();
     }
 
+    /**
+     * @description Return whether the given string is an SObject
+     * @param sObjName `String`
+     * @return  `Boolean`
+     */
     public Boolean isSObject(String sObjName) {
         Map<String, Object> args = new Map<String, Object> {
             'sObjName' => sObjName
@@ -402,7 +410,7 @@ public with sharing class SchemaService {
 
     /**
      * @description given an sObject type, return the fields
-     * @param sObjType the sObject type
+     * @param sot the sObject type
      * @return the fields
      */
     public static List<Schema.SObjectField> getFields(Schema.SObjectType sot) {
@@ -432,7 +440,7 @@ public with sharing class SchemaService {
 
     /**
      * @description Given an sObject and a field api name, return the field
-     * @param sot : the sObject type
+     * @param sObj : the record
      * @param fieldApiName : the field api name
      * @return : the field
      */
@@ -448,6 +456,12 @@ public with sharing class SchemaService {
         return getField(sot, fieldApiName);
     }
 
+    /**
+     * @description Given an sObject and a field api name, return the field
+     * @param sObjApiName 
+     * @param fieldApiName 
+     * @return  `Schema.SObjectField`
+     */
     public static Schema.SObjectField getField(String sObjApiName, String fieldApiName) {
         Map<String, Object> args = new Map<String, Object> {
             'sObjApiName' => sObjApiName,
@@ -500,7 +514,6 @@ public with sharing class SchemaService {
             }
 
             String lowerCaseRelationshipApiName = relationshipApiName.toLowerCase();
-            Boolean isReference = (fieldType == DisplayType.REFERENCE);
             Boolean isRelationshipEqual = (lowerCaseRelationshipApiName == relationshipName);
             if (fieldType == DisplayType.Reference && isRelationshipEqual) {
                 return getFieldName(field);
@@ -510,7 +523,10 @@ public with sharing class SchemaService {
     }
 
     /**
-     * @description Given an sObject and a relationship name, return the field api name
+     * @description Return whether a relationship is polymorphic 
+     * @param sot 
+     * @param relationshipName 
+     * @return  `Boolean`
      */
     public static Boolean isRelationshipPolymorphic(Schema.SObjectType sot, String relationshipName) {
         Map<String, Object> args = new Map<String, Object> {

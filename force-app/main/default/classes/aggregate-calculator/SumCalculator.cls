@@ -1,9 +1,22 @@
+/**
+ * @description Calculates the sum of a field 
+ * @author Zackary Frazier
+ * @since 3/23/2024
+ */
 public with sharing class SumCalculator implements IAggregateCalculator {
     AggregateCalculatorOptions options;
+    /**
+     * @description Constructor
+     * @param options 
+     */
     public SumCalculator(AggregateCalculatorOptions options) {
         this.options = options;
     }
 
+    /**
+     * @description Calculates the sum of a field 
+     * @return  `ProtoAggregate`
+     */
     public ProtoAggregate calculate() {
         return calculate(
             options.aggregateResult,
