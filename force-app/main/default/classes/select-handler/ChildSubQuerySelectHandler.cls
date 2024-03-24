@@ -1,5 +1,15 @@
+/**
+ * @description Child subquery select handler
+ * @author Zackary Frazier
+ * @since 3/23/2024
+ */
 public with sharing class ChildSubQuerySelectHandler implements ISelectHandler {
     FieldSelector fSelector;
+
+    /**
+     * @description Constructor
+     * @param fSelector 
+     */
     public ChildSubQuerySelectHandler(FieldSelector fSelector) {
         Map<String, Object> args = new Map<String, Object> {
             'fSelector' => fSelector
@@ -8,6 +18,12 @@ public with sharing class ChildSubQuerySelectHandler implements ISelectHandler {
         this.fSelector = fSelector;
     }
 
+    /**
+     * @description Handle the select 
+     * @return  `SObject`
+     * @exception QueryException
+     */
+    @SuppressWarnings('PMD.NcssMethodCount')
     public SObject handleSelect() {
         SObject queriedRecord = fSelector.queriedRecord;
         Node fieldNode = fSelector.fieldNode;

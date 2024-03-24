@@ -1,6 +1,15 @@
+/**
+ * @description Handles the selection of a field that is a parent relationship in a subquery 
+ * @author Zackary Frazier
+ * @since 3/23/2024
+ */
 public with sharing class ParentSubQuerySelectHandler implements ISelectHandler {
     
     FieldSelector fSelector;
+    /**
+     * @description Constructor for ParentSubQuerySelectHandler
+     * @param fSelector 
+     */
     public ParentSubQuerySelectHandler(FieldSelector fSelector) {
         Map<String, Object> args = new Map<String, Object>{ 
             'fSelector' => fSelector 
@@ -9,6 +18,10 @@ public with sharing class ParentSubQuerySelectHandler implements ISelectHandler 
         this.fSelector = fSelector;
     }
 
+    /**
+     * @description Selects the field from the queried record 
+     * @return  `SObject`
+     */
     public SObject handleSelect() {
         SObject queriedRecord = fSelector.queriedRecord;
         Node fieldNode = fSelector.fieldNode;
