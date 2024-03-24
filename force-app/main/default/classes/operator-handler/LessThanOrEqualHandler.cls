@@ -3,6 +3,7 @@
  * @author Zackary Frazier
  * @since 3/23/2024
  */
+@SuppressWarnings('PMD.StdCyclomaticComplexity')
 public class LessThanOrEqualHandler implements IOperatorHandler {
     /**
      * @description Handles the LessThanOrEqual operator
@@ -11,6 +12,7 @@ public class LessThanOrEqualHandler implements IOperatorHandler {
      * @return  `Boolean`
      * @exception QueryException
      */
+    @SuppressWarnings('PMD.CyclomaticComplexity')
     public Boolean handle(Object sObjectFieldValue, Object fieldValue) {
         if(sObjectFieldValue == null) {
             return false;
