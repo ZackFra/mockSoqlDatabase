@@ -1,9 +1,22 @@
+/**
+ * @description CountDistinctCalculator is a class that implements the IAggregateCalculator interface. It calculates the distinct count of a field. 
+ * @author Zackary Frazier
+ * @since 3/23/2024
+ */
 public with sharing class CountDistinctCalculator implements IAggregateCalculator {
     AggregateCalculatorOptions options;
+    /**
+     * @description Constructor for the CountDistinctCalculator class.
+     * @param options 
+     */
     public CountDistinctCalculator(AggregateCalculatorOptions options) {
         this.options = options;
     }
 
+    /**
+     * @description This method calculates the distinct count of a field. 
+     * @return  `ProtoAggregate`
+     */
     public ProtoAggregate calculate() {
         return calculate(
             options.aggregateResult,

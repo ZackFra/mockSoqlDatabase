@@ -1,14 +1,21 @@
 /**
  * @description calculates the MAX value of a field for an aggregate result
+ * @author Zackary Frazier
+ * @since 3/23/2024
  */
 public with sharing class MaxCalculator implements IAggregateCalculator {
     AggregateCalculatorOptions options;
+    /**
+     * @description Constructor
+     * @param options 
+     */
     public MaxCalculator(AggregateCalculatorOptions options) {
         this.options = options;
     }
     
     /**
      * @description calculates the MAX value of a field for an aggregate result
+     * @return `ProtoAggregate`
      */
     public ProtoAggregate calculate() {
         return calculate(

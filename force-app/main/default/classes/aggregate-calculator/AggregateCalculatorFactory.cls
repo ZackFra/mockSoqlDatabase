@@ -1,6 +1,18 @@
+/**
+ * @description Generates an instance of an aggregate calculator based on the type provided 
+ * @author Zackary Frazier
+ * @since 3/23/2024
+ */
 public with sharing class AggregateCalculatorFactory {
     private class AggregateCalculatorException extends Exception {}
     
+    /**
+     * @description Generates an instance of an aggregate calculator based on the type provided 
+     * @param type 
+     * @param options 
+     * @return  `IAggregateCalculator`
+     * @exception AggregateCalculatorException
+     */
     public static IAggregateCalculator getCalculator(String type, AggregateCalculatorOptions options) {
         switch on type {
             when 'sum' {
