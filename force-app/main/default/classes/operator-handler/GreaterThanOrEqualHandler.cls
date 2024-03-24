@@ -3,6 +3,7 @@
  * @author Zackary Frazier
  * @since 3/23/2024
  */
+@SuppressWarnings('PMD.StdCyclomaticComplexity')
 public class GreaterThanOrEqualHandler implements IOperatorHandler {
 
     /**
@@ -10,8 +11,9 @@ public class GreaterThanOrEqualHandler implements IOperatorHandler {
      * @param sObjectFieldValue `Object`
      * @param fieldValue `Object`
      * @return  `Boolean`
-     * @exception 
+     * @exception QueryException
      */
+    @SuppressWarnings('PMD.CyclomaticComplexity')
     public Boolean handle(Object sObjectFieldValue, Object fieldValue) {
         if(sObjectFieldValue == null) {
             return false;

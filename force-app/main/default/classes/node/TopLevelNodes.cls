@@ -1,6 +1,6 @@
 /**
  * @description This class is used to parse the top level nodes of a SOQL query.
- * Designed to refresh the instance if the head node changes, i.e. if a new SOQL query is made.
+ *              Designed to refresh the instance if the head node changes, i.e. if a new SOQL query is made.
  * @author Zackary Frazier
  * @since 3/23/2024
  */
@@ -61,7 +61,6 @@ public with sharing class TopLevelNodes {
     /**
      * @description Sets the appropriate node based on the nodeName. Returns the right node of the current node.
      *              or the node itself if the nodeName is not supported.
-     * @param nodeName `String`
      * @param node `Node`
      * @return  `Node`
      */

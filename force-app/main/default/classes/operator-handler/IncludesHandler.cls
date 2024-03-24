@@ -9,7 +9,7 @@ public class IncludesHandler implements IOperatorHandler {
      * @param sObjectFieldValue `Object`
      * @param fieldValue `Object`
      * @return  `Boolean`
-     * @exception 
+     * @exception QueryException
      */
     public Boolean handle(Object sObjectFieldValue, Object fieldValue) {
         List<String> values = new List<String>();
