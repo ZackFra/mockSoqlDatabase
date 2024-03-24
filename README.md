@@ -1,6 +1,6 @@
 # Mock SOQL Database
 
-This project mocks the logic of the Salesforce database for testing. The purpose is to create a unified mock query and DML framework that doesn't require mocking the results of queries by explicitly setting the return values.
+This project mocks the logic of the Salesforce database for testing. The purpose is to create a unified mocking framework for DML statements and SOQL queries that doesn't require mocking the results of queries by explicitly setting the return values.
 
 ## Example
 ```
